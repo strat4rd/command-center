@@ -2441,7 +2441,6 @@ function renderFinances(editing) {
   // Net worth: range from -$110k to $0 (based on loan starting balance)
   const nwMin = -110000, nwMax = 0;
   const nwPct = pct(f.netWorth.current, nwMin, nwMax);
-  const nwCls = f.netWorth.current >= 0 ? 'positive' : 'negative';
 
   // Emergency U: milestone at $16k
   const euPct = pct(f.emergencyU.current, 0, 24000);
@@ -2455,8 +2454,13 @@ function renderFinances(editing) {
   const LOAN_START = 110000;
   const loanProgressPct = pct(LOAN_START - f.loans.current, 0, LOAN_START);
 
-  // Car
-  const carPct = pct(f.car.current, 0, 23000);
+  // Car / surprise bills / tech — simple 0-to-target
+  const carPct   = pct(f.car.current,      0, 23000);
+  const sPct     = pct(f.emergencyS.current, 0, 1000);
+  const techPct  = pct(f.tech.current,     0, 1500);
+
+  // Amount text uses the same color rule as the bar (blue/gold/green)
+  function ac(fillPct) { return `color:${barColor(fillPct)};`; }
 
   const cards = [
     // 1. Net Worth
@@ -2467,7 +2471,7 @@ function renderFinances(editing) {
       </div>
       ${goalLine('Positive net worth by Jul 15, 2026')}
       <div class="fin-amounts">
-        <span class="fin-current ${nwCls}">${fmtDollars(f.netWorth.current)}</span>
+        <span class="fin-current" style="${ac(nwPct)}">${fmtDollars(f.netWorth.current)}</span>
         <span class="fin-target">→ $0</span>
       </div>
       ${bar(nwPct)}
@@ -2484,7 +2488,7 @@ function renderFinances(editing) {
       </div>
       ${goalLine('$65,000 in retirement savings by Dec 31, 2026')}
       <div class="fin-amounts">
-        <span class="fin-current">${fmtDollars(f.retirement.current)}</span>
+        <span class="fin-current" style="${ac(retPct)}">${fmtDollars(f.retirement.current)}</span>
         <span class="fin-target">→ ${fmtDollars(65000)}</span>
       </div>
       ${bar(retPct)}
@@ -2501,7 +2505,7 @@ function renderFinances(editing) {
       </div>
       ${goalLine('$24,000 in fund by Dec 31, 2026')}
       <div class="fin-amounts">
-        <span class="fin-current">${fmtDollars(f.emergencyU.current)}</span>
+        <span class="fin-current" style="${ac(euPct)}">${fmtDollars(f.emergencyU.current)}</span>
         <span class="fin-target">→ ${fmtDollars(24000)}</span>
       </div>
       <div class="fin-track-wrap" style="margin-bottom:18px;">
@@ -2548,10 +2552,10 @@ function renderFinances(editing) {
       </div>
       ${goalLine('$1,000 in fund by TBD')}
       <div class="fin-amounts">
-        <span class="fin-current">${fmtDollars(f.emergencyS.current)}</span>
+        <span class="fin-current" style="${ac(sPct)}">${fmtDollars(f.emergencyS.current)}</span>
         <span class="fin-target">→ ${fmtDollars(1000)}</span>
       </div>
-      ${bar(pct(f.emergencyS.current, 0, 1000))}
+      ${bar(sPct)}
       <div class="fin-meta">No deadline set</div>
       ${editRow('emergencyS','Current amount')}
     </div>`,
@@ -2564,10 +2568,10 @@ function renderFinances(editing) {
       </div>
       ${goalLine('$1,500 in fund by TBD')}
       <div class="fin-amounts">
-        <span class="fin-current">${fmtDollars(f.tech.current)}</span>
+        <span class="fin-current" style="${ac(techPct)}">${fmtDollars(f.tech.current)}</span>
         <span class="fin-target">→ ${fmtDollars(1500)}</span>
       </div>
-      ${bar(pct(f.tech.current, 0, 1500))}
+      ${bar(techPct)}
       <div class="fin-meta">No deadline set</div>
       ${editRow('tech','Current amount')}
     </div>`,
@@ -2580,7 +2584,7 @@ function renderFinances(editing) {
       </div>
       ${goalLine('$23,000 in fund by TBD')}
       <div class="fin-amounts">
-        <span class="fin-current">${fmtDollars(f.car.current)}</span>
+        <span class="fin-current" style="${ac(carPct)}">${fmtDollars(f.car.current)}</span>
         <span class="fin-target">→ ${fmtDollars(23000)}</span>
       </div>
       ${bar(carPct)}
@@ -2595,7 +2599,7 @@ function renderFinances(editing) {
         ${editBtn('loans')}
       </div>
       <div class="fin-amounts">
-        <span class="fin-current negative">${fmtDollars(f.loans.current)}</span>
+        <span class="fin-current" style="${ac(loanProgressPct)}">${fmtDollars(f.loans.current)}</span>
         <span class="fin-target">→ $0</span>
       </div>
       <div class="fin-track"><div class="fin-fill paydown" style="width:${Math.min(loanProgressPct,100)}%;background:${barColor(loanProgressPct)};"></div></div>
