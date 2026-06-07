@@ -1,0 +1,2961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Center</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent:     #4A90D9;
+      --accent-dim: rgba(74, 144, 217, 0.10);
+      --accent-rim: rgba(74, 144, 217, 0.30);
+      --surface:    #ffffff;
+      --surface2:   #f5f5f9;
+      --border:     #e8e8f0;
+      --border-d:   #d4d4e4;
+      --text:       #1a1a2e;
+      --muted:      #6b6b90;
+      --muted2:     #a8a8c0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      background: #ffffff;
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── HEADER ───────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      height: 52px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-wordmark {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .header-date { font-size: 12px; color: var(--muted); }
+
+    /* ── TABS ─────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      padding: 0 28px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      padding: 11px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+
+    .tab:hover  { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── MAIN ─────────────────────────────────────────────── */
+    .main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+    }
+
+    .tab-panel        { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── DEADLINE BANNER ──────────────────────────────────── */
+    .deadline-banner {
+      background: rgba(245,166,35,0.06);
+      border: 1px solid rgba(245,166,35,0.25);
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .deadline-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .deadline-sub {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #ffffff;
+      background: #F5A623;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-top: 5px;
+    }
+
+    .deadline-date { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+    .deadline-right { text-align: right; flex-shrink: 0; }
+
+    .deadline-count {
+      font-size: 52px;
+      font-weight: 800;
+      color: #F5A623;
+      line-height: 1;
+      letter-spacing: -2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .deadline-unit {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+    }
+
+    /* ── TWO-COLUMN WRITING LAYOUT ───────────────────────── */
+    .writing-layout {
+      display: grid;
+      grid-template-columns: 1fr 180px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 700px) {
+      .writing-layout { grid-template-columns: 1fr; }
+    }
+
+    .writing-col     { min-width: 0; }
+    .writing-sidebar { width: 180px; min-width: 0; flex-shrink: 0; }
+
+    /* ── CONTEST STACK ────────────────────────────────────── */
+    .contest-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      width: 100%;
+    }
+
+    .cg-card {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      box-sizing: border-box;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .cg-card.next-up {
+      background: #EFF6FF;
+      border-left: 3px solid #4A90D9;
+      padding-left: 8px;
+    }
+
+    .cg-next-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #4A90D9;
+    }
+
+    .cg-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .cg-meta {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .cg-date {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .cg-pill {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #ffffff;
+      background: var(--accent);
+      padding: 1px 4px;
+      border-radius: 3px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ── CARD ─────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+
+    .card:last-child { margin-bottom: 0; }
+
+    /* ── WEEK TRACKER ─────────────────────────────────────── */
+    .tracker-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .tracker-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .tracker-stat { font-size: 13px; color: var(--muted); }
+    .tracker-stat strong { color: var(--accent); font-weight: 700; }
+
+    .progress-track {
+      height: 5px;
+      background: var(--surface2);
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── WEEK NAV ─────────────────────────────────────────── */
+    .week-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .nav-btn {
+      width: 28px;
+      height: 28px;
+      background: var(--surface2);
+      border: 1px solid var(--border-d);
+      color: var(--muted);
+      border-radius: 7px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      line-height: 1;
+      transition: color 0.12s, border-color 0.12s, background 0.12s;
+      flex-shrink: 0;
+    }
+
+    .nav-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent-rim);
+      background: var(--accent-dim);
+    }
+
+    .week-info { text-align: center; }
+
+    .week-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .now-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .week-range { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+    /* ── WRITING BLOCKS ───────────────────────────────────── */
+    .blocks { display: flex; flex-direction: column; gap: 7px; }
+
+    .block {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 12px;
+      align-items: start;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .block:hover       { border-color: var(--border-d); background: var(--surface); }
+    .block.today-block { border-color: var(--accent-rim); background: var(--surface); }
+    .block.done        { opacity: 0.4; }
+    .block.done .block-day { text-decoration: line-through; }
+
+    .cb {
+      width: 20px;
+      height: 20px;
+      border: 1.5px solid var(--border-d);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .block.done .cb     { background: var(--accent); border-color: var(--accent); }
+    .cb svg             { display: none; }
+    .block.done .cb svg { display: block; }
+
+    .block-body { min-width: 0; }
+
+    .block-top {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 2px;
+      flex-wrap: wrap;
+    }
+
+    .block-day  { font-size: 13px; font-weight: 600; color: var(--text); }
+
+    .block-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .block-meta .sep { color: var(--muted2); }
+
+    .today-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-rim);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .block-goal {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--surface);
+      padding: 6px 10px;
+      border-radius: 6px;
+      border-left: 2px solid var(--accent);
+      margin-top: 7px;
+      font-style: italic;
+      line-height: 1.45;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 36px 20px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* ── COMING SOON ──────────────────────────────────────── */
+    .coming-soon { text-align: center; padding: 80px 40px; }
+    .cs-icon  { font-size: 32px; margin-bottom: 12px; opacity: 0.3; }
+    .cs-title { font-size: 15px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+    .cs-sub   { font-size: 13px; color: var(--muted2); }
+
+    /* ── JOURNAL ──────────────────────────────────────────── */
+    .journal-form { display: flex; flex-direction: column; gap: 16px; }
+
+    .field-group { display: flex; flex-direction: column; }
+
+    .field-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    textarea.journal-input {
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      resize: vertical;
+      min-height: 66px;
+      line-height: 1.5;
+      transition: border-color 0.15s;
+    }
+
+    textarea.journal-input:focus {
+      outline: none;
+      border-color: var(--accent-rim);
+      background: var(--surface);
+    }
+
+    .pill-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .pill-cb { display: none; }
+
+    .pill-label {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border-d);
+      color: var(--muted);
+      cursor: pointer;
+      background: var(--surface2);
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      user-select: none;
+    }
+
+    .pill-cb:checked + .pill-label {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slider-side { font-size: 11px; color: var(--muted2); white-space: nowrap; }
+
+    input[type="range"].overwhelm-slider {
+      flex: 1;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .journal-save-btn {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      align-self: flex-start;
+      transition: opacity 0.15s;
+    }
+
+    .journal-save-btn:hover { opacity: 0.85; }
+
+    .journal-history { display: flex; flex-direction: column; gap: 8px; }
+
+    .jentry {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .jentry-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .jentry-date { font-size: 12px; font-weight: 600; color: var(--text); }
+
+    .jentry-overwhelm {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent-rim);
+    }
+
+    .jentry-field {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .jentry-field strong { color: var(--text); font-weight: 600; }
+
+    .jentry-workouts { font-size: 11px; color: var(--muted2); margin-top: 3px; }
+
+    /* ── TASKS ────────────────────────────────────────────── */
+    .tasks-stats-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .tasks-stat-block { display: flex; flex-direction: column; gap: 4px; }
+
+    .tasks-stat-val {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .t-hours-input {
+      width: 52px;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      border: none;
+      border-bottom: 2px solid var(--border-d);
+      background: transparent;
+      text-align: center;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .t-hours-input:focus { outline: none; border-bottom-color: var(--accent); }
+
+    .t-list { display: flex; flex-direction: column; gap: 2px; }
+
+    .t-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 4px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.1s;
+    }
+
+    .t-item:last-child { border-bottom: none; }
+    .t-item:hover { background: var(--surface2); }
+
+    .t-cb {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--border-d);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.12s, border-color 0.12s;
+    }
+
+    .t-item.done .t-cb { background: var(--accent); border-color: var(--accent); }
+    .t-cb svg { display: none; }
+    .t-item.done .t-cb svg { display: block; }
+
+    .t-name {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .t-item.done .t-name { text-decoration: line-through; color: var(--muted2); }
+
+    .t-mins { font-size: 12px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+
+    .t-cat-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .t-cat-Writing  { background: rgba(245,166,35,0.10);  color: #92400E; }
+    .t-cat-Fitness  { background: rgba(74,144,217,0.12); color: #1D4ED8; }
+    .t-cat-Work     { background: rgba(74,144,217,0.12); color: #1D4ED8; }
+    .t-cat-Personal { background: #F5F5F9; color: #6b6b90; }
+    .t-cat-Finance  { background: rgba(245,166,35,0.10);  color: #92400E; }
+
+    .t-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 10px 0 4px;
+    }
+
+    .t-item.t-queued {
+      background: var(--surface2);
+      opacity: 0.75;
+    }
+    .t-item.t-queued:hover { background: var(--border); }
+
+    .t-queue-btn {
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .t-queue-btn:hover { border-color: var(--accent-rim); color: var(--accent); }
+
+    .t-add-form {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .t-text-input {
+      flex: 1;
+      min-width: 160px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    .t-text-input:focus { outline: none; border-color: var(--accent-rim); background: var(--surface); }
+
+    .t-mins-input {
+      width: 68px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+
+    .t-mins-input:focus { outline: none; border-color: var(--accent-rim); background: var(--surface); }
+
+    .t-select {
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+
+    .t-select:focus { outline: none; border-color: var(--accent-rim); }
+
+    /* ── FITNESS ─────────────────────────────────────────── */
+    .fit-schedule { display: flex; flex-direction: column; gap: 6px; }
+
+    .fit-day {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: border-color 0.12s, background 0.12s;
+    }
+
+    .fit-day:hover { border-color: var(--border-d); }
+
+    .fit-day.done {
+      background: rgba(76,175,133,0.07);
+      border-color: rgba(76,175,133,0.30);
+    }
+
+    .fit-day.today { border-color: var(--accent-rim); background: var(--accent-dim); }
+
+    .fit-day-cb {
+      width: 20px; height: 20px;
+      border: 1.5px solid var(--border-d);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.12s, border-color 0.12s;
+    }
+
+    .fit-day.done .fit-day-cb { background: #4CAF85; border-color: #4CAF85; }
+    .fit-day-cb svg { display: none; }
+    .fit-day.done .fit-day-cb svg { display: block; }
+
+    .fit-day-name {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      width: 90px; flex-shrink: 0;
+    }
+
+    .fit-day.done .fit-day-name { color: #166534; }
+
+    .fit-workout-name { font-size: 13px; color: var(--text); flex: 1; }
+
+    .fit-day-meta {
+      font-size: 11px; color: var(--muted);
+      display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+    }
+
+    .fit-rest { font-style: italic; color: var(--muted2); flex: 1; font-size: 13px; }
+
+    .fit-streak {
+      font-size: 13px; font-weight: 600;
+      color: #4CAF85;
+    }
+
+    .fit-log { display: flex; flex-direction: column; gap: 6px; }
+
+    .fit-log-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .fit-log-date {
+      font-size: 12px; color: var(--muted);
+      width: 80px; flex-shrink: 0;
+    }
+
+    .fit-log-dots { display: flex; gap: 4px; flex-wrap: wrap; }
+
+    .fit-dot {
+      font-size: 10px; font-weight: 600;
+      padding: 2px 7px; border-radius: 10px;
+      background: rgba(76,175,133,0.12); color: #166534;
+    }
+
+    .fit-log-empty { font-size: 12px; color: var(--muted2); font-style: italic; }
+
+    .fit-day.optional { opacity: 0.65; }
+    .fit-day.optional .fit-day-name { color: var(--muted2); }
+
+    .fit-optional-tag {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted2);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    /* ── FINANCES ────────────────────────────────────────── */
+    .fin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .fin-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .fin-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .fin-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .fin-edit-btn {
+      font-size: 11px;
+      font-weight: 600;
+      color: #F5A623;
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 6px;
+      padding: 3px 9px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.12s;
+    }
+
+    .fin-edit-btn:hover { background: #FEF3C7; }
+
+    .fin-amounts {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .fin-current {
+      font-size: 22px;
+      font-weight: 800;
+      color: #F5A623;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .fin-current.negative { color: #EF4444; }
+    .fin-current.positive { color: #4CAF85; }
+
+    .fin-target {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .fin-track-wrap { position: relative; }
+
+    .fin-track {
+      height: 8px;
+      background: var(--surface2);
+      border-radius: 4px;
+      overflow: visible;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    .fin-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: #4A90D9;
+      transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+      max-width: 100%;
+    }
+
+    .fin-fill.paydown { background: #4A90D9; }
+
+    .fin-milestone {
+      position: absolute;
+      top: -4px;
+      width: 3px;
+      height: 16px;
+      background: #4A90D9;
+      border-radius: 2px;
+      transform: translateX(-50%);
+    }
+
+    .fin-milestone-label {
+      position: absolute;
+      top: 14px;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: 700;
+      color: #4A90D9;
+      white-space: nowrap;
+    }
+
+    .fin-meta {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .fin-meta strong { color: var(--text); }
+
+    .fin-monthly {
+      font-size: 11px;
+      font-weight: 700;
+      color: #F5A623;
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 6px;
+      padding: 4px 10px;
+      align-self: flex-start;
+    }
+
+    .fin-locked {
+      font-size: 11px;
+      color: var(--muted2);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .fin-sub-items { display: flex; flex-direction: column; gap: 8px; }
+
+    .fin-sub-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .fin-sub-item.locked { opacity: 0.5; }
+
+    .fin-sub-name { color: var(--text); font-weight: 500; }
+    .fin-sub-amount { font-weight: 700; color: #F5A623; }
+    .fin-sub-lock { font-size: 11px; color: var(--muted2); margin-top: 2px; }
+
+    .fin-edit-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .fin-edit-input {
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      width: 120px;
+    }
+
+    .fin-edit-input:focus { outline: none; border-color: #F5A623; }
+
+    .fin-save-btn {
+      background: #F5A623;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .fin-cancel-btn {
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* ── WORK ────────────────────────────────────────────── */
+    .work-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .work-filter-btn {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 13px;
+      border-radius: 20px;
+      border: 1px solid var(--border-d);
+      color: var(--muted);
+      background: var(--surface2);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+
+    .work-filter-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .wt-pill-Creative-Ops { background: rgba(74,144,217,0.12); color: #1D4ED8; }
+    .wt-pill-Ops-Skill     { background: rgba(74,144,217,0.12); color: #1D4ED8; }
+    .wt-pill-CEO-Request   { background: rgba(245,166,35,0.10);  color: #92400E; }
+
+    .skill-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .skill-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .skill-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .skill-field-group { display: flex; flex-direction: column; gap: 4px; }
+
+    .skill-field-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    textarea.skill-textarea {
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 8px 10px;
+      resize: vertical;
+      min-height: 52px;
+      line-height: 1.4;
+    }
+
+    textarea.skill-textarea:focus {
+      outline: none;
+      border-color: var(--accent-rim);
+    }
+
+    /* ── MAIN / ROCKS ────────────────────────────────────── */
+    .rocks-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 680px) {
+      .rocks-grid { grid-template-columns: 1fr; }
+    }
+
+    .rock-card.rock-dreams {
+      background: #FFFBEF;
+      border-color: #F5A623;
+    }
+
+    .dream-list { display: flex; flex-direction: column; gap: 10px; margin-top: 2px; }
+
+    .dream-item { display: flex; flex-direction: column; gap: 2px; }
+
+    .dream-goal {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    .dream-date {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .rock-card {
+      background: #ffffff;
+      border: 1px solid #4A90D9;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rock-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .rock-script {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .rock-sub {
+      font-size: 12px;
+      font-weight: 600;
+      color: #4A90D9;
+      margin-top: -4px;
+    }
+
+    .rock-progress-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rock-progress-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      width: 44px;
+      flex-shrink: 0;
+    }
+
+    .rock-bar {
+      flex: 1;
+      height: 6px;
+      background: rgba(74,144,217,0.15);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .rock-fill         { height: 100%; border-radius: 3px; transition: width 0.3s; background: #F5A623; }
+    .rock-fill-green   { background: #4CAF85; }
+    .rock-fill-gold    { background: #F5A623; }
+
+    .rock-progress-frac {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      min-width: 28px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .rock-next {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text);
+      background: #F5F5F5;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 9px;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
+    .rock-fit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-top: 2px;
+    }
+
+    .rock-fit-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      padding: 2px 0;
+    }
+
+    .rock-fit-row.done .rock-fit-name { color: #4CAF85; }
+    .rock-fit-row.done .rock-fit-dow  { color: #4CAF85; opacity: 0.8; }
+
+    .rock-fit-row.rest .rock-fit-name { color: var(--muted2); text-decoration: line-through; }
+    .rock-fit-row.rest .rock-fit-dow  { color: var(--muted2); }
+
+    .rock-fit-row.today .rock-fit-name {
+      font-weight: 700;
+      color: #4A90D9;
+    }
+    .rock-fit-row.today .rock-fit-dow {
+      font-weight: 700;
+      color: #4A90D9;
+    }
+
+    .rock-fit-dow {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      width: 26px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
+
+    .rock-fit-name { color: var(--text); flex: 1; font-weight: 500; }
+    .rock-fit-tick { color: #4CAF85; font-size: 12px; font-weight: 700; margin-left: auto; }
+
+    /* ── VETTER ───────────────────────────────────────────── */
+    .vetter-rocks { display: flex; flex-direction: column; gap: 10px; }
+
+    .rock-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .rock-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      min-width: 140px;
+    }
+
+    .vetter-verdict {
+      margin-top: 20px;
+      border-radius: 10px;
+      padding: 16px 18px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .vetter-verdict.green  { background: rgba(76,175,133,0.08);   border: 1px solid rgba(76,175,133,0.30);  color: #166534; }
+    .vetter-verdict.red    { background: rgba(232,160,160,0.20); border: 1px solid #E8A0A0;               color: #991B1B; }
+    .vetter-verdict.amber  { background: rgba(245,166,35,0.08);   border: 1px solid rgba(245,166,35,0.30);  color: #92400E; }
+
+    .verdict-head {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-wordmark">Command Center</div>
+  <div class="header-date" id="js-date"></div>
+</header>
+
+<nav class="tabs">
+  <div class="tab active" data-tab="main">Main</div>
+  <div class="tab" data-tab="writing">Writing</div>
+  <div class="tab" data-tab="tasks">Tasks</div>
+  <div class="tab" data-tab="journal">Journal</div>
+  <div class="tab" data-tab="fitness">Fitness</div>
+  <div class="tab" data-tab="finances">Finances</div>
+  <div class="tab" data-tab="work">Day Job</div>
+  <div class="tab" data-tab="focus">Focus</div>
+  <div class="tab" data-tab="vetter">Vetter</div>
+</nav>
+
+<div class="main">
+
+  <!-- ── WRITING ──────────────────────────────────────────── -->
+  <!-- ── MAIN ──────────────────────────────────────────────── -->
+  <div class="tab-panel active" id="panel-main">
+
+    <div style="margin-bottom:20px;">
+      <div class="tracker-label" style="margin-bottom:12px;">This Week</div>
+      <div class="rocks-grid" id="main-rocks"></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div class="tracker-label">Today's Deck</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <input type="number" id="deck-available" class="t-hours-input" value="8" min="0" max="24">
+          <span style="font-size:13px;color:var(--muted);">hrs available</span>
+          <span id="deck-stats" style="font-size:12px;font-weight:600;"></span>
+        </div>
+      </div>
+      <div id="deck-list" class="t-list"></div>
+    </div>
+
+  </div>
+
+  <div class="tab-panel" id="panel-writing">
+    <div class="writing-layout">
+
+      <!-- Left: deadline banner + tracker + week blocks -->
+      <div class="writing-col">
+
+        <div class="deadline-banner">
+          <div>
+            <div class="deadline-name">Big Break Final Draft</div>
+            <div class="deadline-sub">TV &amp; Feature</div>
+            <div class="deadline-date">June 29, 2026</div>
+          </div>
+          <div class="deadline-right">
+            <div class="deadline-count" id="js-days">—</div>
+            <div class="deadline-unit">days remaining</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="tracker-row">
+            <div class="tracker-label" id="js-tracker-label">Week Progress</div>
+            <div class="tracker-stat">
+              <strong id="js-hrs-done">0</strong> / <span id="js-hrs-goal">8</span> hrs
+            </div>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="js-progress" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="week-nav">
+            <button class="nav-btn" id="js-prev">&#8249;</button>
+            <div class="week-info">
+              <div class="week-title" id="js-week-title">—</div>
+              <div class="week-range" id="js-week-range">—</div>
+            </div>
+            <button class="nav-btn" id="js-next">&#8250;</button>
+          </div>
+          <div class="blocks" id="js-blocks"></div>
+        </div>
+
+      </div>
+
+      <!-- Right: contest cards stacked -->
+      <div class="writing-sidebar">
+        <div class="contest-stack" id="js-contests"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── TASKS ────────────────────────────────────────────── -->
+  <!-- ── TASKS ─────────────────────────────────────────────── -->
+  <div class="tab-panel" id="panel-tasks">
+
+    <!-- Stats bar -->
+    <div class="tasks-stats card" style="margin-bottom:16px;">
+      <div class="tasks-stats-inner">
+        <div class="tasks-stat-block">
+          <div class="field-label">Remaining</div>
+          <div class="tasks-stat-val" id="t-remaining">—</div>
+        </div>
+        <div class="tasks-stat-block">
+          <div class="field-label">Available today</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="number" id="t-available" class="t-hours-input" value="8" min="0" max="24">
+            <span style="font-size:13px;color:var(--muted);">hrs</span>
+          </div>
+        </div>
+        <div class="tasks-stat-block">
+          <div class="field-label">Fit in day?</div>
+          <div class="tasks-stat-val" id="t-fit">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task list -->
+    <div class="card" style="margin-bottom:16px;">
+      <div id="t-list" class="t-list"></div>
+    </div>
+
+    <!-- Add task form -->
+    <div class="card">
+      <div class="tracker-label" style="margin-bottom:14px;">Add Task</div>
+      <div class="t-add-form">
+        <input type="text"   id="t-new-name" class="t-text-input" placeholder="Task name">
+        <input type="number" id="t-new-mins" class="t-mins-input" placeholder="Min" min="1">
+        <select id="t-new-cat" class="t-select">
+          <option value="Personal">Personal</option>
+          <option value="Writing">Writing</option>
+          <option value="Work">Work</option>
+          <option value="Fitness">Fitness</option>
+          <option value="Finance">Finance</option>
+        </select>
+        <button class="journal-save-btn" style="padding:8px 18px;" onclick="addTask()">Add</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── JOURNAL ───────────────────────────────────────────── -->
+  <div class="tab-panel" id="panel-journal">
+    <div class="card" style="max-width:640px;">
+      <div class="tracker-label" style="margin-bottom:18px;">Daily Check-In</div>
+      <div class="journal-form">
+
+        <div class="field-group">
+          <div class="field-label">Writing — what did you work on?</div>
+          <textarea class="journal-input" id="j-writing" placeholder="Scenes, pages, breakthroughs..."></textarea>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Day Job — what got done?</div>
+          <textarea class="journal-input" id="j-work" placeholder="Tasks completed, progress made..."></textarea>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Derailed by — what interrupted your plan today</div>
+          <textarea class="journal-input" id="j-derailed" style="min-height:50px;" placeholder="What pulled you off track?"></textarea>
+          <p style="font-size:12px;color:var(--muted);font-style:italic;margin:4px 0 0;">Note what derailed you so you can plan around it next time.</p>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Workouts completed</div>
+          <div class="pill-group">
+            <input class="pill-cb" type="checkbox" id="j-strength" value="Strength">
+            <label class="pill-label" for="j-strength">Strength</label>
+            <input class="pill-cb" type="checkbox" id="j-longrun" value="Long Run">
+            <label class="pill-label" for="j-longrun">Long Run</label>
+            <input class="pill-cb" type="checkbox" id="j-shortrun" value="Short Run">
+            <label class="pill-label" for="j-shortrun">Short Run</label>
+            <input class="pill-cb" type="checkbox" id="j-walk" value="Walk 10k">
+            <label class="pill-label" for="j-walk">Walk 10k</label>
+            <input class="pill-cb" type="checkbox" id="j-rest" value="Rest Day">
+            <label class="pill-label" for="j-rest">Rest Day</label>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Overwhelm level — <span id="j-overwhelm-val">5</span>/10</div>
+          <div class="slider-row">
+            <span class="slider-side">Calm</span>
+            <input type="range" class="overwhelm-slider" id="j-overwhelm" min="1" max="10" value="5">
+            <span class="slider-side">Max</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">One win</div>
+          <textarea class="journal-input" id="j-win" style="min-height:50px;" placeholder="Something that went right..."></textarea>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Tomorrow's writing intention</div>
+          <textarea class="journal-input" id="j-intention" style="min-height:50px;" placeholder="Specific scene, pages, or goal..."></textarea>
+        </div>
+
+        <button class="journal-save-btn" onclick="saveJournalEntry()">Save Entry</button>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <div class="tracker-label" style="margin-bottom:12px;">Recent Entries</div>
+      <div class="journal-history" id="js-journal-history"></div>
+    </div>
+  </div>
+
+  <!-- ── FOCUS ─────────────────────────────────────────────── -->
+  <!-- ── FITNESS ───────────────────────────────────────────── -->
+  <div class="tab-panel" id="panel-fitness">
+
+    <!-- Streak + this-week schedule -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;">
+        <div class="tracker-label">This Week's Schedule</div>
+        <div class="fit-streak" id="fit-streak-display"></div>
+      </div>
+      <div class="fit-schedule" id="fit-schedule"></div>
+    </div>
+
+    <!-- 14-day log -->
+    <div class="card">
+      <div class="tracker-label" style="margin-bottom:14px;">Last 14 Days</div>
+      <div class="fit-log" id="fit-log"></div>
+    </div>
+
+  </div>
+
+  <!-- ── FINANCES ──────────────────────────────────────────── -->
+  <div class="tab-panel" id="panel-finances">
+    <div class="fin-grid" id="fin-goals"></div>
+  </div>
+
+  <!-- ── WORK ──────────────────────────────────────────────── -->
+  <div class="tab-panel" id="panel-work">
+
+    <!-- Work Tasks -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="tracker-label" style="margin-bottom:14px;">Day Job Tasks</div>
+      <div class="work-filters" id="work-filters">
+        <button class="work-filter-btn active" data-filter="All">All</button>
+        <button class="work-filter-btn" data-filter="Creative Ops">Creative Ops</button>
+        <button class="work-filter-btn" data-filter="Ops Skill">Ops Skill</button>
+        <button class="work-filter-btn" data-filter="CEO Request">CEO Request</button>
+      </div>
+      <div id="work-task-list" class="t-list" style="margin-top:12px;"></div>
+      <div class="t-add-form" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+        <input type="text" id="wt-new-name" class="t-text-input" placeholder="Task name">
+        <select id="wt-new-tag" class="t-select">
+          <option value="Creative Ops">Creative Ops</option>
+          <option value="Ops Skill">Ops Skill</option>
+          <option value="CEO Request">CEO Request</option>
+        </select>
+        <button class="journal-save-btn" style="padding:8px 18px;" onclick="addWorkTask()">Add</button>
+      </div>
+    </div>
+
+    <!-- Skills & Development -->
+    <div class="card">
+      <div class="tracker-label" style="margin-bottom:16px;">Skills &amp; Development</div>
+      <div class="skill-grid" id="skill-grid"></div>
+    </div>
+
+  </div>
+
+  <div class="tab-panel" id="panel-focus">
+    <div class="coming-soon">
+      <div class="cs-icon">◎</div>
+      <div class="cs-title">Focus</div>
+      <div class="cs-sub">Coming soon</div>
+    </div>
+  </div>
+
+  <!-- ── VETTER ────────────────────────────────────────────── -->
+  <div class="tab-panel" id="panel-vetter">
+    <div class="card" style="max-width:600px;">
+      <div class="tracker-label" style="margin-bottom:18px;">Vet a New Request</div>
+      <div class="journal-form">
+
+        <div class="field-group">
+          <div class="field-label">Describe the request</div>
+          <textarea class="journal-input" id="v-request" placeholder="What's being asked of you?"></textarea>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Does it serve your rocks?</div>
+          <div class="vetter-rocks">
+            <div class="rock-row">
+              <span class="rock-name">Writing Career</span>
+              <div class="pill-group">
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-writing" id="v-w-yes" value="yes">
+                <label class="pill-label" for="v-w-yes">Yes</label>
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-writing" id="v-w-no" value="no">
+                <label class="pill-label" for="v-w-no">No</label>
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-writing" id="v-w-stretch" value="stretch">
+                <label class="pill-label" for="v-w-stretch">Stretch</label>
+              </div>
+            </div>
+            <div class="rock-row">
+              <span class="rock-name">Weight &amp; Health</span>
+              <div class="pill-group">
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-health" id="v-h-yes" value="yes">
+                <label class="pill-label" for="v-h-yes">Yes</label>
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-health" id="v-h-no" value="no">
+                <label class="pill-label" for="v-h-no">No</label>
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-health" id="v-h-stretch" value="stretch">
+                <label class="pill-label" for="v-h-stretch">Stretch</label>
+              </div>
+            </div>
+            <div class="rock-row">
+              <span class="rock-name">Finances</span>
+              <div class="pill-group">
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-finance" id="v-f-yes" value="yes">
+                <label class="pill-label" for="v-f-yes">Yes</label>
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-finance" id="v-f-no" value="no">
+                <label class="pill-label" for="v-f-no">No</label>
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-finance" id="v-f-stretch" value="stretch">
+                <label class="pill-label" for="v-f-stretch">Stretch</label>
+              </div>
+            </div>
+            <div class="rock-row">
+              <span class="rock-name">Day Job Stability</span>
+              <div class="pill-group">
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-career" id="v-c-yes" value="yes">
+                <label class="pill-label" for="v-c-yes">Yes</label>
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-career" id="v-c-no" value="no">
+                <label class="pill-label" for="v-c-no">No</label>
+                <input class="pill-cb rock-pill" type="radio" name="v-rock-career" id="v-c-stretch" value="stretch">
+                <label class="pill-label" for="v-c-stretch">Stretch</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">What would you deprioritize?</div>
+          <textarea class="journal-input" id="v-deprioritize" style="min-height:54px;" placeholder="What moves down or gets dropped?"></textarea>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Is this request non-negotiable?</div>
+          <div class="pill-group">
+            <input class="pill-cb" type="radio" name="v-ceo" id="v-ceo-yes" value="yes">
+            <label class="pill-label" for="v-ceo-yes">Yes</label>
+            <input class="pill-cb" type="radio" name="v-ceo" id="v-ceo-no" value="no">
+            <label class="pill-label" for="v-ceo-no">No</label>
+          </div>
+        </div>
+
+        <button class="journal-save-btn" onclick="runVetter()">Get Verdict</button>
+      </div>
+
+      <div id="v-verdict" class="vetter-verdict" style="display:none;"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────────────────
+
+const WEEKLY_GOAL = 8;
+
+// ─────────────────────────────────────────────────────────
+// CONTESTS
+// ─────────────────────────────────────────────────────────
+
+const CONTESTS = [
+  { name: 'Big Break Final Draft',      date: 'Jun 29',     type: 'TV & Feature', priority: true  },
+  { name: 'Page Turner Awards',         date: 'Jun 30',     type: 'TV & Feature', priority: false },
+  { name: 'Sundance Episodic Lab',      date: '~Oct 15',    type: 'TV',           priority: true  },
+  { name: 'Script Pipeline First Look', date: 'Oct 30',     type: 'TV & Feature', priority: false },
+  { name: 'Cinestory TV',               date: 'Nov 30',     type: 'TV',           priority: true  },
+  { name: 'Blacklist Episodic Lab',     date: '~Dec 2026',  type: 'TV',           priority: false },
+  { name: 'Save The Cat',               date: '~Apr 2027',  type: 'TV & Feature', priority: false },
+  { name: 'Page Awards',                date: '~May 2027',  type: 'TV & Feature', priority: false },
+  { name: 'Austin Film Festival',       date: '~May 2027',  type: 'TV & Feature', priority: false },
+  { name: 'Nicholls via Blacklist',     date: '~May 2027',  type: 'Feature',      priority: true  },
+  { name: 'Script Pipeline TV',         date: '~May 2027',  type: 'TV',           priority: false },
+  { name: 'Script Pipeline Feature',    date: '~May 2027',  type: 'Feature',      priority: false },
+  { name: 'Cinestory Feature',          date: '~Jun 2027',  type: 'Feature',      priority: true  },
+];
+
+// ─────────────────────────────────────────────────────────
+// DEFAULT WRITING DATA
+// ─────────────────────────────────────────────────────────
+
+const DEFAULTS = {
+  'data-version': 3,
+  weeks: {
+    '2026-05-30': [
+      { id: 'w0-a', day: 'Saturday',  date: '2026-05-30', time: '8:30 PM',  duration: 1.5, goal: 'Outline', done: false },
+      { id: 'w0-b', day: 'Sunday',    date: '2026-05-31', time: '7:00 AM',  duration: 1.5, goal: 'Outline', done: false },
+      { id: 'w0-c', day: 'Sunday',    date: '2026-05-31', time: '12:30 PM', duration: 1.5, goal: 'Outline', done: false },
+      { id: 'w0-d', day: 'Monday',    date: '2026-06-01', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+      { id: 'w0-e', day: 'Tuesday',   date: '2026-06-02', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+      { id: 'w0-f', day: 'Wednesday', date: '2026-06-03', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+      { id: 'w0-g', day: 'Thursday',  date: '2026-06-04', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+    ],
+    '2026-06-06': [
+      { id: 'w1-b', day: 'Sunday',    date: '2026-06-07', time: '7:00 AM',  duration: 1.5, goal: 'Outline',      done: false },
+      { id: 'w1-c', day: 'Sunday',    date: '2026-06-07', time: '12:30 PM', duration: 1.5, goal: 'Outline',      done: false },
+      { id: 'w1-d', day: 'Monday',    date: '2026-06-08', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+      { id: 'w1-e', day: 'Tuesday',   date: '2026-06-09', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+      { id: 'w1-f', day: 'Wednesday', date: '2026-06-10', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+      { id: 'w1-g', day: 'Thursday',  date: '2026-06-11', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+    ],
+    '2026-06-13': [
+      { id: 'w2-a', day: 'Saturday',  date: '2026-06-13', time: '9:00 AM',  duration: 1.5, goal: 'Write scenes', done: false },
+      { id: 'w2-b', day: 'Saturday',  date: '2026-06-13', time: '1:00 PM',  duration: 1.5, goal: 'Write scenes', done: false },
+      { id: 'w2-c', day: 'Saturday',  date: '2026-06-13', time: '5:00 PM',  duration: 1.5, goal: 'Write scenes', done: false },
+      { id: 'w2-d', day: 'Sunday',    date: '2026-06-14', time: '9:00 AM',  duration: 1.5, goal: 'Write scenes', done: false },
+      { id: 'w2-e', day: 'Sunday',    date: '2026-06-14', time: '1:00 PM',  duration: 1.5, goal: 'Write scenes', done: false },
+      { id: 'w2-f', day: 'Monday',    date: '2026-06-15', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+      { id: 'w2-g', day: 'Tuesday',   date: '2026-06-16', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+      { id: 'w2-h', day: 'Wednesday', date: '2026-06-17', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+      { id: 'w2-i', day: 'Thursday',  date: '2026-06-18', time: '7:30 AM',  duration: 0.75,goal: 'Write scenes', done: false },
+    ],
+    '2026-06-20': [
+      { id: 'w3-a', day: 'Saturday',  date: '2026-06-20', time: '9:00 AM',  duration: 1.5, goal: 'Write scenes',    done: false },
+      { id: 'w3-b', day: 'Saturday',  date: '2026-06-20', time: '1:00 PM',  duration: 1.5, goal: 'Write scenes',    done: false },
+      { id: 'w3-c', day: 'Sunday',    date: '2026-06-21', time: '9:00 AM',  duration: 1.5, goal: 'Write scenes',    done: false },
+      { id: 'w3-d', day: 'Sunday',    date: '2026-06-21', time: '1:00 PM',  duration: 1.5, goal: 'Assemble draft',  done: false },
+      { id: 'w3-e', day: 'Monday',    date: '2026-06-22', time: '7:30 AM', duration: 0.75, goal: 'Read through', done: false },
+      { id: 'w3-f', day: 'Tuesday',   date: '2026-06-23', time: '7:30 AM', duration: 0.75, goal: 'Final fixes',  done: false },
+      { id: 'w3-g', day: 'Wednesday', date: '2026-06-24', time: '7:30 AM', duration: 0.75, goal: 'Final fixes',  done: false },
+      { id: 'w3-h', day: 'Thursday',  date: '2026-06-25', time: '7:30 AM', duration: 0.75, goal: 'Final fixes',  done: false },
+      { id: 'w3-i', day: 'Friday',    date: '2026-06-26', time: '7:30 AM', duration: 0.75, goal: 'Submit',       done: false },
+    ],
+  },
+};
+
+// ─────────────────────────────────────────────────────────
+// STORAGE
+// ─────────────────────────────────────────────────────────
+
+function loadData() {
+  const raw = localStorage.getItem('cc_v3');
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+function saveData(d) { localStorage.setItem('cc_v3', JSON.stringify(d)); }
+
+function initData() {
+  let d = loadData();
+  if (!d) { d = JSON.parse(JSON.stringify(DEFAULTS)); saveData(d); return d; }
+  // Migration: remove any block dated 2026-06-06 that snuck in before this fix
+  let dirty = false;
+  Object.keys(d.weeks || {}).forEach(wk => {
+    const before = d.weeks[wk].length;
+    d.weeks[wk] = d.weeks[wk].filter(b => b.date !== '2026-06-06');
+    if (d.weeks[wk].length !== before) dirty = true;
+  });
+  if (dirty) saveData(d);
+  return d;
+}
+
+// ─────────────────────────────────────────────────────────
+// WEEK UTILITIES
+// ─────────────────────────────────────────────────────────
+
+// Weeks run Saturday–Friday. Key = "YYYY-MM-DD" of the opening Saturday.
+function satWeekKey(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = d.getDay(); // 0=Sun … 6=Sat
+  d.setDate(d.getDate() - (day + 1) % 7); // step back to most-recent Saturday
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function satWeekRange(key, firstBlockDate) {
+  const startStr = firstBlockDate || key;
+  const start = new Date(startStr + 'T12:00:00');
+  const end   = new Date(key + 'T12:00:00');
+  end.setDate(end.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
+function shiftSatWeek(key, delta) {
+  const d = new Date(key + 'T12:00:00');
+  d.setDate(d.getDate() + delta * 7);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function daysFrom(isoDateStr) {
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  return Math.ceil((new Date(isoDateStr + 'T00:00:00') - now) / 86400000);
+}
+
+function todayStr() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+}
+
+// ─────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────
+
+let DATA        = initData();
+let currentWeek = satWeekKey(new Date());
+const TODAY_STR = todayStr();
+const THISWK    = satWeekKey(new Date());
+
+// ─────────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────────
+
+function renderDeadline() {
+  const days = daysFrom('2026-06-29');
+  document.getElementById('js-days').textContent = Math.max(0, days);
+}
+
+function parseContestDate(str) {
+  const s = str.replace(/^~/, '').trim();
+  // Already has a 4-digit year (e.g. "Dec 2026", "Apr 2027", "May 2027")
+  if (/\d{4}$/.test(s)) {
+    // Month + year only — use 1st of that month
+    const d = new Date(s + ' 1');
+    return isNaN(d) ? null : d;
+  }
+  // "Mon DD" with no year — try 2026 then 2027
+  let d = new Date(s + ' 2026');
+  if (isNaN(d)) d = new Date(s + ' 2027');
+  return isNaN(d) ? null : d;
+}
+
+function renderContests() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Exclude Big Break (shown in main banner), attach parsed dates, filter expired
+  const upcoming = CONTESTS
+    .filter(c => c.name !== 'Big Break Final Draft')
+    .map(c => ({ ...c, _date: parseContestDate(c.date) }))
+    .filter(c => c._date && c._date >= today);
+
+  // First card always "Next Up"; second too if within 7 days of first
+  const nextUpSet = new Set();
+  if (upcoming.length > 0) {
+    nextUpSet.add(0);
+    if (upcoming.length > 1) {
+      const diff = (upcoming[1]._date - upcoming[0]._date) / (1000 * 60 * 60 * 24);
+      if (diff <= 7) nextUpSet.add(1);
+    }
+  }
+
+  document.getElementById('js-contests').innerHTML = upcoming.map((c, i) => {
+    const isNext = nextUpSet.has(i);
+    return `
+    <div class="cg-card${isNext ? ' next-up' : ''}">
+      ${isNext ? '<span class="cg-next-label">NEXT UP</span>' : ''}
+      <div class="cg-name">${c.name}</div>
+      <div class="cg-meta">
+        <span class="cg-date">${c.date}</span>
+        <span class="cg-pill">${c.type}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTracker() {
+  const blocks = DATA.weeks[currentWeek] || [];
+  const done   = blocks.filter(b => b.done).reduce((s, b) => s + b.duration, 0);
+  const pct    = Math.min(100, (done / WEEKLY_GOAL) * 100);
+  document.getElementById('js-tracker-label').textContent = currentWeek === THISWK ? 'This Week' : 'Week Progress';
+  document.getElementById('js-hrs-done').textContent = done % 1 ? done.toFixed(1) : done;
+  document.getElementById('js-hrs-goal').textContent = WEEKLY_GOAL;
+  document.getElementById('js-progress').style.width = pct + '%';
+}
+
+function renderNav() {
+  const cur    = currentWeek === THISWK;
+  const blocks = DATA.weeks[currentWeek] || [];
+  const firstBlockDate = blocks.length
+    ? blocks.reduce((min, b) => b.date < min ? b.date : min, blocks[0].date)
+    : currentWeek;
+  const start = new Date(firstBlockDate + 'T12:00:00');
+  const label = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  document.getElementById('js-week-title').innerHTML =
+    `Week of ${label}` + (cur ? ' <span class="now-dot"></span>' : '');
+  document.getElementById('js-week-range').textContent = satWeekRange(currentWeek, firstBlockDate);
+}
+
+function renderBlocks() {
+  const list = document.getElementById('js-blocks');
+  let blocks = DATA.weeks[currentWeek] || [];
+  if (currentWeek === THISWK) {
+    blocks = blocks.filter(b => b.date >= TODAY_STR);
+  }
+
+  if (!blocks.length) {
+    list.innerHTML = '<div class="empty">No sessions scheduled for this week.</div>';
+    return;
+  }
+
+  list.innerHTML = blocks.map(b => {
+    const isToday = b.date === TODAY_STR;
+    const dur = b.duration === 1 ? '1 hr'
+      : `${b.duration % 1 ? b.duration.toFixed(1) : b.duration} hrs`;
+    return `
+    <div class="block ${b.done ? 'done' : ''} ${isToday ? 'today-block' : ''}"
+         onclick="toggleBlock('${b.id}')">
+      <div class="cb">
+        <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+          <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="block-body">
+        <div class="block-top">
+          <span class="block-day">${b.day}</span>
+          <span class="block-meta">
+            <span>${b.time}</span><span class="sep">·</span><span>${dur}</span>
+          </span>
+          ${isToday ? '<span class="today-badge">Today</span>' : ''}
+        </div>
+        <div class="block-goal">${b.goal}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll() {
+  renderDeadline();
+  renderContests();
+  renderTracker();
+  renderNav();
+  renderBlocks();
+}
+
+// ─────────────────────────────────────────────────────────
+// INTERACTIONS
+// ─────────────────────────────────────────────────────────
+
+function toggleBlock(id) {
+  const blocks = DATA.weeks[currentWeek];
+  if (!blocks) return;
+  const b = blocks.find(x => x.id === id);
+  if (!b) return;
+  b.done = !b.done;
+  saveData(DATA);
+  renderTracker();
+  renderBlocks();
+}
+
+document.getElementById('js-prev').addEventListener('click', () => {
+  currentWeek = shiftSatWeek(currentWeek, -1); renderAll();
+});
+document.getElementById('js-next').addEventListener('click', () => {
+  currentWeek = shiftSatWeek(currentWeek, +1); renderAll();
+});
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const t = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + t).classList.add('active');
+    if (t === 'main') renderMain();
+  });
+});
+
+document.getElementById('js-date').textContent = new Date().toLocaleDateString('en-US', {
+  weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+});
+
+// ─────────────────────────────────────────────────────────
+// JOURNAL
+// ─────────────────────────────────────────────────────────
+
+function loadJournal() {
+  try { return JSON.parse(localStorage.getItem('cc_journal') || '[]'); } catch { return []; }
+}
+
+function saveJournal(entries) {
+  localStorage.setItem('cc_journal', JSON.stringify(entries));
+}
+
+function saveJournalEntry() {
+  const workouts = ['j-strength','j-longrun','j-shortrun','j-walk','j-rest']
+    .filter(id => document.getElementById(id).checked)
+    .map(id => document.getElementById(id).value);
+
+  const entry = {
+    ts:        new Date().toISOString(),
+    date:      new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
+    writing:   document.getElementById('j-writing').value.trim(),
+    work:      document.getElementById('j-work').value.trim(),
+    derailed:  document.getElementById('j-derailed').value.trim(),
+    workouts,
+    overwhelm: document.getElementById('j-overwhelm').value,
+    win:       document.getElementById('j-win').value.trim(),
+    intention: document.getElementById('j-intention').value.trim(),
+  };
+
+  const entries = loadJournal();
+  entries.unshift(entry);
+  saveJournal(entries);
+
+  ['j-writing','j-work','j-derailed','j-win','j-intention'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['j-strength','j-longrun','j-shortrun','j-walk','j-rest'].forEach(id => {
+    document.getElementById(id).checked = false;
+  });
+  document.getElementById('j-overwhelm').value = 5;
+  document.getElementById('j-overwhelm-val').textContent = 5;
+
+  renderJournalHistory();
+}
+
+function renderJournalHistory() {
+  const entries = loadJournal().slice(0, 7);
+  const el = document.getElementById('js-journal-history');
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty">No entries yet — save your first check-in above.</div>';
+    return;
+  }
+  el.innerHTML = entries.map(e => `
+    <div class="jentry">
+      <div class="jentry-header">
+        <span class="jentry-date">${e.date}</span>
+        <span class="jentry-overwhelm">Overwhelm ${e.overwhelm}/10</span>
+      </div>
+      ${e.workouts && e.workouts.length ? `<div class="jentry-workouts">${e.workouts.join(' · ')}</div>` : ''}
+      ${e.writing   ? `<div class="jentry-field"><strong>Writing:</strong> ${e.writing}</div>`   : ''}
+      ${e.win       ? `<div class="jentry-field"><strong>Win:</strong> ${e.win}</div>`           : ''}
+    </div>`).join('');
+}
+
+document.getElementById('j-overwhelm').addEventListener('input', function() {
+  document.getElementById('j-overwhelm-val').textContent = this.value;
+});
+
+renderJournalHistory();
+
+// ─────────────────────────────────────────────────────────
+// FITNESS SCHEDULE (must be defined before TASKS for calcAvailableHours)
+// ─────────────────────────────────────────────────────────
+
+const SCHEDULE = [
+  { day: 'Sunday',    name: 'Strength',        detail: 'John Reed', duration: '2 hrs incl. walk', time: '10:00 AM', rest: false, optional: false },
+  { day: 'Monday',    name: 'Light run',        detail: '',          duration: '30 min',    time: 'Morning', rest: false,     optional: true  },
+  { day: 'Tuesday',   name: 'Rest',             detail: '',          duration: '',          time: '',        rest: true,      optional: false },
+  { day: 'Wednesday', name: 'Short run',        detail: '',          duration: '30 min',    time: 'Morning', rest: false,     optional: false },
+  { day: 'Thursday',  name: 'Strength',         detail: 'John Reed', duration: '2 hrs',     time: 'Evening', rest: false,     optional: false },
+  { day: 'Friday',    name: 'Rest',             detail: '',          duration: '',          time: '',        rest: true,      optional: false },
+  { day: 'Saturday',  name: 'Long run',         detail: '',          duration: '45–60 min', time: 'Morning', rest: false,     optional: false },
+];
+
+// ─────────────────────────────────────────────────────────
+// TASKS
+// ─────────────────────────────────────────────────────────
+
+const TASK_DEFAULTS = [
+  { id: 't1',  name: 'Make grocery list',                      mins: 15,  cat: 'Personal', done: false, queued: false },
+  { id: 't2',  name: 'Grocery shop',                           mins: 60,  cat: 'Personal', done: false, queued: false },
+  { id: 't3',  name: 'Spaghetti meal prep',                    mins: 45,  cat: 'Personal', done: false, queued: false },
+  { id: 't4',  name: 'Crispy teriyaki tofu soba meal prep',    mins: 45,  cat: 'Personal', done: false, queued: false },
+  { id: 't5',  name: 'Laundry',                                mins: 60,  cat: 'Personal', done: false, queued: false },
+  { id: 't6',  name: 'Return clothes',                         mins: 60,  cat: 'Personal', done: false, queued: false },
+  { id: 't7',  name: 'Record finances',                        mins: 30,  cat: 'Finance',  done: false, queued: false },
+  { id: 't8',  name: 'Cancel backup dentist appointment',       mins: 10,  cat: 'Personal', done: false, queued: false },
+  { id: 't9',  name: 'Research closer gyms',                   mins: 20,  cat: 'Personal', done: false, queued: false },
+  { id: 't10', name: 'Finish The Slight Edge last 2 chapters', mins: 45,  cat: 'Personal', done: false, queued: false },
+  { id: 't11', name: 'Re-engage writers group',                mins: 15,  cat: 'Writing',  done: false, queued: false },
+  { id: 't12', name: 'Build AM transition plan for CEO',       mins: 90,  cat: 'Personal', done: false, queued: false },
+];
+
+function loadTasks() {
+  try { return JSON.parse(localStorage.getItem('cc_tasks') || 'null'); } catch { return null; }
+}
+
+function saveTasks(tasks) {
+  localStorage.setItem('cc_tasks', JSON.stringify(tasks));
+}
+
+function initTasks() {
+  const d = loadTasks();
+  if (d) return d;
+  const fresh = JSON.parse(JSON.stringify(TASK_DEFAULTS));
+  saveTasks(fresh);
+  return fresh;
+}
+let TASKS = initTasks();
+// ensure all tasks have queued field
+TASKS.forEach(t => { if (t.queued === undefined) t.queued = false; });
+// purge completed tasks from previous days
+(function() {
+  const before = TASKS.length;
+  TASKS = TASKS.filter(t => !t.done || t.doneDate === TODAY_STR);
+  if (TASKS.length !== before) saveTasks(TASKS);
+})();;
+
+function fmtMins(total) {
+  if (total < 60) return `${total}m`;
+  const h = Math.floor(total / 60), m = total % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+function calcAvailableHours() {
+  const WAKING = 16;
+  const dayI = new Date().getDay();
+  const isWeekday = dayI >= 1 && dayI <= 5;
+  const dayJobHrs = isWeekday ? 9 : 0;
+  const writingMins = Object.values(DATA.weeks || {}).flat()
+    .filter(b => b.date === TODAY_STR)
+    .reduce((s, b) => s + b.duration * 60, 0);
+  const fitSched = SCHEDULE[dayI];
+  const fitMins = (!fitSched.rest && !fitSched.optional) ? parseFitMins(fitSched.duration) : 0;
+  const miscHrs = 1.5;
+  const free = WAKING - dayJobHrs - (writingMins / 60) - (fitMins / 60) - miscHrs;
+  return Math.min(WAKING, Math.max(0, free));
+}
+
+function renderTasks() {
+  const active   = TASKS.filter(t => !t.done && !t.queued);
+  const queued   = TASKS.filter(t => !t.done && t.queued);
+  const done     = TASKS.filter(t => t.done);
+  const totalMins = active.reduce((s, t) => s + t.mins, 0);
+  const available = parseFloat(document.getElementById('t-available').value) || 0;
+  const availMins = available * 60;
+
+  document.getElementById('t-remaining').textContent = fmtMins(totalMins);
+
+  const fitEl = document.getElementById('t-fit');
+  if (totalMins <= availMins) {
+    fitEl.textContent = 'Yes';
+    fitEl.style.color = '#4CAF85';
+  } else {
+    fitEl.textContent = `${fmtMins(totalMins - availMins)} over`;
+    fitEl.style.color = '#EF4444';
+  }
+
+  const check = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+    <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+
+  function taskRow(t, opts = {}) {
+    const isQueued = opts.queued;
+    const isDone   = t.done;
+    return `<div class="t-item ${isDone ? 'done' : ''} ${isQueued ? 't-queued' : ''}" onclick="toggleTask('${t.id}')">
+      <div class="t-cb">${isDone ? check : ''}</div>
+      <span class="t-name">${t.name}</span>
+      <span class="t-mins">${t.mins}m</span>
+      <span class="t-cat-pill t-cat-${t.cat}">${t.cat}</span>
+      ${!isDone ? `<button class="t-queue-btn" onclick="event.stopPropagation();queueTask('${t.id}')">${isQueued ? 'Unqueue' : 'Queue for later'}</button>` : ''}
+    </div>`;
+  }
+
+  let html = '';
+  if (active.length) {
+    html += active.map(t => taskRow(t)).join('');
+  } else {
+    html += '<div class="empty" style="padding:12px 0;">No active tasks.</div>';
+  }
+  if (queued.length) {
+    html += `<div class="t-section-label">Queued</div>`;
+    html += queued.map(t => taskRow(t, { queued: true })).join('');
+  }
+  if (done.length) {
+    html += `<div class="t-section-label">Completed</div>`;
+    html += done.map(t => taskRow(t)).join('');
+  }
+
+  document.getElementById('t-list').innerHTML = html;
+}
+
+function toggleTask(id) {
+  const t = TASKS.find(t => t.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  if (t.done) {
+    t.queued   = false;
+    t.doneDate = TODAY_STR;
+  } else {
+    t.doneDate = null;
+  }
+  saveTasks(TASKS);
+  renderTasks();
+}
+
+function queueTask(id) {
+  const t = TASKS.find(t => t.id === id);
+  if (!t) return;
+  t.queued = !t.queued;
+  saveTasks(TASKS);
+  renderTasks();
+}
+
+function addTask() {
+  const name = document.getElementById('t-new-name').value.trim();
+  const mins = parseInt(document.getElementById('t-new-mins').value, 10);
+  const cat  = document.getElementById('t-new-cat').value;
+  if (!name || !mins || mins < 1) return;
+  TASKS.push({ id: 't' + Date.now(), name, mins, cat, done: false, queued: false });
+  saveTasks(TASKS);
+  document.getElementById('t-new-name').value = '';
+  document.getElementById('t-new-mins').value = '';
+  renderTasks();
+}
+
+document.getElementById('t-available').addEventListener('input', renderTasks);
+
+// Set auto-calculated available hours as default
+(function() {
+  const autoHrs = calcAvailableHours();
+  document.getElementById('t-available').value = autoHrs.toFixed(1);
+})();
+
+renderTasks();
+
+// ─────────────────────────────────────────────────────────
+// FITNESS
+// ─────────────────────────────────────────────────────────
+
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function fitWeekKey() {
+  // Use Sun–Sat week keyed by Sunday date
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay());
+  return d.toISOString().slice(0,10);
+}
+
+function loadFitness() {
+  try { return JSON.parse(localStorage.getItem('cc_fitness') || '{}'); } catch { return {}; }
+}
+
+function saveFitness(data) {
+  localStorage.setItem('cc_fitness', JSON.stringify(data));
+}
+
+function fitCheckSvg() {
+  return `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+    <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function toggleFitDay(dayIndex) {
+  const data   = loadFitness();
+  const wk     = fitWeekKey();
+  if (!data[wk]) data[wk] = {};
+  data[wk][dayIndex] = !data[wk][dayIndex];
+  saveFitness(data);
+  renderFitness();
+}
+
+function renderFitness() {
+  const data    = loadFitness();
+  const wk      = fitWeekKey();
+  const thisWk  = data[wk] || {};
+  const todayDI = new Date().getDay();
+
+  // Schedule
+  document.getElementById('fit-schedule').innerHTML = SCHEDULE.map((s, i) => {
+    const done    = !!thisWk[i];
+    const isToday = i === todayDI;
+    const cls     = ['fit-day', done ? 'done' : '', isToday && !done ? 'today' : '', s.optional ? 'optional' : ''].join(' ').trim();
+    const noClick = s.rest && !s.optional;
+    return `
+    <div class="${cls}" onclick="${noClick ? '' : `toggleFitDay(${i})`}" style="${noClick ? 'cursor:default;' : ''}">
+      <div class="fit-day-cb">${done ? fitCheckSvg() : ''}</div>
+      <div class="fit-day-name">${s.day}</div>
+      ${s.rest && !s.optional
+        ? `<div class="fit-rest">Rest day</div>`
+        : `<div class="fit-workout-name">${s.name}${s.detail ? ` <span style="color:var(--muted);font-weight:400;">· ${s.detail}</span>` : ''}${s.optional ? ' <span class="fit-optional-tag">Optional</span>' : ''}</div>
+           <div class="fit-day-meta"><span>${s.time}</span><span style="color:var(--muted2)">·</span><span>${s.duration}</span></div>`
+      }
+    </div>`;
+  }).join('');
+
+  // Streak — count consecutive completed weeks (all non-rest days done)
+  const nonRestDays = SCHEDULE.map((s,i) => ({i, rest: s.rest})).filter(x => !x.rest).map(x => x.i);
+  let streak = 0;
+  let checkWk = fitWeekKey();
+  for (let w = 0; w < 52; w++) {
+    const wkData = data[checkWk] || {};
+    const allDone = nonRestDays.every(i => wkData[i]);
+    if (w === 0 && !allDone) break; // current week not done yet — streak from previous
+    if (w > 0 && !allDone) break;
+    if (w > 0) streak++;
+    // step back one week
+    const d = new Date(checkWk + 'T12:00:00');
+    d.setDate(d.getDate() - 7);
+    checkWk = d.toISOString().slice(0,10);
+  }
+  // Also count current week if fully done
+  const curDone = nonRestDays.every(i => thisWk[i]);
+  if (curDone) streak++;
+
+  document.getElementById('fit-streak-display').textContent =
+    streak > 0 ? `${streak} week streak 🔥` : '';
+
+  // 14-day log
+  const rows = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() - i);
+    const dayI  = d.getDay();
+    // Find the week key for this date
+    const sun   = new Date(d); sun.setDate(d.getDate() - dayI);
+    const wkKey = sun.toISOString().slice(0,10);
+    const wkD   = data[wkKey] || {};
+    const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const sched = SCHEDULE[dayI];
+    const completed = wkD[dayI];
+    rows.push({ label, sched, completed, isRest: sched.rest });
+  }
+
+  document.getElementById('fit-log').innerHTML = rows.map(r => `
+    <div class="fit-log-row">
+      <span class="fit-log-date">${r.label}</span>
+      <div class="fit-log-dots">
+        ${r.isRest
+          ? `<span class="fit-log-empty">Rest</span>`
+          : r.completed
+            ? `<span class="fit-dot">${r.sched.name}</span>`
+            : `<span class="fit-log-empty">—</span>`
+        }
+      </div>
+    </div>`).join('');
+}
+
+renderFitness();
+
+// ─────────────────────────────────────────────────────────
+// FINANCES
+// ─────────────────────────────────────────────────────────
+
+const FIN_DEFAULTS = {
+  netWorth:     { current: -5500 },
+  emergencyU:   { current: 13500 },
+  emergencyS:   { current: 0 },
+  tech:         { current: 0 },
+  retirement:   { current: 60000 },
+  loans:        { current: 79000 },
+  car:          { current: 0 },
+};
+
+function loadFin() {
+  try { return JSON.parse(localStorage.getItem('cc_fin') || 'null'); } catch { return null; }
+}
+function saveFin(d) { localStorage.setItem('cc_fin', JSON.stringify(d)); }
+
+function initFin() {
+  const d = loadFin();
+  if (d) return d;
+  const fresh = JSON.parse(JSON.stringify(FIN_DEFAULTS));
+  saveFin(fresh);
+  return fresh;
+}
+let FIN = initFin();
+
+function fmtDollars(n) {
+  const abs = Math.abs(Math.round(n));
+  const s   = abs.toLocaleString('en-US');
+  return (n < 0 ? '-$' : '$') + s;
+}
+
+function monthsUntil(isoDate) {
+  const now = new Date(), tgt = new Date(isoDate + 'T00:00:00');
+  return Math.max(0, (tgt.getFullYear() - now.getFullYear()) * 12 + (tgt.getMonth() - now.getMonth()));
+}
+
+function monthlySavingsNeeded(current, target, isoDate) {
+  const mo = monthsUntil(isoDate);
+  if (mo <= 0) return null;
+  const needed = (target - current) / mo;
+  return needed > 0 ? needed : null;
+}
+
+function pct(current, min, max) {
+  if (max === min) return 100;
+  return Math.min(100, Math.max(0, ((current - min) / (max - min)) * 100));
+}
+
+function openFinEdit(key) {
+  renderFinances(key);
+}
+
+function saveFinEdit(key) {
+  const val = parseFloat(document.getElementById('fin-input-' + key).value.replace(/[^0-9.\-]/g,''));
+  if (isNaN(val)) return;
+  FIN[key].current = val;
+  // Only auto-recalculate net worth from components when not editing net worth directly
+  if (key !== 'netWorth') {
+    FIN.netWorth.current = FIN.emergencyU.current - FIN.loans.current + FIN.retirement.current;
+  }
+  saveFin(FIN);
+  renderFinances();
+}
+
+function cancelFinEdit() { renderFinances(); }
+
+function renderFinances(editing) {
+  const f = FIN;
+  const emergU = f.emergencyU.current;
+
+  function editRow(key, label) {
+    if (editing === key) return `
+      <div class="fin-edit-row">
+        <input class="fin-edit-input" id="fin-input-${key}" type="number"
+               value="${f[key].current}" placeholder="${label}">
+        <button class="fin-save-btn"   onclick="saveFinEdit('${key}')">Save</button>
+        <button class="fin-cancel-btn" onclick="cancelFinEdit()">Cancel</button>
+      </div>`;
+    return '';
+  }
+
+  function editBtn(key) {
+    return `<button class="fin-edit-btn" onclick="openFinEdit('${key}')">Edit</button>`;
+  }
+
+  function barColor(fillPct) {
+    if (fillPct >= 100) return '#4CAF85';
+    if (fillPct >= 80)  return '#F5A623';
+    return '#4A90D9';
+  }
+
+  function bar(fillPct, cls='') {
+    const w = Math.min(fillPct, 100);
+    return `<div class="fin-track"><div class="fin-fill" style="width:${w}%;background:${barColor(fillPct)};"></div></div>`;
+  }
+
+  function monthly(current, target, deadline) {
+    const mo = monthlySavingsNeeded(current, target, deadline);
+    return mo ? `<div class="fin-monthly">${fmtDollars(mo)}/mo to hit deadline</div>` : '';
+  }
+
+  // Net worth: range from -$79k to $0
+  const nwMin = -79000, nwMax = 0;
+  const nwPct = pct(f.netWorth.current, nwMin, nwMax);
+  const nwCls = f.netWorth.current >= 0 ? 'positive' : 'negative';
+
+  // Emergency U: milestone at $16k
+  const euPct = pct(f.emergencyU.current, 0, 24000);
+  const msPct = pct(16000, 0, 24000);
+  const tvUnlocked = emergU >= 16000;
+
+  // Retirement
+  const retPct = pct(f.retirement.current, 0, 65000);
+
+  // Loans paydown
+  const loanPct = pct(f.loans.current, 0, 79000); // full = worst, shrinks as paid
+
+  // Car
+  const carPct = pct(f.car.current, 0, 23000);
+
+  const cards = [
+    // 1. Net Worth
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Net Worth</div>
+        ${editBtn('netWorth')}
+      </div>
+      <div class="fin-amounts">
+        <span class="fin-current ${nwCls}">${fmtDollars(f.netWorth.current)}</span>
+        <span class="fin-target">→ $0</span>
+      </div>
+      ${bar(nwPct)}
+      <div class="fin-meta">Deadline <strong>Jul 15, 2026</strong></div>
+      ${monthly(f.netWorth.current, 0, '2026-07-15')}
+      ${editRow('netWorth','Net worth')}
+    </div>`,
+
+    // 2. Emergency: Unemployment
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Emergency Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Unemployment</span></div>
+        ${editBtn('emergencyU')}
+      </div>
+      <div class="fin-amounts">
+        <span class="fin-current">${fmtDollars(f.emergencyU.current)}</span>
+        <span class="fin-target">→ ${fmtDollars(24000)}</span>
+      </div>
+      <div class="fin-track-wrap" style="margin-bottom:18px;">
+        <div class="fin-track">
+          <div class="fin-fill" style="width:${Math.min(euPct,100)}%;background:${barColor(euPct)};"></div>
+          <div class="fin-milestone" style="left:${msPct}%"></div>
+          <div class="fin-milestone-label" style="left:${msPct}%">unlock TV</div>
+        </div>
+      </div>
+      <div class="fin-meta">Deadline <strong>Dec 31, 2026</strong></div>
+      ${monthly(f.emergencyU.current, 24000, '2026-12-31')}
+      ${editRow('emergencyU','Current amount')}
+    </div>`,
+
+    // 3. Emergency: Surprise Bills
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Emergency Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Surprise Bills</span></div>
+        ${editBtn('emergencyS')}
+      </div>
+      <div class="fin-amounts">
+        <span class="fin-current">${fmtDollars(f.emergencyS.current)}</span>
+        <span class="fin-target">→ ${fmtDollars(1000)}</span>
+      </div>
+      ${bar(pct(f.emergencyS.current, 0, 1000))}
+      <div class="fin-meta">No deadline</div>
+      ${editRow('emergencyS','Current amount')}
+    </div>`,
+
+    // 4. Tech Emergency Fund
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Tech Emergency Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Laptop + iPhone</span></div>
+        ${editBtn('tech')}
+      </div>
+      <div class="fin-amounts">
+        <span class="fin-current">${fmtDollars(f.tech.current)}</span>
+        <span class="fin-target">→ ${fmtDollars(1500)}</span>
+      </div>
+      ${bar(pct(f.tech.current, 0, 1500))}
+      <div class="fin-meta">No deadline</div>
+      ${editRow('tech','Current amount')}
+    </div>`,
+
+    // 5. Retirement
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Retirement</div>
+        ${editBtn('retirement')}
+      </div>
+      <div class="fin-amounts">
+        <span class="fin-current">${fmtDollars(f.retirement.current)}</span>
+        <span class="fin-target">→ ${fmtDollars(65000)}</span>
+      </div>
+      ${bar(retPct, retPct >= 100 ? 'complete' : '')}
+      <div class="fin-meta">Deadline <strong>Dec 31, 2026</strong> · $7,000 employer match vests <strong>Feb 25, 2027</strong> (~$72k total)</div>
+      ${monthly(f.retirement.current, 65000, '2026-12-31')}
+      ${editRow('retirement','Current balance')}
+    </div>`,
+
+    // 6. Student Loans
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Student Loans</div>
+        ${editBtn('loans')}
+      </div>
+      <div class="fin-amounts">
+        <span class="fin-current negative">${fmtDollars(f.loans.current)}</span>
+        <span class="fin-target">→ $0</span>
+      </div>
+      ${bar(100 - pct(f.loans.current, 0, 79000), 'paydown')}
+      <div class="fin-meta">Paying minimums · 4% interest · On track to pay off before age 55 · Not a priority over retirement</div>
+      ${editRow('loans','Current balance')}
+    </div>`,
+
+    // 7. Car Fund
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Car Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Mazda CX-30</span></div>
+        ${editBtn('car')}
+      </div>
+      <div class="fin-amounts">
+        <span class="fin-current">${fmtDollars(f.car.current)}</span>
+        <span class="fin-target">→ ${fmtDollars(23000)}</span>
+      </div>
+      ${bar(carPct)}
+      <div class="fin-meta">$28,000 price − $5,000 trade-in · Timeline 3–4 years · Not actively saving yet</div>
+      ${editRow('car','Current amount')}
+    </div>`,
+
+    // 8. Upcoming Purchases
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Upcoming Purchases</div>
+      </div>
+      <div class="fin-sub-items">
+        <div class="fin-sub-item ${tvUnlocked ? '' : 'locked'}">
+          <div>
+            <div class="fin-sub-name">TV</div>
+            ${tvUnlocked ? '' : '<div class="fin-sub-lock">🔒 Unlocks when emergency fund hits $16k</div>'}
+          </div>
+          <span class="fin-sub-amount">$180</span>
+        </div>
+        <div class="fin-sub-item">
+          <div class="fin-sub-name">Chair</div>
+          <span class="fin-sub-amount">$300</span>
+        </div>
+        <div class="fin-sub-item">
+          <div class="fin-sub-name">Laptop / iPhone</div>
+          <span class="fin-sub-amount">$1,500</span>
+        </div>
+      </div>
+    </div>`,
+  ];
+
+  document.getElementById('fin-goals').innerHTML = cards.join('');
+
+  if (editing) {
+    const inp = document.getElementById('fin-input-' + editing);
+    if (inp) { inp.focus(); inp.select(); }
+  }
+}
+
+renderFinances();
+
+// ─────────────────────────────────────────────────────────
+// WORK
+// ─────────────────────────────────────────────────────────
+
+const WORK_TASK_DEFAULTS = [
+  { id: 'wt1', name: 'Document intake/workflow process for creative requests',      tag: 'Creative Ops', done: false },
+  { id: 'wt2', name: 'Define SLA framework between ops and client teams',           tag: 'Creative Ops', done: false },
+  { id: 'wt3', name: 'Build client triage list with new AM — rank by attention required', tag: 'Ops Skill',    done: false },
+  { id: 'wt4', name: 'Create resource capacity framework for CEO review',           tag: 'Ops Skill',    done: false },
+  { id: 'wt5', name: 'Set up onboarding doc for new AM',                            tag: 'Ops Skill',    done: false },
+  { id: 'wt6', name: 'CEO: AM transition stabilization plan',                       tag: 'CEO Request',  done: false },
+];
+
+const SKILL_DEFAULTS = [
+  { id: 'sk1', name: 'Process Design & SLA Frameworks',                demonstrate: '', gap: '', howToBuild: '' },
+  { id: 'sk2', name: 'Cross-functional Alignment & Managing Up',       demonstrate: '', gap: '', howToBuild: '' },
+  { id: 'sk3', name: 'PM Tooling (Asana, Airtable, reporting)',        demonstrate: '', gap: '', howToBuild: '' },
+  { id: 'sk4', name: 'AI & Automation in Workflows',                   demonstrate: '', gap: '', howToBuild: '' },
+  { id: 'sk5', name: 'People Management, Hiring & Onboarding',         demonstrate: '', gap: '', howToBuild: '' },
+  { id: 'sk6', name: 'Client Management & Stakeholder Influence',      demonstrate: '', gap: '', howToBuild: '' },
+  { id: 'sk7', name: 'Packaging Work as Case Studies & Portfolio',     demonstrate: '', gap: '', howToBuild: '' },
+];
+
+function loadWorkData() {
+  try { return JSON.parse(localStorage.getItem('cc_work') || 'null'); } catch { return null; }
+}
+function saveWorkData(d) { localStorage.setItem('cc_work', JSON.stringify(d)); }
+
+function initWorkData() {
+  const d = loadWorkData();
+  if (d) return d;
+  const fresh = {
+    tasks:  JSON.parse(JSON.stringify(WORK_TASK_DEFAULTS)),
+    skills: JSON.parse(JSON.stringify(SKILL_DEFAULTS)),
+  };
+  saveWorkData(fresh);
+  return fresh;
+}
+let WORK_DATA = initWorkData();
+// Migrate old status/notes skill format to new three-field format
+WORK_DATA.skills.forEach(sk => {
+  if (sk.demonstrate === undefined) sk.demonstrate = sk.notes || '';
+  if (sk.gap === undefined) sk.gap = '';
+  if (sk.howToBuild === undefined) sk.howToBuild = '';
+});
+
+let workFilter = 'All';
+
+function toggleWorkTask(id) {
+  const t = WORK_DATA.tasks.find(t => t.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  saveWorkData(WORK_DATA);
+  renderWorkTasks();
+}
+
+function addWorkTask() {
+  const name = document.getElementById('wt-new-name').value.trim();
+  const tag  = document.getElementById('wt-new-tag').value;
+  if (!name) return;
+  WORK_DATA.tasks.push({ id: 'wt' + Date.now(), name, tag, done: false });
+  saveWorkData(WORK_DATA);
+  document.getElementById('wt-new-name').value = '';
+  renderWorkTasks();
+}
+
+function setWorkFilter(f) {
+  workFilter = f;
+  document.querySelectorAll('.work-filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === f);
+  });
+  renderWorkTasks();
+}
+
+function renderWorkTasks() {
+  const check = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+    <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+  const visible = WORK_DATA.tasks.filter(t => workFilter === 'All' || t.tag === workFilter);
+  const tagClass = tag => 'wt-pill-' + tag.replace(/\s+/g, '-');
+  document.getElementById('work-task-list').innerHTML = visible.length ? visible.map(t => `
+    <div class="t-item ${t.done ? 'done' : ''}" onclick="toggleWorkTask('${t.id}')">
+      <div class="t-cb">${t.done ? check : ''}</div>
+      <span class="t-name">${t.name}</span>
+      <span class="t-cat-pill ${tagClass(t.tag)}">${t.tag}</span>
+    </div>`).join('')
+    : '<div class="empty">No tasks for this filter.</div>';
+}
+
+function saveSkillField(id, field) {
+  const sk = WORK_DATA.skills.find(s => s.id === id);
+  if (!sk) return;
+  sk[field] = document.getElementById(`sk-${field}-${id}`).value;
+  saveWorkData(WORK_DATA);
+}
+
+function renderSkills() {
+  document.getElementById('skill-grid').innerHTML = WORK_DATA.skills.map(sk => `
+    <div class="skill-card">
+      <div class="skill-name">${sk.name}</div>
+      <div class="skill-field-group">
+        <div class="skill-field-label">What I can demonstrate today</div>
+        <textarea class="skill-textarea" id="sk-demonstrate-${sk.id}"
+                  placeholder="Evidence, examples, current capability..."
+                  onchange="saveSkillField('${sk.id}','demonstrate')">${sk.demonstrate || ''}</textarea>
+      </div>
+      <div class="skill-field-group">
+        <div class="skill-field-label">Gap or next step</div>
+        <textarea class="skill-textarea" id="sk-gap-${sk.id}"
+                  placeholder="What's missing or where the ceiling is..."
+                  onchange="saveSkillField('${sk.id}','gap')">${sk.gap || ''}</textarea>
+      </div>
+      <div class="skill-field-group">
+        <div class="skill-field-label">How to build it</div>
+        <textarea class="skill-textarea" id="sk-howToBuild-${sk.id}"
+                  placeholder="Specific actions, projects, resources..."
+                  onchange="saveSkillField('${sk.id}','howToBuild')">${sk.howToBuild || ''}</textarea>
+      </div>
+    </div>`).join('');
+}
+
+document.querySelectorAll('.work-filter-btn').forEach(b => {
+  b.addEventListener('click', () => setWorkFilter(b.dataset.filter));
+});
+
+renderWorkTasks();
+renderSkills();
+
+// ─────────────────────────────────────────────────────────
+// MAIN
+// ─────────────────────────────────────────────────────────
+
+function parseFitMins(str) {
+  if (!str) return 0;
+  if (str.includes('2 hrs')) return 120;
+  if (str.includes('45')) return 52;
+  const m = str.match(/(\d+)/);
+  return m ? parseInt(m[1]) : 30;
+}
+
+function renderRocks() {
+  const checkSvg = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+    <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  // ── Writing ──
+  const allBlocks = Object.values(DATA.weeks).flat();
+  const outlineBlocks = allBlocks.filter(b => /^outline$/i.test(b.goal));
+  const draftBlocks   = allBlocks.filter(b => /^write scenes$|^assemble draft$|^read through$|^final fixes$|^submit$/i.test(b.goal));
+  const outlineDone   = outlineBlocks.filter(b => b.done).length;
+  const draftDone     = draftBlocks.filter(b => b.done).length;
+  const nextBlock     = allBlocks
+    .filter(b => !b.done && b.date >= TODAY_STR)
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+  const daysLeft = Math.max(0, daysFrom('2026-06-29'));
+  const durFmt = b => b.duration % 1 ? b.duration.toFixed(1) : b.duration;
+
+  // ── Fitness ──
+  const fitData  = loadFitness();
+  const fitWk    = fitWeekKey();
+  const wkFit    = fitData[fitWk] || {};
+  const todayDI  = new Date().getDay();
+  const nonRest  = SCHEDULE.map((s,i) => ({...s,i})).filter(s => !s.rest);
+  const fitDone  = nonRest.filter(s => wkFit[s.i]).length;
+
+  document.getElementById('main-rocks').innerHTML = `
+    <div class="rock-card rock-writing">
+      <div class="rock-label">Writing</div>
+      <div class="rock-script" style="font-size:22px;font-weight:800;letter-spacing:-0.3px;">Lucidity</div>
+      <div class="rock-sub">Big Break · ${daysLeft} days left</div>
+      <div class="rock-progress-row">
+        <span class="rock-progress-label">Outline</span>
+        <div class="rock-bar"><div class="rock-fill" style="width:${outlineBlocks.length ? (outlineDone/outlineBlocks.length)*100 : 0}%"></div></div>
+        <span class="rock-progress-frac">${outlineDone}/${outlineBlocks.length}</span>
+      </div>
+      <div class="rock-progress-row">
+        <span class="rock-progress-label">Draft</span>
+        <div class="rock-bar"><div class="rock-fill" style="width:${draftBlocks.length ? (draftDone/draftBlocks.length)*100 : 0}%"></div></div>
+        <span class="rock-progress-frac">${draftDone}/${draftBlocks.length}</span>
+      </div>
+      <div class="rock-next">${nextBlock
+        ? `Next: ${nextBlock.day} · ${nextBlock.time} · ${durFmt(nextBlock)}h`
+        : 'All blocks complete ✓'}</div>
+    </div>
+
+    <div class="rock-card rock-fitness">
+      <div class="rock-label">Fitness</div>
+      <div class="rock-script" style="font-size:20px;font-weight:800;color:#4A90D9;">${fitDone} / ${nonRest.length} done this week</div>
+      <div class="rock-fit-list">
+        ${SCHEDULE.map((s,i) => {
+          const done  = !!wkFit[i];
+          const today = i === todayDI;
+          const cls   = [done ? 'done' : '', s.rest ? 'rest' : '', today ? 'today' : ''].filter(Boolean).join(' ');
+          return `<div class="rock-fit-row ${cls}">
+            <span class="rock-fit-dow">${s.day.slice(0,3)}</span>
+            <span class="rock-fit-name">${s.rest ? 'Rest' : s.name}</span>
+            ${done ? `<span class="rock-fit-tick">✓</span>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="rock-card rock-dreams">
+      <div class="rock-label">Dreams</div>
+      <div class="dream-list">
+        <div class="dream-item">
+          <span class="dream-goal">Sell a screenplay for $300,000</span>
+          <span class="dream-date">by Jan 1, 2028</span>
+        </div>
+        <div class="dream-item">
+          <span class="dream-goal">Create and showrun a hit show on television</span>
+          <span class="dream-date">by Jan 1, 2030</span>
+        </div>
+        <div class="dream-item">
+          <span class="dream-goal">Direct a feature film</span>
+          <span class="dream-date">by Jan 1, 2033</span>
+        </div>
+        <div class="dream-item">
+          <span class="dream-goal">Marry a wonderful man</span>
+          <span class="dream-date">by Jan 1, 2030</span>
+        </div>
+      </div>
+    </div>
+
+  `;
+}
+
+function renderDeck() {
+  const availHrs  = parseFloat(document.getElementById('deck-available').value) || 8;
+  const availMins = availHrs * 60;
+  const items     = [];
+
+  // Today's writing blocks
+  Object.values(DATA.weeks).flat()
+    .filter(b => b.date === TODAY_STR)
+    .forEach(b => items.push({
+      type: 'writing', id: b.id,
+      name: `Writing — ${b.duration % 1 ? b.duration.toFixed(1) : b.duration}hrs`,
+      mins: Math.round(b.duration * 60),
+      cat: 'Writing', done: b.done,
+    }));
+
+  // Today's fitness (if not rest)
+  const todayDI   = new Date().getDay();
+  const todaySch  = SCHEDULE[todayDI];
+  if (!todaySch.rest) {
+    const fitData = loadFitness();
+    const wkFit   = fitData[fitWeekKey()] || {};
+    items.push({
+      type: 'fitness', id: 'fit-today',
+      name: todaySch.name + (todaySch.detail ? ' · ' + todaySch.detail : '') + ` (${todaySch.time})`,
+      mins: parseFitMins(todaySch.duration),
+      cat: 'Fitness', done: !!wkFit[todayDI],
+    });
+  }
+
+  // All incomplete tasks from cc_tasks
+  TASKS.filter(t => !t.done).forEach(t => items.push({
+    type: 'task', id: t.id,
+    name: t.name, mins: t.mins, cat: t.cat, done: false,
+  }));
+
+  const incompleteMins = items.filter(i => !i.done).reduce((s,i) => s + i.mins, 0);
+  const over = incompleteMins > availMins;
+  const statsEl = document.getElementById('deck-stats');
+  statsEl.textContent = `${fmtMins(incompleteMins)} of tasks · `;
+  statsEl.style.color = 'var(--muted)';
+  const badge = document.createElement('span');
+  badge.textContent = over ? `${fmtMins(incompleteMins - availMins)} over` : 'Fits ✓';
+  badge.style.color = over ? '#EF4444' : '#4CAF85';
+  statsEl.appendChild(badge);
+
+  const catCls = { Writing:'t-cat-Writing', Fitness:'t-cat-Fitness', Work:'t-cat-Work', Personal:'t-cat-Personal', Finance:'t-cat-Finance' };
+  const checkSvg = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+    <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  document.getElementById('deck-list').innerHTML = items.length
+    ? items.map(item => `
+      <div class="t-item ${item.done ? 'done' : ''}" onclick="toggleDeckItem('${item.type}','${item.id}')">
+        <div class="t-cb">${item.done ? checkSvg : ''}</div>
+        <span class="t-name">${item.name}</span>
+        <span class="t-mins">${item.mins}m</span>
+        <span class="t-cat-pill ${catCls[item.cat]||'t-cat-Personal'}">${item.cat}</span>
+      </div>`).join('')
+    : '<div class="empty">Nothing on today\'s deck.</div>';
+}
+
+function toggleDeckItem(type, id) {
+  if (type === 'writing') {
+    for (const wk of Object.keys(DATA.weeks)) {
+      const b = DATA.weeks[wk].find(b => b.id === id);
+      if (b) { b.done = !b.done; saveData(DATA); renderTracker(); renderBlocks(); break; }
+    }
+  } else if (type === 'fitness') {
+    const fitData = loadFitness();
+    const wk = fitWeekKey();
+    if (!fitData[wk]) fitData[wk] = {};
+    const dayI = new Date().getDay();
+    fitData[wk][dayI] = !fitData[wk][dayI];
+    saveFitness(fitData);
+    renderFitness();
+  } else if (type === 'task') {
+    const t = TASKS.find(t => t.id === id);
+    if (t) { t.done = !t.done; saveTasks(TASKS); renderTasks(); }
+  }
+  renderMain();
+}
+
+function renderMain() {
+  renderRocks();
+  renderDeck();
+}
+
+document.getElementById('deck-available').addEventListener('input', renderDeck);
+
+// ─────────────────────────────────────────────────────────
+// VETTER
+// ─────────────────────────────────────────────────────────
+
+function runVetter() {
+  const isCEO = document.querySelector('input[name="v-ceo"]:checked')?.value === 'yes';
+
+  const rockVals = ['v-rock-writing','v-rock-health','v-rock-finance','v-rock-career'].map(name => {
+    const checked = document.querySelector(`input[name="${name}"]:checked`);
+    return checked ? checked.value : null;
+  });
+
+  const servesCount = rockVals.filter(v => v === 'yes' || v === 'stretch').length;
+
+  const box = document.getElementById('v-verdict');
+  box.style.display = 'block';
+
+  if (isCEO) {
+    box.className = 'vetter-verdict amber';
+    box.innerHTML = `<div class="verdict-head">Accept — but document the trade-off.</div>
+      Reply to the CEO in writing. Name exactly what you are deprioritizing to take this on. Make the trade-off explicit and on record before you begin.`;
+  } else if (servesCount >= 2) {
+    box.className = 'vetter-verdict green';
+    box.innerHTML = `<div class="verdict-head">Proceed — but define what moves down.</div>
+      This serves ${servesCount} of your 4 rocks. Before saying yes, write down what specifically gets deprioritized or delayed to make room for it.`;
+  } else {
+    box.className = 'vetter-verdict red';
+    box.innerHTML = `<div class="verdict-head">Decline or defer.</div>
+      This serves ${servesCount === 0 ? 'none' : 'only one'} of your rocks. Say no unless it is directly job-threatening. Protect your time for what actually moves the needle.`;
+  }
+
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+renderMain();
+renderAll();
+</script>
+
+<!-- Reset button (bottom-right corner) -->
+<button id="reset-btn" onclick="
+  if (confirm('Reset all data to defaults? This cannot be undone.')) {
+    ['cc_v3','cc_tasks','cc_fin','cc_work','cc_fitness','cc_journal'].forEach(k => localStorage.removeItem(k));
+    location.reload();
+  }
+" title="Reset all data to defaults">↺ Reset</button>
+
+<style>
+  #reset-btn {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    background: rgba(255,255,255,0.85);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    z-index: 9999;
+    backdrop-filter: blur(4px);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  #reset-btn:hover { color: #DC2626; border-color: #DC2626; }
+</style>
+
+</body>
+</html>
