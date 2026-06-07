@@ -1897,10 +1897,24 @@ function renderBlocks() {
     return;
   }
 
+  // For weekend blocks, replace time with positional label per day
+  const WEEKEND_LABELS = ['Morning block', 'Mid-day block', 'Afternoon block', 'Evening block'];
+  const weekendDayOrder = {};
+  blocks.forEach(b => {
+    if (b.day === 'Saturday' || b.day === 'Sunday') {
+      if (!weekendDayOrder[b.date]) weekendDayOrder[b.date] = [];
+      weekendDayOrder[b.date].push(b.id);
+    }
+  });
+
   list.innerHTML = blocks.map(b => {
-    const isToday = b.date === TODAY_STR;
+    const isToday   = b.date === TODAY_STR;
+    const isWeekend = b.day === 'Saturday' || b.day === 'Sunday';
     const dur = b.duration === 1 ? '1 hr'
       : `${b.duration % 1 ? b.duration.toFixed(1) : b.duration} hrs`;
+    const timeLabel = isWeekend
+      ? (WEEKEND_LABELS[(weekendDayOrder[b.date] || []).indexOf(b.id)] || 'Evening block')
+      : b.time;
     return `
     <div class="block ${b.done ? 'done' : ''} ${isToday ? 'today-block' : ''}"
          onclick="toggleBlock('${b.id}')">
@@ -1914,7 +1928,7 @@ function renderBlocks() {
         <div class="block-top">
           <span class="block-day">${b.day}</span>
           <span class="block-meta">
-            <span>${b.time}</span><span class="sep">·</span><span>${dur}</span>
+            <span>${timeLabel}</span><span class="sep">·</span><span>${dur}</span>
           </span>
           ${isToday ? '<span class="today-badge">Today</span>' : ''}
         </div>
