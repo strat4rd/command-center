@@ -2417,13 +2417,14 @@ function renderFinances(editing) {
     return `<button class="fin-edit-btn" onclick="openFinEdit('${key}')">Edit</button>`;
   }
 
+  // Blue = no progress (0%), Gold = in progress (>0% <100%), Green = complete (100%)
   function barColor(fillPct) {
     if (fillPct >= 100) return '#4CAF85';
-    if (fillPct >= 80)  return '#F5A623';
+    if (fillPct > 0)    return '#F5A623';
     return '#4A90D9';
   }
 
-  function bar(fillPct, cls='') {
+  function bar(fillPct) {
     const w = Math.min(fillPct, 100);
     return `<div class="fin-track"><div class="fin-fill" style="width:${w}%;background:${barColor(fillPct)};"></div></div>`;
   }
@@ -2431,6 +2432,10 @@ function renderFinances(editing) {
   function monthly(current, target, deadline) {
     const mo = monthlySavingsNeeded(current, target, deadline);
     return mo ? `<div class="fin-monthly">${fmtDollars(mo)}/mo to hit deadline</div>` : '';
+  }
+
+  function goalLine(text) {
+    return `<div style="font-size:11px;color:var(--muted);margin-top:-4px;margin-bottom:2px;">${text}</div>`;
   }
 
   // Net worth: range from -$110k to $0 (based on loan starting balance)
@@ -2460,6 +2465,7 @@ function renderFinances(editing) {
         <div class="fin-card-title">Net Worth</div>
         ${editBtn('netWorth')}
       </div>
+      ${goalLine('Positive net worth by Jul 15, 2026')}
       <div class="fin-amounts">
         <span class="fin-current ${nwCls}">${fmtDollars(f.netWorth.current)}</span>
         <span class="fin-target">→ $0</span>
@@ -2470,12 +2476,30 @@ function renderFinances(editing) {
       ${editRow('netWorth','Net worth')}
     </div>`,
 
-    // 2. Emergency: Unemployment
+    // 2. Retirement
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Retirement</div>
+        ${editBtn('retirement')}
+      </div>
+      ${goalLine('$65,000 in retirement savings by Dec 31, 2026')}
+      <div class="fin-amounts">
+        <span class="fin-current">${fmtDollars(f.retirement.current)}</span>
+        <span class="fin-target">→ ${fmtDollars(65000)}</span>
+      </div>
+      ${bar(retPct)}
+      <div class="fin-meta">Deadline <strong>Dec 31, 2026</strong> · $7,000 employer match vests <strong>Feb 25, 2027</strong> (~$72k total)</div>
+      ${monthly(f.retirement.current, 65000, '2026-12-31')}
+      ${editRow('retirement','Current balance')}
+    </div>`,
+
+    // 3. Emergency: Unemployment
     `<div class="fin-card">
       <div class="fin-card-header">
         <div class="fin-card-title">Emergency Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Unemployment</span></div>
         ${editBtn('emergencyU')}
       </div>
+      ${goalLine('$24,000 in fund by Dec 31, 2026')}
       <div class="fin-amounts">
         <span class="fin-current">${fmtDollars(f.emergencyU.current)}</span>
         <span class="fin-target">→ ${fmtDollars(24000)}</span>
@@ -2492,83 +2516,7 @@ function renderFinances(editing) {
       ${editRow('emergencyU','Current amount')}
     </div>`,
 
-    // 3. Emergency: Surprise Bills
-    `<div class="fin-card">
-      <div class="fin-card-header">
-        <div class="fin-card-title">Emergency Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Surprise Bills</span></div>
-        ${editBtn('emergencyS')}
-      </div>
-      <div class="fin-amounts">
-        <span class="fin-current">${fmtDollars(f.emergencyS.current)}</span>
-        <span class="fin-target">→ ${fmtDollars(1000)}</span>
-      </div>
-      ${bar(pct(f.emergencyS.current, 0, 1000))}
-      <div class="fin-meta">No deadline</div>
-      ${editRow('emergencyS','Current amount')}
-    </div>`,
-
-    // 4. Tech Emergency Fund
-    `<div class="fin-card">
-      <div class="fin-card-header">
-        <div class="fin-card-title">Tech Emergency Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Laptop + iPhone</span></div>
-        ${editBtn('tech')}
-      </div>
-      <div class="fin-amounts">
-        <span class="fin-current">${fmtDollars(f.tech.current)}</span>
-        <span class="fin-target">→ ${fmtDollars(1500)}</span>
-      </div>
-      ${bar(pct(f.tech.current, 0, 1500))}
-      <div class="fin-meta">No deadline</div>
-      ${editRow('tech','Current amount')}
-    </div>`,
-
-    // 5. Retirement
-    `<div class="fin-card">
-      <div class="fin-card-header">
-        <div class="fin-card-title">Retirement</div>
-        ${editBtn('retirement')}
-      </div>
-      <div class="fin-amounts">
-        <span class="fin-current">${fmtDollars(f.retirement.current)}</span>
-        <span class="fin-target">→ ${fmtDollars(65000)}</span>
-      </div>
-      ${bar(retPct, retPct >= 100 ? 'complete' : '')}
-      <div class="fin-meta">Deadline <strong>Dec 31, 2026</strong> · $7,000 employer match vests <strong>Feb 25, 2027</strong> (~$72k total)</div>
-      ${monthly(f.retirement.current, 65000, '2026-12-31')}
-      ${editRow('retirement','Current balance')}
-    </div>`,
-
-    // 6. Student Loans
-    `<div class="fin-card">
-      <div class="fin-card-header">
-        <div class="fin-card-title">Student Loans</div>
-        ${editBtn('loans')}
-      </div>
-      <div class="fin-amounts">
-        <span class="fin-current negative">${fmtDollars(f.loans.current)}</span>
-        <span class="fin-target">→ $0</span>
-      </div>
-      <div class="fin-track"><div class="fin-fill paydown" style="width:${Math.min(loanProgressPct,100)}%;background:#4A90D9;"></div></div>
-      <div class="fin-meta">Started at <strong>$110,000</strong> · Current balance <strong>$79,000</strong> · <strong>$31,000</strong> paid off · Paying minimums · 4% interest</div>
-      ${editRow('loans','Current balance')}
-    </div>`,
-
-    // 7. Car Fund
-    `<div class="fin-card">
-      <div class="fin-card-header">
-        <div class="fin-card-title">Car Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Mazda CX-30</span></div>
-        ${editBtn('car')}
-      </div>
-      <div class="fin-amounts">
-        <span class="fin-current">${fmtDollars(f.car.current)}</span>
-        <span class="fin-target">→ ${fmtDollars(23000)}</span>
-      </div>
-      ${bar(carPct)}
-      <div class="fin-meta">$28,000 price − $5,000 trade-in · Timeline 3–4 years · Not actively saving yet</div>
-      ${editRow('car','Current amount')}
-    </div>`,
-
-    // 8. Upcoming Purchases
+    // 4. Upcoming Purchases
     `<div class="fin-card">
       <div class="fin-card-header">
         <div class="fin-card-title">Upcoming Purchases</div>
@@ -2590,6 +2538,69 @@ function renderFinances(editing) {
           <span class="fin-sub-amount">$1,500</span>
         </div>
       </div>
+    </div>`,
+
+    // 5. Emergency: Surprise Bills
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Emergency Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Surprise Bills</span></div>
+        ${editBtn('emergencyS')}
+      </div>
+      ${goalLine('$1,000 in fund by TBD')}
+      <div class="fin-amounts">
+        <span class="fin-current">${fmtDollars(f.emergencyS.current)}</span>
+        <span class="fin-target">→ ${fmtDollars(1000)}</span>
+      </div>
+      ${bar(pct(f.emergencyS.current, 0, 1000))}
+      <div class="fin-meta">No deadline set</div>
+      ${editRow('emergencyS','Current amount')}
+    </div>`,
+
+    // 6. Tech Replacement Fund
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Tech Replacement Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Laptop + iPhone</span></div>
+        ${editBtn('tech')}
+      </div>
+      ${goalLine('$1,500 in fund by TBD')}
+      <div class="fin-amounts">
+        <span class="fin-current">${fmtDollars(f.tech.current)}</span>
+        <span class="fin-target">→ ${fmtDollars(1500)}</span>
+      </div>
+      ${bar(pct(f.tech.current, 0, 1500))}
+      <div class="fin-meta">No deadline set</div>
+      ${editRow('tech','Current amount')}
+    </div>`,
+
+    // 7. Car Fund
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Car Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Mazda CX-30</span></div>
+        ${editBtn('car')}
+      </div>
+      ${goalLine('$23,000 in fund by TBD')}
+      <div class="fin-amounts">
+        <span class="fin-current">${fmtDollars(f.car.current)}</span>
+        <span class="fin-target">→ ${fmtDollars(23000)}</span>
+      </div>
+      ${bar(carPct)}
+      <div class="fin-meta">$28,000 price − $5,000 trade-in · Timeline 3–4 years · Not actively saving yet</div>
+      ${editRow('car','Current amount')}
+    </div>`,
+
+    // 8. Student Loans
+    `<div class="fin-card">
+      <div class="fin-card-header">
+        <div class="fin-card-title">Student Loans</div>
+        ${editBtn('loans')}
+      </div>
+      <div class="fin-amounts">
+        <span class="fin-current negative">${fmtDollars(f.loans.current)}</span>
+        <span class="fin-target">→ $0</span>
+      </div>
+      <div class="fin-track"><div class="fin-fill paydown" style="width:${Math.min(loanProgressPct,100)}%;background:${barColor(loanProgressPct)};"></div></div>
+      <div class="fin-meta">Started at <strong>$110,000</strong> · Current balance <strong>$79,000</strong> · <strong>$31,000</strong> paid off · Paying minimums · 4% interest</div>
+      ${editRow('loans','Current balance')}
     </div>`,
   ];
 
