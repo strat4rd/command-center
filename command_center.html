@@ -1116,9 +1116,10 @@
 
     .dream-item {
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
+      align-items: baseline;
       gap: 4px;
-      padding: 20px 0;
+      padding: 5px 0;
     }
 
     .dream-item + .dream-item {
@@ -1129,13 +1130,14 @@
       font-size: 13px;
       font-weight: 700;
       color: #1a1a2e;
-      line-height: 1.3;
+      line-height: 1.4;
     }
 
     .dream-date {
       font-size: 12px;
       font-weight: 700;
       color: #F5A623;
+      white-space: nowrap;
     }
 
     .rock-card {
@@ -3091,7 +3093,7 @@ function renderRocks() {
     </div>
 
     <div class="rock-card rock-dreams">
-      <div class="rock-label">Dreams</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);">✦ Dreams &amp; Goals</div>
       <div class="dream-list">
         <div class="dream-item">
           <span class="dream-goal">Sell a screenplay for $300,000</span>
