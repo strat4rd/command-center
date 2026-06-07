@@ -1112,14 +1112,12 @@
       border-color: #F5A623;
     }
 
-    .dream-list { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+    .dream-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
 
     .dream-item {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: 4px;
-      padding: 5px 0;
+      display: block;
+      line-height: 1.5;
+      padding: 4px 0;
     }
 
     .dream-item + .dream-item {
@@ -1127,17 +1125,17 @@
     }
 
     .dream-goal {
+      display: inline;
       font-size: 13px;
       font-weight: 700;
       color: #1a1a2e;
-      line-height: 1.4;
     }
 
     .dream-date {
+      display: inline;
       font-size: 12px;
       font-weight: 700;
       color: #F5A623;
-      white-space: nowrap;
     }
 
     .rock-card {
@@ -3096,7 +3094,7 @@ function renderRocks() {
     </div>
 
     <div class="rock-card rock-dreams">
-      <div style="font-size:13px;font-weight:700;color:var(--text);">✦ Dreams &amp; Goals</div>
+      <div class="rock-label">Dreams / Goals</div>
       <div class="dream-list">
         <div class="dream-item">
           <span class="dream-goal">Sell a screenplay for $300,000</span>
