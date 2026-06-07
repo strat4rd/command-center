@@ -2581,6 +2581,10 @@ const FIN_DEFAULTS = {
   retirement:   { current: 60000 },
   loans:        { current: 79000 },
   car:          { current: 0 },
+  feCarRepair:  { current: 0 },
+  feTV:         { current: 0 },
+  feChair:      { current: 0 },
+  feLaptop:     { current: 0 },
 };
 
 function loadFin() {
@@ -2590,7 +2594,14 @@ function saveFin(d) { localStorage.setItem('cc_fin', JSON.stringify(d)); }
 
 function initFin() {
   const d = loadFin();
-  if (d) return d;
+  if (d) {
+    let dirty = false;
+    ['feCarRepair','feTV','feChair','feLaptop'].forEach(k => {
+      if (!d[k]) { d[k] = { current: 0 }; dirty = true; }
+    });
+    if (dirty) saveFin(d);
+    return d;
+  }
   const fresh = JSON.parse(JSON.stringify(FIN_DEFAULTS));
   saveFin(fresh);
   return fresh;
@@ -2702,6 +2713,12 @@ function renderFinances(editing) {
   const sPct     = pct(f.emergencyS.current, 0, 1000);
   const techPct  = pct(f.tech.current,     0, 1500);
 
+  // Future Expenses sub-items
+  const feCarRepairPct = pct(f.feCarRepair.current, 0, 1000);
+  const feTVPct        = pct(f.feTV.current,        0, 180);
+  const feChairPct     = pct(f.feChair.current,     0, 300);
+  const feLaptopPct    = pct(f.feLaptop.current,    0, 1500);
+
   // Inline color for amount text — mirrors barColor so text and bar always match
   function ac(fillPct) { return `color:${barColor(fillPct)};`; }
 
@@ -2769,24 +2786,56 @@ function renderFinances(editing) {
         <div class="fin-card-title">Future Expenses</div>
       </div>
       <div class="fin-sub-items">
-        <div class="fin-sub-item">
-          <div class="fin-sub-name">Car Repair</div>
-          <span class="fin-sub-amount" style="color:#4A90D9;">$1,000</span>
-        </div>
-        <div class="fin-sub-item ${tvUnlocked ? '' : 'locked'}">
-          <div>
-            <div class="fin-sub-name">TV</div>
-            ${tvUnlocked ? '' : '<div class="fin-sub-lock">🔒 Unlocks when emergency fund hits $16k</div>'}
+        <div class="fin-sub-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div class="fin-sub-name">Car Repair</div>
+            <div style="display:flex;align-items:baseline;gap:5px;flex-shrink:0;">
+              <span style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;${ac(feCarRepairPct)}">${fmtDollars(f.feCarRepair.current)}</span>
+              <span style="font-size:11px;color:var(--muted);">/ $1,000</span>
+              ${editBtn('feCarRepair', feCarRepairPct)}
+            </div>
           </div>
-          <span class="fin-sub-amount">$180</span>
+          ${bar(feCarRepairPct)}
+          ${editRow('feCarRepair','Amount saved')}
         </div>
-        <div class="fin-sub-item">
-          <div class="fin-sub-name">Chair</div>
-          <span class="fin-sub-amount">$300</span>
+        <div class="fin-sub-item ${tvUnlocked ? '' : 'locked'}" style="flex-direction:column;align-items:stretch;gap:6px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div>
+              <div class="fin-sub-name">TV</div>
+              ${tvUnlocked ? '' : '<div class="fin-sub-lock">🔒 Unlocks when emergency fund hits $16k</div>'}
+            </div>
+            <div style="display:flex;align-items:baseline;gap:5px;flex-shrink:0;">
+              <span style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;${ac(feTVPct)}">${fmtDollars(f.feTV.current)}</span>
+              <span style="font-size:11px;color:var(--muted);">/ $180</span>
+              ${tvUnlocked ? editBtn('feTV', feTVPct) : ''}
+            </div>
+          </div>
+          ${bar(feTVPct)}
+          ${tvUnlocked ? editRow('feTV','Amount saved') : ''}
         </div>
-        <div class="fin-sub-item">
-          <div class="fin-sub-name">Laptop / iPhone</div>
-          <span class="fin-sub-amount">$1,500</span>
+        <div class="fin-sub-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div class="fin-sub-name">Chair</div>
+            <div style="display:flex;align-items:baseline;gap:5px;flex-shrink:0;">
+              <span style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;${ac(feChairPct)}">${fmtDollars(f.feChair.current)}</span>
+              <span style="font-size:11px;color:var(--muted);">/ $300</span>
+              ${editBtn('feChair', feChairPct)}
+            </div>
+          </div>
+          ${bar(feChairPct)}
+          ${editRow('feChair','Amount saved')}
+        </div>
+        <div class="fin-sub-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div class="fin-sub-name">Laptop / iPhone</div>
+            <div style="display:flex;align-items:baseline;gap:5px;flex-shrink:0;">
+              <span style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;${ac(feLaptopPct)}">${fmtDollars(f.feLaptop.current)}</span>
+              <span style="font-size:11px;color:var(--muted);">/ $1,500</span>
+              ${editBtn('feLaptop', feLaptopPct)}
+            </div>
+          </div>
+          ${bar(feLaptopPct)}
+          ${editRow('feLaptop','Amount saved')}
         </div>
       </div>
     </div>`,
