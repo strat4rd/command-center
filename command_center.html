@@ -2534,7 +2534,7 @@ function wtChartSvg(entries) {
 function renderWeight() {
   const entries = loadWeight();
   const current = entries.length ? entries[entries.length - 1].lbs : null;
-  const currentStr = current != null ? `${current} lbs` : '—';
+  const currentStr = current != null ? `Current: ${current} lbs` : 'No weight logged';
 
   const p1 = wtProgressPct(entries, 152);
   const p2 = wtProgressPct(entries, 145);
@@ -2544,15 +2544,15 @@ function renderWeight() {
       <div class="wt-left-panel">
         <div class="wt-goal-card" style="flex:1;background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.28);">
           <div class="wt-goal-label" style="color:#b87d10;">Interim Goal</div>
-          <div class="wt-goal-weight" style="color:#F5A623;">${currentStr}</div>
-          <div class="wt-goal-target">→ 152 lbs</div>
+          <div class="wt-goal-weight" style="color:#F5A623;">152 lbs</div>
+          <div class="wt-goal-target">${currentStr}</div>
           <div class="wt-goal-deadline" style="color:#F5A623;">by Aug 13, 2026</div>
           <div class="wt-bar-wrap" style="background:rgba(245,166,35,0.18);"><div class="wt-bar-fill" style="width:${p1.toFixed(1)}%;background:#F5A623;"></div></div>
         </div>
         <div class="wt-goal-card" style="flex:1;background:rgba(74,144,217,0.06);border:1px solid rgba(74,144,217,0.25);">
           <div class="wt-goal-label" style="color:#3a70ad;">Final Goal</div>
-          <div class="wt-goal-weight" style="color:#4A90D9;">${currentStr}</div>
-          <div class="wt-goal-target">→ 145 lbs</div>
+          <div class="wt-goal-weight" style="color:#4A90D9;">145 lbs</div>
+          <div class="wt-goal-target">${currentStr}</div>
           <div class="wt-goal-deadline" style="color:#4A90D9;">by Nov 1, 2026</div>
           <div class="wt-bar-wrap" style="background:rgba(74,144,217,0.18);"><div class="wt-bar-fill" style="width:${p2.toFixed(1)}%;background:#4A90D9;"></div></div>
         </div>
