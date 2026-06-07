@@ -2424,8 +2424,11 @@ function renderFinances(editing) {
     return '';
   }
 
-  function editBtn(key) {
-    return `<button class="fin-edit-btn" onclick="openFinEdit('${key}')">Edit</button>`;
+  function editBtn(key, fillPct) {
+    const color  = barColor(fillPct);
+    const bg     = fillPct >= 100 ? 'rgba(76,175,133,0.08)'  : fillPct > 0 ? '#FFFBEB'  : 'rgba(74,144,217,0.08)';
+    const border = fillPct >= 100 ? 'rgba(76,175,133,0.30)'  : fillPct > 0 ? '#FDE68A'  : 'rgba(74,144,217,0.30)';
+    return `<button class="fin-edit-btn" style="color:${color};background:${bg};border-color:${border};" onclick="openFinEdit('${key}')">Edit</button>`;
   }
 
   // pct=0 → blue (no progress), pct 1–99 → gold (in progress), pct≥100 → green (complete)
@@ -2478,7 +2481,7 @@ function renderFinances(editing) {
     `<div class="fin-card">
       <div class="fin-card-header">
         <div class="fin-card-title">Net Worth</div>
-        ${editBtn('netWorth')}
+        ${editBtn('netWorth', nwPct)}
       </div>
       ${goalLine('Positive net worth by Jul 15, 2026')}
       <div class="fin-amounts">
@@ -2495,7 +2498,7 @@ function renderFinances(editing) {
     `<div class="fin-card">
       <div class="fin-card-header">
         <div class="fin-card-title">Retirement</div>
-        ${editBtn('retirement')}
+        ${editBtn('retirement', retPct)}
       </div>
       ${goalLine('$65,000 in retirement savings by Dec 31, 2026')}
       <div class="fin-amounts">
@@ -2512,7 +2515,7 @@ function renderFinances(editing) {
     `<div class="fin-card">
       <div class="fin-card-header">
         <div class="fin-card-title">Emergency Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Unemployment</span></div>
-        ${editBtn('emergencyU')}
+        ${editBtn('emergencyU', euPct)}
       </div>
       ${goalLine('$24,000 in fund by Dec 31, 2026')}
       <div class="fin-amounts">
@@ -2559,7 +2562,7 @@ function renderFinances(editing) {
     `<div class="fin-card">
       <div class="fin-card-header">
         <div class="fin-card-title">Emergency Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Surprise Bills</span></div>
-        ${editBtn('emergencyS')}
+        ${editBtn('emergencyS', sPct)}
       </div>
       ${goalLine('$1,000 in fund by TBD')}
       <div class="fin-amounts">
@@ -2575,7 +2578,7 @@ function renderFinances(editing) {
     `<div class="fin-card">
       <div class="fin-card-header">
         <div class="fin-card-title">Tech Replacement Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Laptop + iPhone</span></div>
-        ${editBtn('tech')}
+        ${editBtn('tech', techPct)}
       </div>
       ${goalLine('$1,500 in fund by TBD')}
       <div class="fin-amounts">
@@ -2591,7 +2594,7 @@ function renderFinances(editing) {
     `<div class="fin-card">
       <div class="fin-card-header">
         <div class="fin-card-title">Car Fund<br><span style="font-weight:500;color:var(--muted);font-size:12px;">Mazda CX-30</span></div>
-        ${editBtn('car')}
+        ${editBtn('car', carPct)}
       </div>
       ${goalLine('$23,000 in fund by TBD')}
       <div class="fin-amounts">
@@ -2607,7 +2610,7 @@ function renderFinances(editing) {
     `<div class="fin-card">
       <div class="fin-card-header">
         <div class="fin-card-title">Student Loans</div>
-        ${editBtn('loans')}
+        ${editBtn('loans', loanProgressPct)}
       </div>
       <div class="fin-amounts">
         <span class="fin-current" style="${ac(loanProgressPct)}">${fmtDollars(f.loans.current)}</span>
