@@ -2763,12 +2763,16 @@ function renderFinances(editing) {
       ${editRow('emergencyU','Current amount')}
     </div>`,
 
-    // 4. Upcoming Purchases
+    // 4. Future Expenses
     `<div class="fin-card">
       <div class="fin-card-header">
-        <div class="fin-card-title">Upcoming Purchases</div>
+        <div class="fin-card-title">Future Expenses</div>
       </div>
       <div class="fin-sub-items">
+        <div class="fin-sub-item">
+          <div class="fin-sub-name">Car Repair</div>
+          <span class="fin-sub-amount" style="color:#4A90D9;">$1,000</span>
+        </div>
         <div class="fin-sub-item ${tvUnlocked ? '' : 'locked'}">
           <div>
             <div class="fin-sub-name">TV</div>
