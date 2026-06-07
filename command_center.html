@@ -2893,8 +2893,8 @@ function renderDeck() {
     });
   }
 
-  // All incomplete tasks from cc_tasks
-  TASKS.filter(t => !t.done).forEach(t => items.push({
+  // Active (not done, not queued) tasks from cc_tasks
+  TASKS.filter(t => !t.done && !t.queued).forEach(t => items.push({
     type: 'task', id: t.id,
     name: t.name, mins: t.mins, cat: t.cat, done: false,
   }));
