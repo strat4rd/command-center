@@ -790,15 +790,15 @@
     .fit-log-empty { font-size: 12px; color: var(--muted2); font-style: italic; }
 
     /* Weight tracking */
-    .wt-top-grid { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 10px; align-items: start; }
+    .wt-top-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; align-items: start; }
+    .wt-left-panel { display: flex; flex-direction: column; gap: 8px; }
     .wt-goal-card { border-radius: 10px; padding: 10px 12px; }
     .wt-goal-label { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
-    .wt-goal-weight { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; margin-bottom: 1px; }
-    .wt-goal-target { font-size: 10px; color: var(--muted); margin-bottom: 7px; }
-    .wt-bar-wrap { height: 3px; border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+    .wt-goal-weight { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; margin-bottom: 2px; }
+    .wt-goal-target { font-size: 10px; color: var(--muted); margin-bottom: 1px; }
+    .wt-goal-deadline { font-size: 10px; font-weight: 700; margin-bottom: 7px; }
+    .wt-bar-wrap { height: 3px; border-radius: 2px; overflow: hidden; }
     .wt-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
-    .wt-goal-deadline { font-size: 9px; color: var(--muted); }
-    .wt-right-panel { display: flex; flex-direction: column; gap: 8px; }
     .wt-log-row { display: flex; gap: 6px; align-items: center; }
     .wt-input { flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; font-family: inherit; background: var(--surface2); color: var(--text); outline: none; min-width: 0; }
     .wt-input:focus { border-color: var(--accent); }
@@ -2539,25 +2539,27 @@ function renderWeight() {
 
   document.getElementById('wt-top').innerHTML = `
     <div class="wt-top-grid">
-      <div class="wt-goal-card" style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.28);">
-        <div class="wt-goal-label" style="color:#b87d10;">Interim Goal</div>
-        <div class="wt-goal-weight" style="color:#F5A623;">${currentStr}</div>
-        <div class="wt-goal-target">→ 152 lbs by Aug 13</div>
-        <div class="wt-bar-wrap" style="background:rgba(245,166,35,0.18);"><div class="wt-bar-fill" style="width:${p1.toFixed(1)}%;background:#F5A623;"></div></div>
-      </div>
-      <div class="wt-goal-card" style="background:rgba(74,144,217,0.06);border:1px solid rgba(74,144,217,0.25);">
-        <div class="wt-goal-label" style="color:#3a70ad;">Final Goal</div>
-        <div class="wt-goal-weight" style="color:#4A90D9;">${currentStr}</div>
-        <div class="wt-goal-target">→ 145 lbs by Nov 1</div>
-        <div class="wt-bar-wrap" style="background:rgba(74,144,217,0.18);"><div class="wt-bar-fill" style="width:${p2.toFixed(1)}%;background:#4A90D9;"></div></div>
-      </div>
-      <div class="wt-right-panel">
+      <div class="wt-left-panel">
+        <div class="wt-goal-card" style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.28);">
+          <div class="wt-goal-label" style="color:#b87d10;">Interim Goal</div>
+          <div class="wt-goal-weight" style="color:#F5A623;">${currentStr}</div>
+          <div class="wt-goal-target">→ 152 lbs</div>
+          <div class="wt-goal-deadline" style="color:#F5A623;">by Aug 13, 2026</div>
+          <div class="wt-bar-wrap" style="background:rgba(245,166,35,0.18);"><div class="wt-bar-fill" style="width:${p1.toFixed(1)}%;background:#F5A623;"></div></div>
+        </div>
+        <div class="wt-goal-card" style="background:rgba(74,144,217,0.06);border:1px solid rgba(74,144,217,0.25);">
+          <div class="wt-goal-label" style="color:#3a70ad;">Final Goal</div>
+          <div class="wt-goal-weight" style="color:#4A90D9;">${currentStr}</div>
+          <div class="wt-goal-target">→ 145 lbs</div>
+          <div class="wt-goal-deadline" style="color:#4A90D9;">by Nov 1, 2026</div>
+          <div class="wt-bar-wrap" style="background:rgba(74,144,217,0.18);"><div class="wt-bar-fill" style="width:${p2.toFixed(1)}%;background:#4A90D9;"></div></div>
+        </div>
         <div class="wt-log-row">
           <input type="number" id="wt-input" class="wt-input" placeholder="Today's weight (lbs)" min="50" max="400" step="0.1">
           <button class="wt-log-btn" onclick="logWeight()">Log</button>
         </div>
-        <div class="wt-chart-wrap">${wtChartSvg(entries)}</div>
       </div>
+      <div class="wt-chart-wrap">${wtChartSvg(entries)}</div>
     </div>`;
 }
 
