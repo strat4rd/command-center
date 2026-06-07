@@ -2080,7 +2080,6 @@ const TASK_DEFAULTS = [
   { id: 't9',  name: 'Research closer gyms',                   mins: 20,  cat: 'Personal', done: false, queued: false },
   { id: 't10', name: 'Finish The Slight Edge last 2 chapters', mins: 45,  cat: 'Personal', done: false, queued: false },
   { id: 't11', name: 'Re-engage writers group',                mins: 15,  cat: 'Writing',  done: false, queued: false },
-  { id: 't12', name: 'Build AM transition plan for CEO',       mins: 90,  cat: 'Personal', done: false, queued: false },
 ];
 
 function loadTasks() {
@@ -2105,6 +2104,8 @@ TASKS.forEach(t => { if (t.queued === undefined) t.queued = false; });
 (function() {
   const before = TASKS.length;
   TASKS = TASKS.filter(t => !t.done || t.doneDate === TODAY_STR);
+  // remove deleted task from any saved localStorage data
+  TASKS = TASKS.filter(t => t.name !== 'Build AM transition plan for CEO');
   if (TASKS.length !== before) saveTasks(TASKS);
 })();;
 
