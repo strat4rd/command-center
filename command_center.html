@@ -790,14 +790,14 @@
     .fit-log-empty { font-size: 12px; color: var(--muted2); font-style: italic; }
 
     /* Weight tracking */
-    .wt-goals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-    .wt-goal-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
-    .wt-goal-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-    .wt-goal-weight { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 2px; }
-    .wt-goal-target { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
-    .wt-bar-wrap { height: 5px; background: rgba(74,144,217,0.15); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+    .wt-goals-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+    .wt-goal-card { border-radius: 12px; padding: 14px 18px; }
+    .wt-goal-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+    .wt-goal-weight { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; line-height: 1; margin-bottom: 1px; }
+    .wt-goal-target { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+    .wt-bar-wrap { height: 4px; border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
     .wt-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
-    .wt-goal-deadline { font-size: 10px; color: var(--muted2); }
+    .wt-goal-deadline { font-size: 10px; color: var(--muted); }
     .wt-log-row { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; }
     .wt-input { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; background: var(--surface2); color: var(--text); outline: none; }
     .wt-input:focus { border-color: var(--accent); }
@@ -1529,6 +1529,9 @@
   <!-- ── FITNESS ───────────────────────────────────────────── -->
   <div class="tab-panel" id="panel-fitness">
 
+    <!-- Weight goal banners -->
+    <div class="wt-goals-grid" id="wt-goals" style="margin-bottom:16px;"></div>
+
     <!-- Streak + this-week schedule -->
     <div class="card" style="margin-bottom:16px;">
       <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;">
@@ -1539,16 +1542,14 @@
     </div>
 
     <!-- 14-day log -->
-    <div class="card">
+    <div class="card" style="margin-bottom:16px;">
       <div class="tracker-label" style="margin-bottom:14px;">Last 14 Days</div>
       <div class="fit-log" id="fit-log"></div>
     </div>
 
-    <!-- Weight tracking -->
-    <div class="card" style="margin-top:16px;">
-      <div class="tracker-label" style="margin-bottom:14px;">Weight Tracking</div>
-
-      <div class="wt-goals-grid" id="wt-goals"></div>
+    <!-- Weight log + chart -->
+    <div class="card">
+      <div class="tracker-label" style="margin-bottom:12px;">Weight Log</div>
 
       <div class="wt-log-row">
         <input type="number" id="wt-input" class="wt-input" placeholder="Today's weight (lbs)" min="50" max="400" step="0.1">
@@ -1556,10 +1557,12 @@
       </div>
 
       <div class="wt-chart-wrap">
-        <div class="wt-chart-title">Progress over time</div>
-        <div class="wt-legend">
-          <div class="wt-legend-item"><div class="wt-legend-dash" style="border-color:#F5A623;"></div> Interim goal Aug 13</div>
-          <div class="wt-legend-item"><div class="wt-legend-dash" style="border-color:#4A90D9;"></div> Goal Nov 1</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="wt-chart-title" style="margin-bottom:0;">Progress over time</div>
+          <div class="wt-legend">
+            <div class="wt-legend-item"><div class="wt-legend-dash" style="border-color:#F5A623;"></div> Aug 13</div>
+            <div class="wt-legend-item"><div class="wt-legend-dash" style="border-color:#4A90D9;"></div> Nov 1</div>
+          </div>
         </div>
         <div id="wt-chart"></div>
       </div>
@@ -2475,8 +2478,8 @@ function wtBarColor(p) {
 }
 
 function wtChartSvg(entries) {
-  const W = 400, H = 200;
-  const L = 38, R = W - 20, T = 14, B = H - 28;
+  const W = 400, H = 140;
+  const L = 34, R = W - 16, T = 10, B = H - 22;
   const chartW = R - L, chartH = B - T;
 
   const allLbs = entries.map(e => e.lbs);
@@ -2538,18 +2541,18 @@ function wtChartSvg(entries) {
     <rect x="${L}" y="${T}" width="${chartW}" height="${chartH}" fill="#F8F9FB" rx="3"/>
     ${yTicks.map(lb => {
       const y = yPos(lb);
-      return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="#E5E7EB" stroke-width="0.5"/>
-              <text x="${(L-4)}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="8.5" fill="#9CA3AF">${lb}</text>`;
+      return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="#EAECF0" stroke-width="0.5"/>
+              <text x="${(L-3)}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="7" fill="#B0B8C4">${lb}</text>`;
     }).join('')}
-    <line x1="${L}" y1="${y152.toFixed(1)}" x2="${R}" y2="${y152.toFixed(1)}" stroke="#F5A623" stroke-width="1.5" stroke-dasharray="5,3"/>
-    <text x="${(R-2)}" y="${(y152-4).toFixed(1)}" text-anchor="end" font-size="8" fill="#F5A623" font-weight="600">152</text>
-    <line x1="${L}" y1="${y145.toFixed(1)}" x2="${R}" y2="${y145.toFixed(1)}" stroke="#4A90D9" stroke-width="1.5" stroke-dasharray="5,3"/>
-    <text x="${(R-2)}" y="${(y145-4).toFixed(1)}" text-anchor="end" font-size="8" fill="#4A90D9" font-weight="600">145</text>
-    ${xTicks.map(t => `<line x1="${t.x.toFixed(1)}" y1="${B}" x2="${t.x.toFixed(1)}" y2="${(B+3)}" stroke="#D1D5DB" stroke-width="0.5"/>
-      <text x="${t.x.toFixed(1)}" y="${(B+12)}" text-anchor="middle" font-size="8.5" fill="#9CA3AF">${t.label}</text>`).join('')}
-    ${linePath ? `<path d="${linePath}" fill="none" stroke="#4CAF85" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
-    ${points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#4CAF85" stroke="white" stroke-width="1.5"/>`).join('')}
-    ${points.length === 0 ? `<text x="${((L+R)/2)}" y="${((T+B)/2+4)}" text-anchor="middle" font-size="11" fill="#9CA3AF" font-style="italic">Log your first weight to see progress</text>` : ''}
+    <line x1="${L}" y1="${y152.toFixed(1)}" x2="${R}" y2="${y152.toFixed(1)}" stroke="#F5A623" stroke-width="1" stroke-dasharray="4,3"/>
+    <text x="${(R-2)}" y="${(y152-3).toFixed(1)}" text-anchor="end" font-size="7" fill="#F5A623" font-weight="600">152</text>
+    <line x1="${L}" y1="${y145.toFixed(1)}" x2="${R}" y2="${y145.toFixed(1)}" stroke="#4A90D9" stroke-width="1" stroke-dasharray="4,3"/>
+    <text x="${(R-2)}" y="${(y145-3).toFixed(1)}" text-anchor="end" font-size="7" fill="#4A90D9" font-weight="600">145</text>
+    ${xTicks.map(t => `<line x1="${t.x.toFixed(1)}" y1="${B}" x2="${t.x.toFixed(1)}" y2="${(B+2)}" stroke="#D1D5DB" stroke-width="0.5"/>
+      <text x="${t.x.toFixed(1)}" y="${(B+10)}" text-anchor="middle" font-size="7" fill="#B0B8C4">${t.label}</text>`).join('')}
+    ${linePath ? `<path d="${linePath}" fill="none" stroke="#4CAF85" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
+    ${points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="#4CAF85" stroke="white" stroke-width="1.2"/>`).join('')}
+    ${points.length === 0 ? `<text x="${((L+R)/2)}" y="${((T+B)/2+4)}" text-anchor="middle" font-size="9.5" fill="#B0B8C4" font-style="italic">Log your first weight to see progress</text>` : ''}
   </svg>`;
 }
 
@@ -2562,18 +2565,18 @@ function renderWeight() {
   const p2 = wtProgressPct(entries, 145);
 
   document.getElementById('wt-goals').innerHTML = `
-    <div class="wt-goal-card">
-      <div class="wt-goal-label">Interim Goal</div>
-      <div class="wt-goal-weight" style="color:${wtBarColor(p1)};">${currentStr}</div>
-      <div class="wt-goal-target">target: 152 lbs</div>
-      <div class="wt-bar-wrap"><div class="wt-bar-fill" style="width:${p1.toFixed(1)}%;background:${wtBarColor(p1)};"></div></div>
+    <div class="wt-goal-card" style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.28);">
+      <div class="wt-goal-label" style="color:#b87d10;">Interim Goal</div>
+      <div class="wt-goal-weight" style="color:#F5A623;">${currentStr}</div>
+      <div class="wt-goal-target">→ 152 lbs · A fit-looking 152</div>
+      <div class="wt-bar-wrap" style="background:rgba(245,166,35,0.18);"><div class="wt-bar-fill" style="width:${p1.toFixed(1)}%;background:#F5A623;"></div></div>
       <div class="wt-goal-deadline">by Aug 13, 2026</div>
     </div>
-    <div class="wt-goal-card">
-      <div class="wt-goal-label">Final Goal</div>
-      <div class="wt-goal-weight" style="color:${wtBarColor(p2)};">${currentStr}</div>
-      <div class="wt-goal-target">target: 145 lbs</div>
-      <div class="wt-bar-wrap"><div class="wt-bar-fill" style="width:${p2.toFixed(1)}%;background:${wtBarColor(p2)};"></div></div>
+    <div class="wt-goal-card" style="background:rgba(74,144,217,0.06);border:1px solid rgba(74,144,217,0.25);">
+      <div class="wt-goal-label" style="color:#3a70ad;">Final Goal</div>
+      <div class="wt-goal-weight" style="color:#4A90D9;">${currentStr}</div>
+      <div class="wt-goal-target">→ 145 lbs</div>
+      <div class="wt-bar-wrap" style="background:rgba(74,144,217,0.18);"><div class="wt-bar-fill" style="width:${p2.toFixed(1)}%;background:#4A90D9;"></div></div>
       <div class="wt-goal-deadline">by Nov 1, 2026</div>
     </div>`;
 
