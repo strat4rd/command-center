@@ -861,13 +861,10 @@
     .fin-current {
       font-size: 22px;
       font-weight: 800;
-      color: #F5A623;
+      color: #4A90D9;
       font-variant-numeric: tabular-nums;
       line-height: 1;
     }
-
-    .fin-current.negative { color: #EF4444; }
-    .fin-current.positive { color: #4CAF85; }
 
     .fin-target {
       font-size: 13px;
@@ -958,7 +955,7 @@
     .fin-sub-item.locked { opacity: 0.5; }
 
     .fin-sub-name { color: var(--text); font-weight: 500; }
-    .fin-sub-amount { font-weight: 700; color: #F5A623; }
+    .fin-sub-amount { font-weight: 700; color: #4A90D9; }
     .fin-sub-lock { font-size: 11px; color: var(--muted2); margin-top: 2px; }
 
     .fin-edit-row {
@@ -2431,7 +2428,7 @@ function renderFinances(editing) {
     return `<button class="fin-edit-btn" onclick="openFinEdit('${key}')">Edit</button>`;
   }
 
-  // Blue = no progress (0%), Gold = in progress (>0% <100%), Green = complete (100%)
+  // pct=0 → blue (no progress), pct 1–99 → gold (in progress), pct≥100 → green (complete)
   function barColor(fillPct) {
     if (fillPct >= 100) return '#4CAF85';
     if (fillPct > 0)    return '#F5A623';
@@ -2473,7 +2470,7 @@ function renderFinances(editing) {
   const sPct     = pct(f.emergencyS.current, 0, 1000);
   const techPct  = pct(f.tech.current,     0, 1500);
 
-  // Amount text uses the same color rule as the bar (blue/gold/green)
+  // Inline color for amount text — mirrors barColor so text and bar always match
   function ac(fillPct) { return `color:${barColor(fillPct)};`; }
 
   const cards = [
