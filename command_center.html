@@ -789,6 +789,26 @@
 
     .fit-log-empty { font-size: 12px; color: var(--muted2); font-style: italic; }
 
+    /* Weight tracking */
+    .wt-goals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .wt-goal-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+    .wt-goal-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .wt-goal-weight { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 2px; }
+    .wt-goal-target { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+    .wt-bar-wrap { height: 5px; background: rgba(74,144,217,0.15); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+    .wt-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+    .wt-goal-deadline { font-size: 10px; color: var(--muted2); }
+    .wt-log-row { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; }
+    .wt-input { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; background: var(--surface2); color: var(--text); outline: none; }
+    .wt-input:focus { border-color: var(--accent); }
+    .wt-log-btn { padding: 8px 16px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .wt-log-btn:hover { opacity: 0.88; }
+    .wt-chart-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+    .wt-chart-title { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    .wt-legend { display: flex; gap: 16px; margin-bottom: 10px; }
+    .wt-legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); }
+    .wt-legend-dash { width: 18px; height: 2px; border-bottom: 2px dashed; }
+
     .fit-day.optional { opacity: 0.65; }
     .fit-day.optional .fit-day-name { color: var(--muted2); }
 
@@ -1520,6 +1540,27 @@
     <div class="card">
       <div class="tracker-label" style="margin-bottom:14px;">Last 14 Days</div>
       <div class="fit-log" id="fit-log"></div>
+    </div>
+
+    <!-- Weight tracking -->
+    <div class="card" style="margin-top:16px;">
+      <div class="tracker-label" style="margin-bottom:14px;">Weight Tracking</div>
+
+      <div class="wt-goals-grid" id="wt-goals"></div>
+
+      <div class="wt-log-row">
+        <input type="number" id="wt-input" class="wt-input" placeholder="Today's weight (lbs)" min="50" max="400" step="0.1">
+        <button class="wt-log-btn" onclick="logWeight()">Log weight</button>
+      </div>
+
+      <div class="wt-chart-wrap">
+        <div class="wt-chart-title">Progress over time</div>
+        <div class="wt-legend">
+          <div class="wt-legend-item"><div class="wt-legend-dash" style="border-color:#F5A623;"></div> Interim goal Aug 13</div>
+          <div class="wt-legend-item"><div class="wt-legend-dash" style="border-color:#4A90D9;"></div> Goal Nov 1</div>
+        </div>
+        <div id="wt-chart"></div>
+      </div>
     </div>
 
   </div>
@@ -2389,6 +2430,157 @@ function renderFitness() {
 renderFitness();
 
 // ─────────────────────────────────────────────────────────
+// WEIGHT TRACKING
+// ─────────────────────────────────────────────────────────
+
+function loadWeight() {
+  try { return JSON.parse(localStorage.getItem('cc_weight') || '[]'); } catch { return []; }
+}
+function saveWeight(arr) {
+  localStorage.setItem('cc_weight', JSON.stringify(arr));
+}
+
+function logWeight() {
+  const inp = document.getElementById('wt-input');
+  const val = parseFloat(inp.value);
+  if (!val || val < 50 || val > 400) return;
+  const entries = loadWeight();
+  const today = TODAY_STR;
+  const idx = entries.findIndex(e => e.date === today);
+  if (idx >= 0) entries[idx].lbs = val;
+  else entries.push({ date: today, lbs: val });
+  entries.sort((a,b) => a.date.localeCompare(b.date));
+  saveWeight(entries);
+  inp.value = '';
+  renderWeight();
+  renderRocks();
+}
+
+function wtProgressPct(entries, target) {
+  if (!entries.length) return 0;
+  const start   = entries[0].lbs;
+  const current = entries[entries.length - 1].lbs;
+  if (start <= target) return 100;
+  if (current <= target) return 100;
+  if (current >= start) return 0;
+  return Math.min(100, Math.max(0, ((start - current) / (start - target)) * 100));
+}
+
+function wtBarColor(p) {
+  if (p >= 100) return '#4CAF85';
+  if (p > 0)    return '#F5A623';
+  return '#4A90D9';
+}
+
+function wtChartSvg(entries) {
+  const W = 400, H = 200;
+  const L = 38, R = W - 20, T = 14, B = H - 28;
+  const chartW = R - L, chartH = B - T;
+
+  const allLbs = entries.map(e => e.lbs);
+  const rawMin = allLbs.length ? Math.min(...allLbs, 145) : 145;
+  const rawMax = allLbs.length ? Math.max(...allLbs, 155) : 160;
+  const yMin = Math.floor(rawMin - 3);
+  const yMax = Math.ceil(rawMax + 3);
+
+  const xEndDate   = new Date('2026-11-01T12:00:00');
+  const xStartDate = entries.length ? new Date(entries[0].date + 'T12:00:00') : new Date();
+  // Ensure start is at least 2 weeks before end for legibility
+  const xSpan = Math.max(xEndDate - xStartDate, 14 * 86400000);
+
+  function xPos(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    return L + Math.max(0, Math.min(1, (d - xStartDate) / xSpan)) * chartW;
+  }
+  function yPos(lbs) {
+    return T + ((yMax - lbs) / (yMax - yMin)) * chartH;
+  }
+
+  // Group by Sunday-keyed week, average lbs, use midweek date for x
+  const weekMap = {};
+  entries.forEach(e => {
+    const d = new Date(e.date + 'T12:00:00');
+    const sun = new Date(d); sun.setDate(d.getDate() - d.getDay());
+    const wk = sun.toISOString().slice(0,10);
+    if (!weekMap[wk]) weekMap[wk] = { sum: 0, n: 0 };
+    weekMap[wk].sum += e.lbs;
+    weekMap[wk].n++;
+  });
+  const points = Object.entries(weekMap).sort((a,b) => a[0].localeCompare(b[0])).map(([wk, v]) => {
+    const wed = new Date(wk + 'T12:00:00'); wed.setDate(wed.getDate() + 3);
+    const avg = v.sum / v.n;
+    return { x: xPos(wed.toISOString().slice(0,10)), y: yPos(avg), avg };
+  });
+
+  // Y-axis gridlines every 5 lbs
+  const yTicks = [];
+  for (let lb = Math.ceil(yMin / 5) * 5; lb <= yMax; lb += 5) yTicks.push(lb);
+
+  // X-axis monthly ticks
+  const xTicks = [];
+  const cur = new Date(xStartDate); cur.setDate(1);
+  if (cur < xStartDate) cur.setMonth(cur.getMonth() + 1);
+  while (cur <= xEndDate) {
+    const x = xPos(cur.toISOString().slice(0,10));
+    if (x >= L && x <= R) xTicks.push({ x, label: cur.toLocaleDateString('en-US', { month:'short' }) });
+    cur.setMonth(cur.getMonth() + 1);
+  }
+
+  const y152 = yPos(152);
+  const y145 = yPos(145);
+  const linePath = points.length > 1
+    ? 'M ' + points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')
+    : '';
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;" xmlns="http://www.w3.org/2000/svg">
+    <rect x="${L}" y="${T}" width="${chartW}" height="${chartH}" fill="#F8F9FB" rx="3"/>
+    ${yTicks.map(lb => {
+      const y = yPos(lb);
+      return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="#E5E7EB" stroke-width="0.5"/>
+              <text x="${(L-4)}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="8.5" fill="#9CA3AF">${lb}</text>`;
+    }).join('')}
+    <line x1="${L}" y1="${y152.toFixed(1)}" x2="${R}" y2="${y152.toFixed(1)}" stroke="#F5A623" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <text x="${(R-2)}" y="${(y152-4).toFixed(1)}" text-anchor="end" font-size="8" fill="#F5A623" font-weight="600">152</text>
+    <line x1="${L}" y1="${y145.toFixed(1)}" x2="${R}" y2="${y145.toFixed(1)}" stroke="#4A90D9" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <text x="${(R-2)}" y="${(y145-4).toFixed(1)}" text-anchor="end" font-size="8" fill="#4A90D9" font-weight="600">145</text>
+    ${xTicks.map(t => `<line x1="${t.x.toFixed(1)}" y1="${B}" x2="${t.x.toFixed(1)}" y2="${(B+3)}" stroke="#D1D5DB" stroke-width="0.5"/>
+      <text x="${t.x.toFixed(1)}" y="${(B+12)}" text-anchor="middle" font-size="8.5" fill="#9CA3AF">${t.label}</text>`).join('')}
+    ${linePath ? `<path d="${linePath}" fill="none" stroke="#4CAF85" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
+    ${points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="#4CAF85" stroke="white" stroke-width="1.5"/>`).join('')}
+    ${points.length === 0 ? `<text x="${((L+R)/2)}" y="${((T+B)/2+4)}" text-anchor="middle" font-size="11" fill="#9CA3AF" font-style="italic">Log your first weight to see progress</text>` : ''}
+  </svg>`;
+}
+
+function renderWeight() {
+  const entries = loadWeight();
+  const current = entries.length ? entries[entries.length - 1].lbs : null;
+  const currentStr = current != null ? `${current} lbs` : '—';
+
+  const p1 = wtProgressPct(entries, 152);
+  const p2 = wtProgressPct(entries, 145);
+
+  document.getElementById('wt-goals').innerHTML = `
+    <div class="wt-goal-card">
+      <div class="wt-goal-label">Interim Goal</div>
+      <div class="wt-goal-weight" style="color:${wtBarColor(p1)};">${currentStr}</div>
+      <div class="wt-goal-target">target: 152 lbs</div>
+      <div class="wt-bar-wrap"><div class="wt-bar-fill" style="width:${p1.toFixed(1)}%;background:${wtBarColor(p1)};"></div></div>
+      <div class="wt-goal-deadline">by Aug 13, 2026</div>
+    </div>
+    <div class="wt-goal-card">
+      <div class="wt-goal-label">Final Goal</div>
+      <div class="wt-goal-weight" style="color:${wtBarColor(p2)};">${currentStr}</div>
+      <div class="wt-goal-target">target: 145 lbs</div>
+      <div class="wt-bar-wrap"><div class="wt-bar-fill" style="width:${p2.toFixed(1)}%;background:${wtBarColor(p2)};"></div></div>
+      <div class="wt-goal-deadline">by Nov 1, 2026</div>
+    </div>`;
+
+  document.getElementById('wt-chart').innerHTML = wtChartSvg(entries);
+}
+
+renderWeight();
+
+// ─────────────────────────────────────────────────────────
 // FINANCES
 // ─────────────────────────────────────────────────────────
 
@@ -2871,6 +3063,18 @@ function renderRocks() {
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div class="rock-label">Fitness</div>
         <div class="rock-script" style="font-size:20px;font-weight:800;color:#4A90D9;">${fitDone} / ${nonRest.length} done this week</div>
+        ${(() => {
+          const wEntries = loadWeight();
+          if (!wEntries.length) return '';
+          const curW = wEntries[wEntries.length - 1].lbs;
+          const wP2  = wtProgressPct(wEntries, 145);
+          const wClr = wtBarColor(wP2);
+          return `<div style="display:flex;align-items:center;gap:6px;margin:-2px 0 2px;">
+            <span style="font-size:11px;font-weight:600;color:${wClr};">${curW} lbs</span>
+            <span style="font-size:11px;color:var(--muted);">→ 145 lbs goal</span>
+          </div>
+          <div class="rock-bar" style="margin-bottom:2px;"><div class="rock-fill" style="width:${wP2.toFixed(1)}%;background:${wClr};"></div></div>`;
+        })()}
         <div class="rock-fit-list">
           ${SCHEDULE.map((s,i) => {
             const done  = !!wkFit[i];
