@@ -1895,7 +1895,7 @@ function renderBlocks() {
   }
 
   // For weekend blocks, replace time with positional label per day
-  const WEEKEND_LABELS = ['Morning block', 'Mid-day block', 'Afternoon block', 'Evening block'];
+  const WEEKEND_LABELS = ['Morning block', 'Mid-day / evening block'];
   const weekendDayOrder = {};
   blocks.forEach(b => {
     if (b.day === 'Saturday' || b.day === 'Sunday') {
@@ -1910,7 +1910,7 @@ function renderBlocks() {
     const dur = b.duration === 1 ? '1 hr'
       : `${b.duration % 1 ? b.duration.toFixed(1) : b.duration} hrs`;
     const timeLabel = isWeekend
-      ? (WEEKEND_LABELS[(weekendDayOrder[b.date] || []).indexOf(b.id)] || 'Evening block')
+      ? ((weekendDayOrder[b.date] || []).indexOf(b.id) === 0 ? 'Morning block' : 'Mid-day / evening block')
       : b.time;
     return `
     <div class="block ${b.done ? 'done' : ''} ${isToday ? 'today-block' : ''}"
