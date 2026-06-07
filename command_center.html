@@ -615,6 +615,8 @@
     .t-item.done .t-name { text-decoration: line-through; color: var(--muted2); }
 
     .t-mins { font-size: 12px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .t-mins.editable { cursor: pointer; }
+    .t-mins.editable:hover { color: var(--accent); text-decoration: underline dotted; }
 
     .t-cat-pill {
       font-size: 10px;
@@ -2174,10 +2176,13 @@ function renderTasks() {
   function taskRow(t, opts = {}) {
     const isQueued = opts.queued;
     const isDone   = t.done;
+    const minsSpan = isDone
+      ? `<span class="t-mins">${t.mins}m</span>`
+      : `<span class="t-mins editable" title="Click to edit time" onclick="event.stopPropagation();editTaskMins(event,'${t.id}')">${t.mins}m</span>`;
     return `<div class="t-item ${isDone ? 'done' : ''} ${isQueued ? 't-queued' : ''}" onclick="toggleTask('${t.id}')">
       <div class="t-cb">${isDone ? check : ''}</div>
       <span class="t-name">${t.name}</span>
-      <span class="t-mins">${t.mins}m</span>
+      ${minsSpan}
       <span class="t-cat-pill t-cat-${t.cat}">${t.cat}</span>
       ${!isDone ? `<button class="t-queue-btn" onclick="event.stopPropagation();queueTask('${t.id}')">${isQueued ? 'Unqueue' : 'Queue for later'}</button>` : ''}
     </div>`;
@@ -2221,6 +2226,39 @@ function queueTask(id) {
   t.queued = !t.queued;
   saveTasks(TASKS);
   renderTasks();
+}
+
+function editTaskMins(e, id) {
+  const span = e.currentTarget;
+  const t = TASKS.find(t => t.id === id);
+  if (!t) return;
+
+  const inp = document.createElement('input');
+  inp.type = 'number';
+  inp.min  = 1;
+  inp.value = t.mins;
+  inp.style.cssText = 'width:52px;font-size:12px;font-family:inherit;font-weight:600;' +
+    'color:var(--accent);border:1px solid var(--accent-rim);border-radius:4px;' +
+    'padding:1px 4px;background:var(--surface);text-align:center;';
+
+  span.replaceWith(inp);
+  inp.focus();
+  inp.select();
+
+  let committed = false;
+  function commit() {
+    if (committed) return;
+    committed = true;
+    const val = parseInt(inp.value, 10);
+    if (val > 0) { t.mins = val; saveTasks(TASKS); }
+    renderTasks();
+  }
+
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter')  { inp.blur(); }
+    if (ev.key === 'Escape') { committed = true; renderTasks(); }
+  });
 }
 
 function addTask() {
