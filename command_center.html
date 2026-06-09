@@ -2136,7 +2136,7 @@ TASKS.forEach(t => { if (t.queued === undefined) t.queued = false; });
 // purge completed tasks from previous days
 (function() {
   const before = TASKS.length;
-  TASKS = TASKS.filter(t => !t.done || t.doneDate === TODAY_STR);
+  TASKS = TASKS.filter(t => t.queued || !t.done || t.doneDate === TODAY_STR);
   // remove deleted task from any saved localStorage data
   TASKS = TASKS.filter(t => t.name !== 'Build AM transition plan for CEO');
   if (TASKS.length !== before) saveTasks(TASKS);
