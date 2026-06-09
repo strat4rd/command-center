@@ -2437,14 +2437,50 @@ function logWeight() {
   renderRocks();
 }
 
-function wtProgressPct(entries, target) {
+function wtMondayOf(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const daysFromMon = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - daysFromMon);
+  return d.toISOString().slice(0, 10);
+}
+
+function wtWeeklyAverages(entries) {
+  const weekMap = {};
+  entries.forEach(e => {
+    const wk = wtMondayOf(e.date);
+    if (!weekMap[wk]) weekMap[wk] = { sum: 0, n: 0 };
+    weekMap[wk].sum += e.lbs;
+    weekMap[wk].n++;
+  });
+  return Object.entries(weekMap)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([wk, v]) => {
+      const avg = Math.round((v.sum / v.n) * 10) / 10;
+      const monDate = new Date(wk + 'T12:00:00');
+      const label = monDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' wk';
+      return { weekStart: wk, avg, n: v.n, label };
+    });
+}
+
+function wtCurrentWeekAvg(entries) {
+  if (!entries.length) return null;
+  const thisWeek = wtMondayOf(TODAY_STR);
+  const thisWeekEntries = entries.filter(e => wtMondayOf(e.date) === thisWeek);
+  if (thisWeekEntries.length) {
+    const avg = thisWeekEntries.reduce((s, e) => s + e.lbs, 0) / thisWeekEntries.length;
+    return Math.round(avg * 10) / 10;
+  }
+  return entries[entries.length - 1].lbs;
+}
+
+function wtProgressPct(entries, target, currentLbs) {
   if (!entries.length) return 0;
-  const start   = entries[0].lbs;
-  const current = entries[entries.length - 1].lbs;
+  const cur   = currentLbs != null ? currentLbs : entries[entries.length - 1].lbs;
+  const start = entries[0].lbs;
   if (start <= target) return 100;
-  if (current <= target) return 100;
-  if (current >= start) return 0;
-  return Math.min(100, Math.max(0, ((start - current) / (start - target)) * 100));
+  if (cur <= target)   return 100;
+  if (cur >= start)    return 0;
+  return Math.min(100, Math.max(0, ((start - cur) / (start - target)) * 100));
 }
 
 function wtBarColor(p) {
@@ -2458,14 +2494,15 @@ function wtChartSvg(entries) {
   const L = 28, R = W - 10, T = 8, B = H - 18;
   const chartW = R - L, chartH = B - T;
 
-  const allLbs = entries.map(e => e.lbs);
+  const weeklyAvgs = wtWeeklyAverages(entries);
+  const allLbs = weeklyAvgs.map(w => w.avg);
   const rawMin = allLbs.length ? Math.min(...allLbs, 145) : 145;
   const rawMax = allLbs.length ? Math.max(...allLbs, 155) : 160;
   const yMin = Math.floor(rawMin - 3);
   const yMax = Math.ceil(rawMax + 3);
 
   const xEndDate   = new Date('2026-11-01T12:00:00');
-  const xStartDate = entries.length ? new Date(entries[0].date + 'T12:00:00') : new Date();
+  const xStartDate = weeklyAvgs.length ? new Date(weeklyAvgs[0].weekStart + 'T12:00:00') : new Date();
   const xSpan = Math.max(xEndDate - xStartDate, 14 * 86400000);
 
   function xPos(dateStr) {
@@ -2475,18 +2512,13 @@ function wtChartSvg(entries) {
   function yPos(lbs) {
     return T + ((yMax - lbs) / (yMax - yMin)) * chartH;
   }
-  function fmtDate(dateStr) {
-    const d = new Date(dateStr + 'T12:00:00');
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
 
-  // Plot each individual entry as its own point
-  const points = entries.map(e => ({
-    x: xPos(e.date),
-    y: yPos(e.lbs),
-    lbs: e.lbs,
-    date: e.date
-  }));
+  // One dot per week, plotted at Wednesday midpoint
+  const points = weeklyAvgs.map(w => {
+    const wed = new Date(w.weekStart + 'T12:00:00');
+    wed.setDate(wed.getDate() + 3);
+    return { x: xPos(wed.toISOString().slice(0, 10)), y: yPos(w.avg), avg: w.avg, label: w.label, n: w.n };
+  });
 
   // Y-axis gridlines every 5 lbs
   const yTicks = [];
@@ -2497,8 +2529,8 @@ function wtChartSvg(entries) {
   const cur = new Date(xStartDate); cur.setDate(1);
   if (cur < xStartDate) cur.setMonth(cur.getMonth() + 1);
   while (cur <= xEndDate) {
-    const x = xPos(cur.toISOString().slice(0,10));
-    if (x >= L && x <= R) xTicks.push({ x, label: cur.toLocaleDateString('en-US', { month:'short' }) });
+    const x = xPos(cur.toISOString().slice(0, 10));
+    if (x >= L && x <= R) xTicks.push({ x, label: cur.toLocaleDateString('en-US', { month: 'short' }) });
     cur.setMonth(cur.getMonth() + 1);
   }
 
@@ -2521,18 +2553,18 @@ function wtChartSvg(entries) {
     <text x="${(R-1)}" y="${(y145-3).toFixed(1)}" text-anchor="end" font-size="9" fill="#4A90D9" font-weight="600">145</text>
     ${xTicks.map(t => `<text x="${t.x.toFixed(1)}" y="${(B+11)}" text-anchor="middle" font-size="10" fill="#C0C8D4">${t.label}</text>`).join('')}
     ${linePath ? `<path d="${linePath}" fill="none" stroke="#4CAF85" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
-    ${points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#4CAF85" stroke="white" stroke-width="1.2"><title>${fmtDate(p.date)}: ${p.lbs} lbs</title></circle>`).join('')}
+    ${points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#4CAF85" stroke="white" stroke-width="1.2"><title>${p.label}: ${p.avg} lbs (${p.n} day${p.n !== 1 ? 's' : ''})</title></circle>`).join('')}
     ${points.length === 0 ? `<text x="${((L+R)/2)}" y="${((T+B)/2+4)}" text-anchor="middle" font-size="10" fill="#C0C8D4" font-style="italic">Log weight to see progress</text>` : ''}
   </svg>`;
 }
 
 function renderWeight() {
-  const entries = loadWeight();
-  const current = entries.length ? entries[entries.length - 1].lbs : null;
-  const currentStr = current != null ? `Current: ${current} lbs` : 'No weight logged';
+  const entries  = loadWeight();
+  const weekAvg  = wtCurrentWeekAvg(entries);
+  const currentStr = weekAvg != null ? `This week avg: ${weekAvg} lbs` : 'No weight logged';
 
-  const p1 = wtProgressPct(entries, 152);
-  const p2 = wtProgressPct(entries, 145);
+  const p1 = wtProgressPct(entries, 152, weekAvg);
+  const p2 = wtProgressPct(entries, 145, weekAvg);
 
   document.getElementById('wt-top').innerHTML = `
     <div class="wt-top-grid">
@@ -2557,6 +2589,7 @@ function renderWeight() {
           <input type="number" id="wt-input" class="wt-input" placeholder="Today's weight (lbs)" min="50" max="400" step="0.1">
           <button class="wt-log-btn" onclick="logWeight()">Log</button>
         </div>
+        <p style="font-size:11px;color:var(--muted);margin:2px 0 4px;font-style:italic;">Log your weight daily — weekly averages are calculated automatically and plotted on the chart.</p>
         <div class="wt-chart-wrap">${wtChartSvg(entries)}</div>
       </div>
     </div>`;
@@ -3103,8 +3136,8 @@ function renderRocks() {
         ${(() => {
           const wEntries = loadWeight();
           if (!wEntries.length) return '';
-          const curW = wEntries[wEntries.length - 1].lbs;
-          const wP2  = wtProgressPct(wEntries, 145);
+          const curW = wtCurrentWeekAvg(wEntries);
+          const wP2  = wtProgressPct(wEntries, 145, curW);
           const wClr = wtBarColor(wP2);
           return `<div style="display:flex;align-items:center;gap:6px;margin:-2px 0 2px;">
             <span style="font-size:11px;font-weight:600;color:${wClr};">${curW} lbs</span>
