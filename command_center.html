@@ -2466,7 +2466,6 @@ function wtChartSvg(entries) {
 
   const xEndDate   = new Date('2026-11-01T12:00:00');
   const xStartDate = entries.length ? new Date(entries[0].date + 'T12:00:00') : new Date();
-  // Ensure start is at least 2 weeks before end for legibility
   const xSpan = Math.max(xEndDate - xStartDate, 14 * 86400000);
 
   function xPos(dateStr) {
@@ -2476,22 +2475,18 @@ function wtChartSvg(entries) {
   function yPos(lbs) {
     return T + ((yMax - lbs) / (yMax - yMin)) * chartH;
   }
+  function fmtDate(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
 
-  // Group by Sunday-keyed week, average lbs, use midweek date for x
-  const weekMap = {};
-  entries.forEach(e => {
-    const d = new Date(e.date + 'T12:00:00');
-    const sun = new Date(d); sun.setDate(d.getDate() - d.getDay());
-    const wk = sun.toISOString().slice(0,10);
-    if (!weekMap[wk]) weekMap[wk] = { sum: 0, n: 0 };
-    weekMap[wk].sum += e.lbs;
-    weekMap[wk].n++;
-  });
-  const points = Object.entries(weekMap).sort((a,b) => a[0].localeCompare(b[0])).map(([wk, v]) => {
-    const wed = new Date(wk + 'T12:00:00'); wed.setDate(wed.getDate() + 3);
-    const avg = v.sum / v.n;
-    return { x: xPos(wed.toISOString().slice(0,10)), y: yPos(avg), avg };
-  });
+  // Plot each individual entry as its own point
+  const points = entries.map(e => ({
+    x: xPos(e.date),
+    y: yPos(e.lbs),
+    lbs: e.lbs,
+    date: e.date
+  }));
 
   // Y-axis gridlines every 5 lbs
   const yTicks = [];
@@ -2526,7 +2521,7 @@ function wtChartSvg(entries) {
     <text x="${(R-1)}" y="${(y145-3).toFixed(1)}" text-anchor="end" font-size="9" fill="#4A90D9" font-weight="600">145</text>
     ${xTicks.map(t => `<text x="${t.x.toFixed(1)}" y="${(B+11)}" text-anchor="middle" font-size="10" fill="#C0C8D4">${t.label}</text>`).join('')}
     ${linePath ? `<path d="${linePath}" fill="none" stroke="#4CAF85" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
-    ${points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="#4CAF85" stroke="white" stroke-width="1.2"/>`).join('')}
+    ${points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#4CAF85" stroke="white" stroke-width="1.2"><title>${fmtDate(p.date)}: ${p.lbs} lbs</title></circle>`).join('')}
     ${points.length === 0 ? `<text x="${((L+R)/2)}" y="${((T+B)/2+4)}" text-anchor="middle" font-size="10" fill="#C0C8D4" font-style="italic">Log weight to see progress</text>` : ''}
   </svg>`;
 }
