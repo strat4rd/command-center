@@ -2406,6 +2406,26 @@ function renderFitness() {
     </div>`).join('');
 }
 
+// ─────────────────────────────────────────────────────────
+// STARTUP: PURGE PAST FITNESS + WEIGHT DATA
+// ─────────────────────────────────────────────────────────
+
+(function purgePastFitnessAndWeight() {
+  // Remove cc_fitness weeks older than the current Sun–Sat week
+  const currentFitWk = fitWeekKey();
+  const fitness = loadFitness();
+  let fitDirty = false;
+  Object.keys(fitness).forEach(wk => {
+    if (wk < currentFitWk) { delete fitness[wk]; fitDirty = true; }
+  });
+  if (fitDirty) saveFitness(fitness);
+
+  // Remove cc_weight entries recorded before today
+  const weight = loadWeight();
+  const trimmed = weight.filter(e => e.date >= TODAY_STR);
+  if (trimmed.length !== weight.length) saveWeight(trimmed);
+})();
+
 renderFitness();
 
 // ─────────────────────────────────────────────────────────
