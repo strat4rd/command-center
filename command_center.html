@@ -2867,10 +2867,19 @@ function wtChartSvg(entries) {
   </svg>`;
 }
 
+function loadWeightStart()  { try { const v = localStorage.getItem('cc_weight_start'); return v !== null ? parseFloat(v) : null; } catch { return null; } }
+function saveWeightStart(n) { localStorage.setItem('cc_weight_start', String(n)); }
+
+(function initWeightStart() {
+  if (loadWeightStart() === null) saveWeightStart(161.0);
+})();
+
 function renderWeight() {
-  const entries  = loadWeight();
-  const weekAvg  = wtCurrentWeekAvg(entries);
+  const entries    = loadWeight();
+  const weekAvg    = wtCurrentWeekAvg(entries);
+  const startLbs   = loadWeightStart();
   const currentStr = weekAvg != null ? `This week avg: ${weekAvg} lbs` : 'No weight logged';
+  const startedStr = startLbs !== null ? `Started: ${startLbs.toFixed(1)} lbs` : '';
 
   const p1 = wtProgressPct(entries, 152, weekAvg);
   const p2 = wtProgressPct(entries, 145, weekAvg);
@@ -2882,6 +2891,7 @@ function renderWeight() {
           <div class="wt-goal-label" style="color:#b87d10;">Interim Goal</div>
           <div class="wt-goal-weight" style="color:#F5A623;">152 lbs</div>
           <div class="wt-goal-target">${currentStr}</div>
+          ${startedStr ? `<div class="wt-goal-target" style="color:var(--muted);">${startedStr}</div>` : ''}
           <div class="wt-goal-deadline" style="color:#F5A623;background:#FFF8E7;border-color:#F5A623;">by Aug 13, 2026</div>
           <div class="wt-bar-wrap" style="background:rgba(245,166,35,0.18);"><div class="wt-bar-fill" style="width:${p1.toFixed(1)}%;background:#F5A623;"></div></div>
         </div>
@@ -2889,6 +2899,7 @@ function renderWeight() {
           <div class="wt-goal-label" style="color:#3a70ad;">Final Goal</div>
           <div class="wt-goal-weight" style="color:#4A90D9;">145 lbs</div>
           <div class="wt-goal-target">${currentStr}</div>
+          ${startedStr ? `<div class="wt-goal-target" style="color:var(--muted);">${startedStr}</div>` : ''}
           <div class="wt-goal-deadline" style="color:#4A90D9;background:#EFF6FF;border-color:#4A90D9;">by Nov 1, 2026</div>
           <div class="wt-bar-wrap" style="background:rgba(74,144,217,0.18);"><div class="wt-bar-fill" style="width:${p2.toFixed(1)}%;background:#4A90D9;"></div></div>
         </div>
