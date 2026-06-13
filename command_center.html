@@ -2337,8 +2337,10 @@ function renderFitness() {
   const thisWk  = data[wk] || {};
   const todayDI = new Date().getDay();
 
-  // Schedule
-  document.getElementById('fit-schedule').innerHTML = SCHEDULE.map((s, i) => {
+  // Schedule — display Sat first, then Sun–Fri
+  const SAT_FIRST = [6, 0, 1, 2, 3, 4, 5];
+  document.getElementById('fit-schedule').innerHTML = SAT_FIRST.map(i => {
+    const s       = SCHEDULE[i];
     const done    = !!thisWk[i];
     const isToday = i === todayDI;
     const cls     = ['fit-day', done ? 'done' : '', isToday && !done ? 'today' : '', s.optional ? 'optional' : ''].join(' ').trim();
