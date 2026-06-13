@@ -2475,6 +2475,9 @@ function saveFitness(data) {
   localStorage.setItem('cc_fitness', JSON.stringify(data));
 }
 
+function loadFitOverrides()  { try { return JSON.parse(localStorage.getItem('cc_fit_overrides') || '{}'); } catch { return {}; } }
+function saveFitOverrides(d) { localStorage.setItem('cc_fit_overrides', JSON.stringify(d)); }
+
 let fitCurrentWeek = fitWeekKey();
 const FIT_THISWK   = fitWeekKey();
 let fitEditingId   = null;
@@ -2572,8 +2575,25 @@ function renderFitness() {
     <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6"
           stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
+  const fitOverrides = loadFitOverrides();
+  // Returns the ISO date string for a given dayIndex within the displayed week
+  function dateForDayI(wkKey, dayI) {
+    const off = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 };
+    const d = new Date(wkKey + 'T12:00:00');
+    d.setDate(d.getDate() + off[dayI]);
+    return d.toISOString().slice(0, 10);
+  }
+
   const blocks = ordered.map(workout => {
-    const { id, day, name, detail, time, duration, rest, optional } = workout;
+    const dateKey = dateForDayI(wk, workout.dayIndex);
+    const ov      = fitOverrides[dateKey];
+    const { id, day } = workout;
+    const name     = ov ? ov.name     : workout.name;
+    const rest     = ov ? ov.rest     : workout.rest;
+    const detail   = ov ? ov.detail   : workout.detail;
+    const time     = ov ? ov.time     : workout.time;
+    const duration = ov ? ov.duration : workout.duration;
+    const optional = ov ? ov.optional : workout.optional;
     const done    = !!thisWk[id];
     const isToday = isCurWk && workout.dayIndex === todayDI;
 
@@ -2686,6 +2706,15 @@ document.getElementById('fit-next').addEventListener('click', () => {
   const weight = loadWeight();
   const trimmed = weight.filter(e => e.date >= TODAY_STR);
   if (trimmed.length !== weight.length) saveWeight(trimmed);
+})();
+
+// One-time date overrides for fitness (keyed by YYYY-MM-DD)
+(function initFitDateOverrides() {
+  const ov = loadFitOverrides();
+  if (!ov['2026-06-13']) {
+    ov['2026-06-13'] = { name: 'Rest day', rest: true, detail: '', time: '', duration: '', optional: false };
+    saveFitOverrides(ov);
+  }
 })();
 
 renderFitness();
