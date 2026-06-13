@@ -2301,10 +2301,10 @@ renderTasks();
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 function fitWeekKey() {
-  // Use Sun–Sat week keyed by Sunday date
+  // Sat–Fri week keyed by Saturday date (matches writing view)
   const d = new Date();
   d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - d.getDay());
+  d.setDate(d.getDate() - (d.getDay() + 1) % 7);
   return d.toISOString().slice(0,10);
 }
 
@@ -2382,9 +2382,9 @@ function renderFitness() {
   for (let i = 13; i >= 0; i--) {
     const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() - i);
     const dayI  = d.getDay();
-    // Find the week key for this date
-    const sun   = new Date(d); sun.setDate(d.getDate() - dayI);
-    const wkKey = sun.toISOString().slice(0,10);
+    // Find the Sat–Fri week key for this date
+    const sat   = new Date(d); sat.setDate(d.getDate() - (dayI + 1) % 7);
+    const wkKey = sat.toISOString().slice(0,10);
     const wkD   = data[wkKey] || {};
     const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     const sched = SCHEDULE[dayI];
@@ -2411,7 +2411,7 @@ function renderFitness() {
 // ─────────────────────────────────────────────────────────
 
 (function purgePastFitnessAndWeight() {
-  // Remove cc_fitness weeks older than the current Sun–Sat week
+  // Remove cc_fitness weeks older than the current Sat–Fri week
   const currentFitWk = fitWeekKey();
   const fitness = loadFitness();
   let fitDirty = false;
