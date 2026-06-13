@@ -1196,6 +1196,50 @@
     .fin-pill-prog { background: #FFFBEB;               color: #F5A623; }
     .fin-pill-none { background: rgba(74,144,217,0.10); color: #4A90D9; }
 
+    /* Week boxes */
+    .wk-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 28px);
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .wk-box {
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
+      border: 1.5px solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: white;
+    }
+
+    .wk-legend {
+      display: flex;
+      gap: 12px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .wk-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .wk-legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      border: 1.5px solid;
+      flex-shrink: 0;
+    }
+
     .dream-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
 
     .dream-item {
@@ -3318,7 +3362,49 @@ function parseFitMins(str) {
 }
 
 function renderRocks() {
+  // ── Helpers ──
+  const DEADLINE_WK = satWeekKey(new Date('2026-06-29T12:00:00'));
+
+  function satWeeksBetween(startKey, endKey) {
+    const weeks = [];
+    const cur = new Date(startKey + 'T12:00:00');
+    const end = new Date(endKey   + 'T12:00:00');
+    while (cur <= end) {
+      weeks.push(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 7);
+    }
+    return weeks;
+  }
+
+  function wkBox(wk, donePct, curKey, hasData) {
+    const isFut = wk > curKey;
+    const isCur = wk === curKey;
+    let bg, border, inner = '';
+    if (!hasData || isFut) {
+      bg = '#EFEFEF'; border = '#D0D0D0';
+    } else if (donePct >= 100) {
+      bg = '#4CAF85'; border = '#3D9E76'; inner = '✓';
+    } else if (donePct >= 75) {
+      bg = '#FFF8E7'; border = '#F5A623';
+    } else {
+      bg = '#EFF6FF'; border = '#4A90D9';
+    }
+    const curRing = isCur ? 'outline:2px solid #333;outline-offset:2px;' : '';
+    return `<div class="wk-box" style="background:${bg};border-color:${border};${curRing}" title="Week of ${wk}">${inner}</div>`;
+  }
+
+  const legend = `
+    <div class="wk-legend">
+      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#4CAF85;border-color:#3D9E76;"></div>100%</div>
+      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#FFF8E7;border-color:#F5A623;"></div>75%+</div>
+      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#EFF6FF;border-color:#4A90D9;"></div>&lt;75%</div>
+    </div>`;
+
   // ── Writing ──
+  const allWritingKeys = Object.keys(DATA.weeks).sort();
+  const wStartKey  = allWritingKeys.length ? allWritingKeys[0] : THISWK;
+  const writeWeeks = satWeeksBetween(wStartKey, DEADLINE_WK);
+
   const thisWkBlocks = DATA.weeks[THISWK] || [];
   const lastWkKey    = shiftSatWeek(THISWK, -1);
   const lastWkBlocks = DATA.weeks[lastWkKey] || [];
@@ -3326,10 +3412,15 @@ function renderRocks() {
   const twDone  = thisWkBlocks.filter(b => b.done).length;
   const twTotal = thisWkBlocks.length;
   const lwDone  = lastWkBlocks.filter(b => b.done).length;
-  const lwTotal = lastWkBlocks.length;
-  const atWDone  = allWkBlocks.filter(b => b.done).length;
+  const atWDone = allWkBlocks.filter(b => b.done).length;
   const atWTotal = allWkBlocks.length;
-  const atWPct   = atWTotal ? Math.round((atWDone / atWTotal) * 100) : 0;
+  const atWPct  = atWTotal ? Math.round((atWDone / atWTotal) * 100) : 0;
+
+  const writeBoxes = writeWeeks.map(wk => {
+    const blocks = DATA.weeks[wk] || [];
+    const dp = blocks.length ? (blocks.filter(b => b.done).length / blocks.length) * 100 : 0;
+    return wkBox(wk, dp, THISWK, blocks.length > 0);
+  }).join('');
 
   // ── Fitness ──
   const fitData    = loadFitness();
@@ -3340,10 +3431,22 @@ function renderRocks() {
   const ftTotal = nonRest.length;
   const ftDone  = nonRest.filter(s => !!thisFit[s.id]).length;
   const flDone  = nonRest.filter(s => !!lastFit[s.id]).length;
-  const fitAllWks  = Object.values(fitData);
-  const atFDone    = fitAllWks.reduce((sum, wk) => sum + nonRest.filter(s => !!wk[s.id]).length, 0);
-  const atFTotal   = (fitAllWks.length || 1) * ftTotal;
-  const atFPct     = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
+  const fitAllWks = Object.values(fitData);
+  const atFDone   = fitAllWks.reduce((sum, wk) => sum + nonRest.filter(s => !!wk[s.id]).length, 0);
+  const atFTotal  = (fitAllWks.length || 1) * ftTotal;
+  const atFPct    = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
+
+  const fitKeys   = Object.keys(fitData).sort();
+  const fStartKey = fitKeys.length && fitKeys[0] < FIT_THISWK ? fitKeys[0] : FIT_THISWK;
+  const fitWeeks  = satWeeksBetween(fStartKey, DEADLINE_WK);
+
+  const fitBoxes = fitWeeks.map(wk => {
+    const wkData = fitData[wk] || {};
+    const done   = nonRest.filter(s => !!wkData[s.id]).length;
+    const dp     = ftTotal ? (done / ftTotal) * 100 : 0;
+    const hasData = (wk in fitData) || wk === FIT_THISWK;
+    return wkBox(wk, dp, FIT_THISWK, hasData);
+  }).join('');
 
   // ── Finances ──
   const f = FIN;
@@ -3368,38 +3471,31 @@ function renderRocks() {
     ? finPcts.reduce((s, p) => s + Math.min(p, 100), 0) / finPcts.length
     : 0;
 
-  function fRow(label, done, total, pctOverride, color) {
-    const w = pctOverride !== undefined ? pctOverride : (total ? (done / total) * 100 : 0);
-    const stat = pctOverride !== undefined
-      ? `${Math.round(pctOverride)}% complete`
-      : `${done}/${total}`;
-    return `
-      <div class="foc-row">
-        <div class="foc-row-header">
-          <span class="foc-row-lbl">${label}</span>
-          <span class="foc-row-stat">${stat}</span>
-        </div>
-        <div class="foc-bar"><div class="foc-fill" style="width:${w.toFixed(1)}%;background:${color};"></div></div>
-      </div>`;
-  }
-
   document.getElementById('main-rocks').innerHTML = `
     <div class="foc-card">
 
       <div class="foc-section">
         <div class="foc-label">Writing</div>
-        ${fRow('This week', twDone, twTotal, undefined, '#F5A623')}
-        ${fRow('Last week', lwDone, lwTotal, undefined, '#F5A623')}
-        ${fRow('All time',  atWDone, atWTotal, atWPct,  '#F5A623')}
+        <div class="fin-pills">
+          <span class="fin-pill fin-pill-prog">${twDone} done this week</span>
+          <span class="fin-pill fin-pill-prog">${lwDone} done last week</span>
+          <span class="fin-pill fin-pill-prog">${atWPct}% Completion Rate</span>
+        </div>
+        <div class="wk-grid">${writeBoxes}</div>
+        ${legend}
       </div>
 
       <div class="foc-divider"></div>
 
       <div class="foc-section">
         <div class="foc-label">Fitness</div>
-        ${fRow('This week', ftDone, ftTotal, undefined, '#4A90D9')}
-        ${fRow('Last week', flDone, ftTotal, undefined, '#4A90D9')}
-        ${fRow('All time',  atFDone, atFTotal, atFPct,  '#4A90D9')}
+        <div class="fin-pills">
+          <span class="fin-pill fin-pill-none">${ftDone}/${ftTotal} this week</span>
+          <span class="fin-pill fin-pill-none">${flDone}/${ftTotal} last week</span>
+          <span class="fin-pill fin-pill-none">${atFPct}% Completion Rate</span>
+        </div>
+        <div class="wk-grid">${fitBoxes}</div>
+        ${legend}
       </div>
 
       <div class="foc-divider"></div>
@@ -3411,10 +3507,10 @@ function renderRocks() {
           <span class="fin-pill fin-pill-prog">${finProg} in progress</span>
           <span class="fin-pill fin-pill-none">${finNone} not started</span>
         </div>
-        <div class="foc-bar" style="margin-top:4px;">
+        <div class="foc-bar" style="margin-top:6px;">
           <div class="foc-fill" style="width:${finOverall.toFixed(1)}%;background:#F5A623;"></div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:-2px;">${Math.round(finOverall)}% overall across ${finPcts.length} goals</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">${Math.round(finOverall)}% overall across ${finPcts.length} goals</div>
       </div>
 
     </div>
