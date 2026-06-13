@@ -825,6 +825,20 @@
       vertical-align: middle;
     }
 
+    .fit-edit-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted2);
+      font-size: 15px;
+      line-height: 1;
+      padding: 0 2px;
+      margin-left: auto;
+      flex-shrink: 0;
+      transition: color 0.12s;
+    }
+    .fit-edit-btn:hover { color: var(--accent); }
+
     /* ── FINANCES ────────────────────────────────────────── */
     .fin-grid {
       display: grid;
@@ -2097,15 +2111,26 @@ renderJournalHistory();
 // FITNESS SCHEDULE (must be defined before TASKS for calcAvailableHours)
 // ─────────────────────────────────────────────────────────
 
-const SCHEDULE = [
-  { day: 'Sunday',    name: 'Strength',        detail: 'John Reed', duration: '2 hrs incl. walk', time: '10:00 AM', rest: false, optional: false },
-  { day: 'Monday',    name: 'Light run',        detail: '',          duration: '30 min',    time: 'Morning', rest: false,     optional: true  },
-  { day: 'Tuesday',   name: 'Rest',             detail: '',          duration: '',          time: '',        rest: true,      optional: false },
-  { day: 'Wednesday', name: 'Short run',        detail: '',          duration: '30 min',    time: 'Morning', rest: false,     optional: false },
-  { day: 'Thursday',  name: 'Strength',         detail: 'John Reed', duration: '2 hrs',     time: 'Evening', rest: false,     optional: false },
-  { day: 'Friday',    name: 'Rest',             detail: '',          duration: '',          time: '',        rest: true,      optional: false },
-  { day: 'Saturday',  name: 'Long run',         detail: '',          duration: '45–60 min', time: 'Morning', rest: false,     optional: false },
+const SCHED_DEFAULTS = [
+  { id: 's-0', dayIndex: 0, day: 'Sunday',    name: 'Strength',  detail: 'John Reed', time: '10:00 AM', duration: '2 hrs incl. walk', rest: false, optional: false },
+  { id: 's-1', dayIndex: 1, day: 'Monday',    name: 'Light run', detail: '',          time: 'Morning',  duration: '30 min',           rest: false, optional: true  },
+  { id: 's-2', dayIndex: 2, day: 'Tuesday',   name: 'Rest',      detail: '',          time: '',         duration: '',                 rest: true,  optional: false },
+  { id: 's-3', dayIndex: 3, day: 'Wednesday', name: 'Short run', detail: '',          time: 'Morning',  duration: '30 min',           rest: false, optional: false },
+  { id: 's-4', dayIndex: 4, day: 'Thursday',  name: 'Strength',  detail: 'John Reed', time: 'Evening',  duration: '2 hrs',            rest: false, optional: false },
+  { id: 's-5', dayIndex: 5, day: 'Friday',    name: 'Rest',      detail: '',          time: '',         duration: '',                 rest: true,  optional: false },
+  { id: 's-6', dayIndex: 6, day: 'Saturday',  name: 'Long run',  detail: '',          time: 'Morning',  duration: '45–60 min',        rest: false, optional: false },
 ];
+
+function loadSched()  { try { return JSON.parse(localStorage.getItem('cc_schedule') || 'null'); } catch { return null; } }
+function saveSched(s) { localStorage.setItem('cc_schedule', JSON.stringify(s)); }
+function initSched()  { const d = loadSched(); if (d) return d; const s = JSON.parse(JSON.stringify(SCHED_DEFAULTS)); saveSched(s); return s; }
+let SCHED = initSched();
+
+function schedForDay(dayI) {
+  return SCHED.find(w => w.dayIndex === dayI && !w.rest && !w.optional)
+      || SCHED.find(w => w.dayIndex === dayI)
+      || { id: null, dayIndex: dayI, day: '', name: 'Rest', detail: '', time: '', duration: '', rest: true, optional: false };
+}
 
 // ─────────────────────────────────────────────────────────
 // TASKS
@@ -2166,7 +2191,7 @@ function calcAvailableHours() {
   const writingMins = Object.values(DATA.weeks || {}).flat()
     .filter(b => b.date === TODAY_STR)
     .reduce((s, b) => s + b.duration * 60, 0);
-  const fitSched = SCHEDULE[dayI];
+  const fitSched = schedForDay(dayI);
   const fitMins = (!fitSched.rest && !fitSched.optional) ? parseFitMins(fitSched.duration) : 0;
   const miscHrs = 1.5;
   const free = WAKING - dayJobHrs - (writingMins / 60) - (fitMins / 60) - miscHrs;
@@ -2311,7 +2336,6 @@ renderTasks();
 // ─────────────────────────────────────────────────────────
 
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const SAT_FIRST  = [6, 0, 1, 2, 3, 4, 5]; // display order: Sat–Fri
 
 function fitWeekKey() {
   // Sat–Fri week keyed by Saturday date (matches writing view)
@@ -2327,13 +2351,6 @@ function shiftFitWeek(key, delta) {
   return d.toISOString().slice(0,10);
 }
 
-function fitDayDate(weekKey, dayIndex) {
-  // ISO date string for getDay()-index dayIndex within this Sat-start week
-  const d = new Date(weekKey + 'T12:00:00');
-  d.setDate(d.getDate() + (dayIndex + 1) % 7);
-  return d.toISOString().slice(0, 10);
-}
-
 function loadFitness() {
   try { return JSON.parse(localStorage.getItem('cc_fitness') || '{}'); } catch { return {}; }
 }
@@ -2344,13 +2361,52 @@ function saveFitness(data) {
 
 let fitCurrentWeek = fitWeekKey();
 const FIT_THISWK   = fitWeekKey();
+let fitEditingId   = null;
+let fitShowAdd     = false;
 
-function toggleFitDay(dayIndex) {
+function toggleFitDay(id) {
   const data = loadFitness();
   const wk   = fitCurrentWeek;
   if (!data[wk]) data[wk] = {};
-  data[wk][dayIndex] = !data[wk][dayIndex];
+  data[wk][id] = !data[wk][id];
   saveFitness(data);
+  renderFitness();
+}
+
+function editWorkout(id) { fitEditingId = id; fitShowAdd = false; renderFitness(); }
+
+function cancelFitEdit() { fitEditingId = null; renderFitness(); }
+
+function saveWorkout(id) {
+  const w = SCHED.find(x => x.id === id);
+  if (!w) return;
+  const name = document.getElementById('fit-edit-name').value.trim();
+  const time = document.getElementById('fit-edit-time').value.trim();
+  const dur  = document.getElementById('fit-edit-dur').value.trim();
+  if (name) { w.name = name; w.rest = false; }
+  w.time     = time;
+  w.duration = dur;
+  saveSched(SCHED);
+  fitEditingId = null;
+  renderFitness();
+}
+
+function showAddWorkout() { fitShowAdd = true; fitEditingId = null; renderFitness(); }
+
+function cancelAddWorkout() { fitShowAdd = false; renderFitness(); }
+
+function addWorkout() {
+  const dayI = parseInt(document.getElementById('fit-add-day').value, 10);
+  const name = document.getElementById('fit-add-name').value.trim();
+  const time = document.getElementById('fit-add-time').value.trim();
+  const dur  = document.getElementById('fit-add-dur').value.trim();
+  if (!name) return;
+  SCHED.push({
+    id: 'w-' + Date.now(), dayIndex: dayI, day: DAY_NAMES[dayI],
+    name, detail: '', time, duration: dur, rest: false, optional: false,
+  });
+  saveSched(SCHED);
+  fitShowAdd = false;
   renderFitness();
 }
 
@@ -2362,83 +2418,131 @@ function renderFitness() {
   const isCurWk = wk === FIT_THISWK;
   const fmt     = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
+  // Ordered display: Sat first, then Sun–Fri; multiple workouts per day
+  const ordered = [6, 0, 1, 2, 3, 4, 5].flatMap(dayI => SCHED.filter(w => w.dayIndex === dayI));
+
   // Progress tracker
-  const nonRestIdx = SAT_FIRST.filter(i => !SCHEDULE[i].rest);
-  const doneCount  = nonRestIdx.filter(i => !!thisWk[i]).length;
-  const totalCount = nonRestIdx.length;
+  const nonRestWk = ordered.filter(w => !w.rest);
+  const doneCount = nonRestWk.filter(w => !!thisWk[w.id]).length;
+  const total     = nonRestWk.length;
   document.getElementById('fit-tracker-label').textContent = isCurWk ? 'This Week' : 'Week Progress';
   document.getElementById('fit-done').textContent  = doneCount;
-  document.getElementById('fit-total').textContent = totalCount;
-  document.getElementById('fit-progress').style.width =
-    totalCount ? Math.min(100, (doneCount / totalCount) * 100) + '%' : '0%';
+  document.getElementById('fit-total').textContent = total;
+  document.getElementById('fit-progress').style.width = total ? Math.min(100, (doneCount / total) * 100) + '%' : '0%';
 
-  // Streak (always off the real current week, not the navigated week)
-  const nonRestDays = SCHEDULE.map((s,i) => ({i, rest: s.rest})).filter(x => !x.rest).map(x => x.i);
+  // Streak (anchored to real current week regardless of nav)
+  const nonRestAll = SCHED.filter(w => !w.rest);
   let streak = 0, checkWk = FIT_THISWK;
-  for (let w = 0; w < 52; w++) {
+  for (let i = 0; i < 52; i++) {
     const wkData = data[checkWk] || {};
-    const allDone = nonRestDays.every(i => wkData[i]);
-    if (w === 0 && !allDone) break;
-    if (w > 0 && !allDone) break;
-    if (w > 0) streak++;
-    const d = new Date(checkWk + 'T12:00:00');
-    d.setDate(d.getDate() - 7);
-    checkWk = d.toISOString().slice(0,10);
+    const allDone = nonRestAll.every(w => !!wkData[w.id]);
+    if (i === 0 && !allDone) break;
+    if (i > 0 && !allDone) break;
+    if (i > 0) streak++;
+    const d = new Date(checkWk + 'T12:00:00'); d.setDate(d.getDate() - 7);
+    checkWk = d.toISOString().slice(0, 10);
   }
-  if (nonRestDays.every(i => (data[FIT_THISWK] || {})[i])) streak++;
-  document.getElementById('fit-streak-display').textContent =
-    streak > 0 ? `${streak} week streak 🔥` : '';
+  if (nonRestAll.every(w => !!(data[FIT_THISWK] || {})[w.id])) streak++;
+  document.getElementById('fit-streak-display').textContent = streak > 0 ? `${streak} week streak 🔥` : '';
 
-  // Nav header
+  // Nav
   const satDate = new Date(wk + 'T12:00:00');
   const friDate = new Date(wk + 'T12:00:00'); friDate.setDate(friDate.getDate() + 6);
   document.getElementById('fit-week-title').innerHTML =
     `Week of ${fmt(satDate)}` + (isCurWk ? ' <span class="now-dot"></span>' : '');
   document.getElementById('fit-week-range').textContent = `${fmt(satDate)} – ${fmt(friDate)}`;
 
-  // Blocks
   const checkSvg = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
     <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6"
           stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-  document.getElementById('fit-blocks').innerHTML = SAT_FIRST.map(i => {
-    const s       = SCHEDULE[i];
-    const done    = !!thisWk[i];
-    const isToday = isCurWk && i === todayDI;
+  const blocks = ordered.map(workout => {
+    const { id, day, name, detail, time, duration, rest, optional } = workout;
+    const done    = !!thisWk[id];
+    const isToday = isCurWk && workout.dayIndex === todayDI;
 
-    if (s.rest && !s.optional) {
+    if (fitEditingId === id) {
       return `
-      <div class="block" style="opacity:0.38;cursor:default;">
+      <div class="block" style="cursor:default;">
         <div class="cb"></div>
-        <div class="block-body">
-          <div class="block-top">
-            <span class="block-day">${s.day}</span>
-            <span class="block-meta"><span>Rest day</span></span>
-            ${isToday ? '<span class="today-badge">Today</span>' : ''}
+        <div class="block-body" style="width:100%;">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <input id="fit-edit-name" class="t-text-input" value="${name.replace(/"/g,'&quot;')}" placeholder="Workout name" style="font-size:13px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <input id="fit-edit-time" class="t-text-input" value="${time.replace(/"/g,'&quot;')}" placeholder="Time (e.g. Morning)" style="flex:1;min-width:110px;">
+              <input id="fit-edit-dur"  class="t-text-input" value="${duration.replace(/"/g,'&quot;')}" placeholder="Duration (e.g. 30 min)" style="flex:1;min-width:110px;">
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="journal-save-btn" style="padding:6px 14px;font-size:12px;" onclick="saveWorkout('${id}')">Save</button>
+              <button class="fin-cancel-btn" onclick="cancelFitEdit()">Cancel</button>
+            </div>
           </div>
         </div>
       </div>`;
     }
 
-    const meta = [s.time, s.duration].filter(Boolean)
+    if (rest && !optional) {
+      return `
+      <div class="block" style="opacity:0.38;cursor:default;">
+        <div class="cb"></div>
+        <div class="block-body">
+          <div class="block-top">
+            <span class="block-day">${day}</span>
+            <span class="block-meta"><span>Rest day</span></span>
+            ${isToday ? '<span class="today-badge">Today</span>' : ''}
+            <button class="fit-edit-btn" onclick="event.stopPropagation();editWorkout('${id}')" title="Edit">✎</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    const meta = [time, duration].filter(Boolean)
       .map((p, pi) => pi === 0 ? `<span>${p}</span>` : `<span class="sep">·</span><span>${p}</span>`)
       .join('');
 
     return `
     <div class="block ${done ? 'done' : ''} ${isToday ? 'today-block' : ''}"
-         onclick="toggleFitDay(${i})">
+         onclick="toggleFitDay('${id}')">
       <div class="cb">${done ? checkSvg : ''}</div>
       <div class="block-body">
         <div class="block-top">
-          <span class="block-day">${s.day}</span>
+          <span class="block-day">${day}</span>
           <span class="block-meta">${meta}</span>
           ${isToday ? '<span class="today-badge">Today</span>' : ''}
-          ${s.optional ? '<span class="fit-optional-tag">Optional</span>' : ''}
+          ${optional ? '<span class="fit-optional-tag">Optional</span>' : ''}
+          <button class="fit-edit-btn" onclick="event.stopPropagation();editWorkout('${id}')" title="Edit">✎</button>
         </div>
-        <div class="block-goal">${s.name}${s.detail ? ` · ${s.detail}` : ''}</div>
+        <div class="block-goal">${name}${detail ? ` · ${detail}` : ''}</div>
       </div>
     </div>`;
   }).join('');
+
+  const addForm = fitShowAdd ? `
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select id="fit-add-day" class="t-select">
+          ${[6,0,1,2,3,4,5].map(i => `<option value="${i}">${DAY_NAMES[i]}</option>`).join('')}
+        </select>
+        <input id="fit-add-name" class="t-text-input" placeholder="Workout name" style="flex:2;min-width:140px;">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input id="fit-add-time" class="t-text-input" placeholder="Time (e.g. 7:30 AM)" style="flex:1;min-width:120px;">
+        <input id="fit-add-dur"  class="t-text-input" placeholder="Duration (e.g. 45 min)" style="flex:1;min-width:120px;">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="journal-save-btn" style="padding:7px 16px;" onclick="addWorkout()">Add</button>
+        <button class="fin-cancel-btn" onclick="cancelAddWorkout()">Cancel</button>
+      </div>
+    </div>` : `
+    <button onclick="showAddWorkout()"
+      style="font-family:inherit;font-size:13px;font-weight:600;color:var(--accent);
+             background:var(--accent-dim);border:1px solid var(--accent-rim);
+             border-radius:8px;padding:7px 16px;cursor:pointer;">
+      + Add workout
+    </button>`;
+
+  document.getElementById('fit-blocks').innerHTML =
+    blocks + `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">${addForm}</div>`;
 }
 
 document.getElementById('fit-prev').addEventListener('click', () => {
@@ -3163,8 +3267,8 @@ function renderRocks() {
   const fitWk    = fitWeekKey();
   const wkFit    = fitData[fitWk] || {};
   const todayDI  = new Date().getDay();
-  const nonRest  = SCHEDULE.map((s,i) => ({...s,i})).filter(s => !s.rest);
-  const fitDone  = nonRest.filter(s => wkFit[s.i]).length;
+  const nonRest  = SCHED.filter(s => !s.rest);
+  const fitDone  = nonRest.filter(s => !!wkFit[s.id]).length;
 
   document.getElementById('main-rocks').innerHTML = `
     <div class="rock-card" style="display:flex;flex-direction:column;gap:0;">
@@ -3206,10 +3310,11 @@ function renderRocks() {
           <div class="rock-bar" style="margin-bottom:2px;"><div class="rock-fill" style="width:${wP2.toFixed(1)}%;background:${wClr};"></div></div>`;
         })()}
         <div class="rock-fit-list">
-          ${SCHEDULE.map((s,i) => {
-            const done  = !!wkFit[i];
-            const today = i === todayDI;
-            const cls   = [done ? 'done' : '', s.rest ? 'rest' : '', today ? 'today' : ''].filter(Boolean).join(' ');
+          ${[0,1,2,3,4,5,6].map(dayI => {
+            const s    = schedForDay(dayI);
+            const done = SCHED.filter(w => w.dayIndex === dayI).some(w => !!wkFit[w.id]);
+            const today = dayI === todayDI;
+            const cls  = [done ? 'done' : '', s.rest ? 'rest' : '', today ? 'today' : ''].filter(Boolean).join(' ');
             return `<div class="rock-fit-row ${cls}">
               <span class="rock-fit-dow">${s.day.slice(0,3)}</span>
               <span class="rock-fit-name">${s.rest ? 'Rest' : s.name}</span>
@@ -3260,18 +3365,18 @@ function renderDeck() {
       cat: 'Writing', done: b.done,
     }));
 
-  // Today's fitness (if not rest)
-  const todayDI   = new Date().getDay();
-  const todaySch  = SCHEDULE[todayDI];
-  if (!todaySch.rest) {
+  // Today's fitness workouts
+  const todayDI      = new Date().getDay();
+  const todayWorkouts = SCHED.filter(w => w.dayIndex === todayDI && !w.rest);
+  if (todayWorkouts.length) {
     const fitData = loadFitness();
     const wkFit   = fitData[fitWeekKey()] || {};
-    items.push({
-      type: 'fitness', id: 'fit-today',
-      name: todaySch.name + (todaySch.detail ? ' · ' + todaySch.detail : '') + ` (${todaySch.time})`,
-      mins: parseFitMins(todaySch.duration),
-      cat: 'Fitness', done: !!wkFit[todayDI],
-    });
+    todayWorkouts.forEach(w => items.push({
+      type: 'fitness', id: w.id,
+      name: w.name + (w.detail ? ' · ' + w.detail : '') + (w.time ? ` (${w.time})` : ''),
+      mins: parseFitMins(w.duration),
+      cat: 'Fitness', done: !!wkFit[w.id],
+    }));
   }
 
   // Active (not done, not queued) tasks from cc_tasks
@@ -3315,8 +3420,7 @@ function toggleDeckItem(type, id) {
     const fitData = loadFitness();
     const wk = fitWeekKey();
     if (!fitData[wk]) fitData[wk] = {};
-    const dayI = new Date().getDay();
-    fitData[wk][dayI] = !fitData[wk][dayI];
+    fitData[wk][id] = !fitData[wk][id];
     saveFitness(fitData);
     renderFitness();
   } else if (type === 'task') {
