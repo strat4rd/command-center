@@ -1196,6 +1196,7 @@
     .fin-pill-prog { background: #FFFBEB;               color: #F5A623; }
     .fin-pill-none { background: rgba(74,144,217,0.10); color: #4A90D9; }
     .fin-pill-red  { background: #FFEBEB;               color: #C0504D; }
+    .fin-pill-gray { background: #F5F5F5;               color: #999999; }
 
     /* Week boxes */
     .wk-grid {
@@ -3378,10 +3379,11 @@ function renderRocks() {
   }
 
   function wkBox(wk, donePct, curKey, hasData) {
-    const isFut = wk > curKey;
     const isCur = wk === curKey;
     let bg, border, inner = '';
-    if (!hasData || isFut) {
+    if (isCur) {
+      bg = '#F5F5F5'; border = '#C8C8C8';
+    } else if (!hasData) {
       bg = '#EFEFEF'; border = '#D0D0D0';
     } else if (donePct >= 100) {
       bg = '#4CAF85'; border = '#3D9E76'; inner = '✓';
@@ -3390,7 +3392,7 @@ function renderRocks() {
     } else {
       bg = '#FFEBEB'; border = '#E8A0A0';
     }
-    const curRing = isCur ? 'outline:2px solid #333;outline-offset:2px;' : '';
+    const curRing = isCur ? 'outline:2px solid #AAAAAA;outline-offset:2px;' : '';
     return `<div class="wk-box" style="background:${bg};border-color:${border};${curRing}" title="Week of ${wk}">${inner}</div>`;
   }
 
@@ -3404,7 +3406,7 @@ function renderRocks() {
   // ── Writing ──
   const allWritingKeys = Object.keys(DATA.weeks).sort();
   const wStartKey  = allWritingKeys.length ? allWritingKeys[0] : THISWK;
-  const writeWeeks = satWeeksBetween(wStartKey, DEADLINE_WK);
+  const writeWeeks = satWeeksBetween(wStartKey, THISWK);  // stop at current week
 
   const thisWkBlocks = DATA.weeks[THISWK] || [];
   const lastWkKey    = shiftSatWeek(THISWK, -1);
@@ -3413,9 +3415,22 @@ function renderRocks() {
   const twDone  = thisWkBlocks.filter(b => b.done).length;
   const twTotal = thisWkBlocks.length;
   const lwDone  = lastWkBlocks.filter(b => b.done).length;
+  const lwTotal = lastWkBlocks.length;
   const atWDone = allWkBlocks.filter(b => b.done).length;
   const atWTotal = allWkBlocks.length;
   const atWPct  = atWTotal ? Math.round((atWDone / atWTotal) * 100) : 0;
+
+  // Pill classes: gray=no data, red=<75%, gold=75-99%, green=100%
+  function pillClass(done, total, hasData) {
+    if (!hasData || total === 0) return 'fin-pill-gray';
+    const p = (done / total) * 100;
+    if (p >= 100) return 'fin-pill-met';
+    if (p >= 75)  return 'fin-pill-prog';
+    return 'fin-pill-red';
+  }
+
+  const twPillClass = pillClass(twDone, twTotal, twTotal > 0);
+  const lwPillClass = pillClass(lwDone, lwTotal, lwTotal > 0);
 
   const writeBoxes = writeWeeks.map(wk => {
     const blocks = DATA.weeks[wk] || [];
@@ -3437,15 +3452,18 @@ function renderRocks() {
   const atFTotal  = (fitAllWks.length || 1) * ftTotal;
   const atFPct    = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
 
+  const ftPillClass = pillClass(ftDone, ftTotal, FIT_THISWK in fitData);
+  const flPillClass = pillClass(flDone, ftTotal, lastFitKey in fitData);
+
   const fitKeys   = Object.keys(fitData).sort();
   const fStartKey = fitKeys.length && fitKeys[0] < FIT_THISWK ? fitKeys[0] : FIT_THISWK;
-  const fitWeeks  = satWeeksBetween(fStartKey, DEADLINE_WK);
+  const fitWeeks  = satWeeksBetween(fStartKey, FIT_THISWK);  // stop at current week
 
   const fitBoxes = fitWeeks.map(wk => {
     const wkData = fitData[wk] || {};
     const done   = nonRest.filter(s => !!wkData[s.id]).length;
     const dp     = ftTotal ? (done / ftTotal) * 100 : 0;
-    const hasData = (wk in fitData) || wk === FIT_THISWK;
+    const hasData = wk in fitData;
     return wkBox(wk, dp, FIT_THISWK, hasData);
   }).join('');
 
@@ -3478,9 +3496,9 @@ function renderRocks() {
       <div class="foc-section">
         <div class="foc-label">Writing</div>
         <div class="fin-pills">
-          <span class="fin-pill fin-pill-red">${twDone} done this week</span>
-          <span class="fin-pill fin-pill-red">${lwDone} done last week</span>
-          <span class="fin-pill fin-pill-red">${atWPct}% Completion Rate</span>
+          <span class="fin-pill ${twPillClass}">${twDone} done this week</span>
+          <span class="fin-pill ${lwPillClass}">${lwDone} done last week</span>
+          <span class="fin-pill fin-pill-none">${atWPct}% Completion Rate</span>
         </div>
         <div class="wk-grid">${writeBoxes}</div>
         ${legend}
@@ -3491,9 +3509,9 @@ function renderRocks() {
       <div class="foc-section">
         <div class="foc-label">Fitness</div>
         <div class="fin-pills">
-          <span class="fin-pill fin-pill-red">${ftDone}/${ftTotal} this week</span>
-          <span class="fin-pill fin-pill-red">${flDone}/${ftTotal} last week</span>
-          <span class="fin-pill fin-pill-red">${atFPct}% Completion Rate</span>
+          <span class="fin-pill ${ftPillClass}">${ftDone}/${ftTotal} this week</span>
+          <span class="fin-pill ${flPillClass}">${flDone}/${ftTotal} last week</span>
+          <span class="fin-pill fin-pill-none">${atFPct}% Completion Rate</span>
         </div>
         <div class="wk-grid">${fitBoxes}</div>
         ${legend}
