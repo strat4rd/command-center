@@ -1112,7 +1112,7 @@
     /* ── MAIN / ROCKS ────────────────────────────────────── */
     .rocks-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 3fr 2fr;
       gap: 14px;
     }
 
@@ -1126,66 +1126,75 @@
       border-color: #F5A623;
     }
 
+    /* Dream card (right column) */
     .sc-card {
       background: #ffffff;
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 14px 16px;
+      padding: 16px 18px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
-    .sc-rows { display: flex; flex-direction: column; gap: 4px; }
-
-    .sc-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-    }
-
-    .sc-row-label { font-size: 12px; color: var(--muted); }
-    .sc-row-stat  { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; }
-
-    .sc-bar {
-      height: 5px;
-      background: var(--border);
-      border-radius: 3px;
-      overflow: hidden;
-      margin-bottom: 2px;
-    }
-
-    .sc-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
-
-    .sc-stats-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 2px;
-    }
-
-    .sc-stat {
-      flex: 1;
+    /* Focus card (left column — tall card with 3 sections) */
+    .foc-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      padding: 8px 4px 6px;
-      border-radius: 8px;
     }
 
-    .sc-stat-num { font-size: 22px; font-weight: 800; line-height: 1; }
-    .sc-stat-lbl { font-size: 10px; font-weight: 600; text-align: center; color: var(--muted); line-height: 1.2; }
+    .foc-section { display: flex; flex-direction: column; gap: 11px; }
+    .foc-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 
-    .sc-met  { background: rgba(76,175,133,0.08); }
-    .sc-met  .sc-stat-num { color: #4CAF85; }
+    .foc-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 1px;
+    }
 
-    .sc-prog { background: #FFFBEB; }
-    .sc-prog .sc-stat-num { color: #F5A623; }
+    .foc-row { display: flex; flex-direction: column; gap: 5px; }
 
-    .sc-none { background: rgba(74,144,217,0.08); }
-    .sc-none .sc-stat-num { color: #4A90D9; }
+    .foc-row-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .foc-row-lbl  { font-size: 13px; color: var(--muted); }
+    .foc-row-stat { font-size: 16px; font-weight: 700; color: var(--text); }
+
+    .foc-bar {
+      height: 8px;
+      background: rgba(0,0,0,0.07);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .foc-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+
+    /* Finance pills */
+    .fin-pills { display: flex; gap: 7px; flex-wrap: wrap; }
+
+    .fin-pill {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 4px 11px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .fin-pill-met  { background: rgba(76,175,133,0.12); color: #4CAF85; }
+    .fin-pill-prog { background: #FFFBEB;               color: #F5A623; }
+    .fin-pill-none { background: rgba(74,144,217,0.10); color: #4A90D9; }
 
     .dream-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
 
@@ -3313,10 +3322,14 @@ function renderRocks() {
   const thisWkBlocks = DATA.weeks[THISWK] || [];
   const lastWkKey    = shiftSatWeek(THISWK, -1);
   const lastWkBlocks = DATA.weeks[lastWkKey] || [];
+  const allWkBlocks  = Object.values(DATA.weeks).flat();
   const twDone  = thisWkBlocks.filter(b => b.done).length;
   const twTotal = thisWkBlocks.length;
   const lwDone  = lastWkBlocks.filter(b => b.done).length;
   const lwTotal = lastWkBlocks.length;
+  const atWDone  = allWkBlocks.filter(b => b.done).length;
+  const atWTotal = allWkBlocks.length;
+  const atWPct   = atWTotal ? Math.round((atWDone / atWTotal) * 100) : 0;
 
   // ── Fitness ──
   const fitData    = loadFitness();
@@ -3324,9 +3337,13 @@ function renderRocks() {
   const thisFit    = fitData[FIT_THISWK] || {};
   const lastFitKey = shiftFitWeek(FIT_THISWK, -1);
   const lastFit    = fitData[lastFitKey] || {};
-  const ftDone  = nonRest.filter(s => !!thisFit[s.id]).length;
   const ftTotal = nonRest.length;
+  const ftDone  = nonRest.filter(s => !!thisFit[s.id]).length;
   const flDone  = nonRest.filter(s => !!lastFit[s.id]).length;
+  const fitAllWks  = Object.values(fitData);
+  const atFDone    = fitAllWks.reduce((sum, wk) => sum + nonRest.filter(s => !!wk[s.id]).length, 0);
+  const atFTotal   = (fitAllWks.length || 1) * ftTotal;
+  const atFPct     = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
 
   // ── Finances ──
   const f = FIN;
@@ -3347,62 +3364,59 @@ function renderRocks() {
   const finMet  = finPcts.filter(p => p >= 100).length;
   const finProg = finPcts.filter(p => p > 0 && p < 100).length;
   const finNone = finPcts.filter(p => p === 0).length;
+  const finOverall = finPcts.length
+    ? finPcts.reduce((s, p) => s + Math.min(p, 100), 0) / finPcts.length
+    : 0;
 
-  function scBar(done, total, color) {
-    const w = total ? (done / total) * 100 : 0;
-    return `<div class="sc-bar"><div class="sc-fill" style="width:${w.toFixed(1)}%;background:${color};"></div></div>`;
+  function fRow(label, done, total, pctOverride, color) {
+    const w = pctOverride !== undefined ? pctOverride : (total ? (done / total) * 100 : 0);
+    const stat = pctOverride !== undefined
+      ? `${Math.round(pctOverride)}% complete`
+      : `${done}/${total}`;
+    return `
+      <div class="foc-row">
+        <div class="foc-row-header">
+          <span class="foc-row-lbl">${label}</span>
+          <span class="foc-row-stat">${stat}</span>
+        </div>
+        <div class="foc-bar"><div class="foc-fill" style="width:${w.toFixed(1)}%;background:${color};"></div></div>
+      </div>`;
   }
 
   document.getElementById('main-rocks').innerHTML = `
-    <div class="sc-card">
-      <div class="rock-label">Writing</div>
-      <div class="sc-rows">
-        <div class="sc-row">
-          <span class="sc-row-label">This week</span>
-          <span class="sc-row-stat">${twDone} / ${twTotal} blocks</span>
-        </div>
-        ${scBar(twDone, twTotal, '#4CAF85')}
-        <div class="sc-row" style="margin-top:6px;">
-          <span class="sc-row-label">Last week</span>
-          <span class="sc-row-stat">${lwDone} / ${lwTotal} blocks</span>
-        </div>
-        ${scBar(lwDone, lwTotal, '#4CAF85')}
-      </div>
-    </div>
+    <div class="foc-card">
 
-    <div class="sc-card">
-      <div class="rock-label">Fitness</div>
-      <div class="sc-rows">
-        <div class="sc-row">
-          <span class="sc-row-label">This week</span>
-          <span class="sc-row-stat">${ftDone} / ${ftTotal} workouts</span>
-        </div>
-        ${scBar(ftDone, ftTotal, '#4A90D9')}
-        <div class="sc-row" style="margin-top:6px;">
-          <span class="sc-row-label">Last week</span>
-          <span class="sc-row-stat">${flDone} / ${ftTotal} workouts</span>
-        </div>
-        ${scBar(flDone, ftTotal, '#4A90D9')}
+      <div class="foc-section">
+        <div class="foc-label">Writing</div>
+        ${fRow('This week', twDone, twTotal, undefined, '#F5A623')}
+        ${fRow('Last week', lwDone, lwTotal, undefined, '#F5A623')}
+        ${fRow('All time',  atWDone, atWTotal, atWPct,  '#F5A623')}
       </div>
-    </div>
 
-    <div class="sc-card">
-      <div class="rock-label">Finances</div>
-      <div class="sc-stats-row">
-        <div class="sc-stat sc-met">
-          <div class="sc-stat-num">${finMet}</div>
-          <div class="sc-stat-lbl">Goals met</div>
-        </div>
-        <div class="sc-stat sc-prog">
-          <div class="sc-stat-num">${finProg}</div>
-          <div class="sc-stat-lbl">In progress</div>
-        </div>
-        <div class="sc-stat sc-none">
-          <div class="sc-stat-num">${finNone}</div>
-          <div class="sc-stat-lbl">Not started</div>
-        </div>
+      <div class="foc-divider"></div>
+
+      <div class="foc-section">
+        <div class="foc-label">Fitness</div>
+        ${fRow('This week', ftDone, ftTotal, undefined, '#4A90D9')}
+        ${fRow('Last week', flDone, ftTotal, undefined, '#4A90D9')}
+        ${fRow('All time',  atFDone, atFTotal, atFPct,  '#4A90D9')}
       </div>
-      <div style="font-size:11px;color:var(--muted);">of ${finPcts.length} total goals</div>
+
+      <div class="foc-divider"></div>
+
+      <div class="foc-section">
+        <div class="foc-label">Finances</div>
+        <div class="fin-pills">
+          <span class="fin-pill fin-pill-met">${finMet} met</span>
+          <span class="fin-pill fin-pill-prog">${finProg} in progress</span>
+          <span class="fin-pill fin-pill-none">${finNone} not started</span>
+        </div>
+        <div class="foc-bar" style="margin-top:4px;">
+          <div class="foc-fill" style="width:${finOverall.toFixed(1)}%;background:#F5A623;"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:-2px;">${Math.round(finOverall)}% overall across ${finPcts.length} goals</div>
+      </div>
+
     </div>
 
     <div class="sc-card rock-dreams">
