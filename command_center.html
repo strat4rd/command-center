@@ -1529,13 +1529,31 @@
     <!-- Weight: goal cards + log + chart in one row -->
     <div id="wt-top" style="margin-bottom:16px;"></div>
 
-    <!-- Streak + this-week schedule -->
+    <!-- Progress tracker -->
     <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;">
-        <div class="tracker-label">This Week's Schedule</div>
-        <div class="fit-streak" id="fit-streak-display"></div>
+      <div class="tracker-row">
+        <div class="tracker-label" id="fit-tracker-label">This Week</div>
+        <div class="tracker-stat">
+          <strong id="fit-done">0</strong> / <span id="fit-total">0</span> workouts
+        </div>
       </div>
-      <div class="fit-schedule" id="fit-schedule"></div>
+      <div class="progress-track">
+        <div class="progress-fill" id="fit-progress" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Week navigator + blocks -->
+    <div class="card">
+      <div class="week-nav">
+        <button class="nav-btn" id="fit-prev">&#8249;</button>
+        <div class="week-info">
+          <div class="week-title" id="fit-week-title">—</div>
+          <div class="week-range" id="fit-week-range">—</div>
+        </div>
+        <button class="nav-btn" id="fit-next">&#8250;</button>
+      </div>
+      <div class="fit-streak" id="fit-streak-display" style="text-align:right;margin:-4px 0 12px;font-size:12px;"></div>
+      <div class="blocks" id="fit-blocks"></div>
     </div>
 
   </div>
@@ -2293,6 +2311,7 @@ renderTasks();
 // ─────────────────────────────────────────────────────────
 
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const SAT_FIRST  = [6, 0, 1, 2, 3, 4, 5]; // display order: Sat–Fri
 
 function fitWeekKey() {
   // Sat–Fri week keyed by Saturday date (matches writing view)
@@ -2300,6 +2319,19 @@ function fitWeekKey() {
   d.setHours(0,0,0,0);
   d.setDate(d.getDate() - (d.getDay() + 1) % 7);
   return d.toISOString().slice(0,10);
+}
+
+function shiftFitWeek(key, delta) {
+  const d = new Date(key + 'T12:00:00');
+  d.setDate(d.getDate() + delta * 7);
+  return d.toISOString().slice(0,10);
+}
+
+function fitDayDate(weekKey, dayIndex) {
+  // ISO date string for getDay()-index dayIndex within this Sat-start week
+  const d = new Date(weekKey + 'T12:00:00');
+  d.setDate(d.getDate() + (dayIndex + 1) % 7);
+  return d.toISOString().slice(0, 10);
 }
 
 function loadFitness() {
@@ -2310,15 +2342,12 @@ function saveFitness(data) {
   localStorage.setItem('cc_fitness', JSON.stringify(data));
 }
 
-function fitCheckSvg() {
-  return `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-    <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>`;
-}
+let fitCurrentWeek = fitWeekKey();
+const FIT_THISWK   = fitWeekKey();
 
 function toggleFitDay(dayIndex) {
-  const data   = loadFitness();
-  const wk     = fitWeekKey();
+  const data = loadFitness();
+  const wk   = fitCurrentWeek;
   if (!data[wk]) data[wk] = {};
   data[wk][dayIndex] = !data[wk][dayIndex];
   saveFitness(data);
@@ -2327,53 +2356,97 @@ function toggleFitDay(dayIndex) {
 
 function renderFitness() {
   const data    = loadFitness();
-  const wk      = fitWeekKey();
+  const wk      = fitCurrentWeek;
   const thisWk  = data[wk] || {};
   const todayDI = new Date().getDay();
+  const isCurWk = wk === FIT_THISWK;
+  const fmt     = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-  // Schedule — display Sat first, then Sun–Fri
-  const SAT_FIRST = [6, 0, 1, 2, 3, 4, 5];
-  document.getElementById('fit-schedule').innerHTML = SAT_FIRST.map(i => {
-    const s       = SCHEDULE[i];
-    const done    = !!thisWk[i];
-    const isToday = i === todayDI;
-    const cls     = ['fit-day', done ? 'done' : '', isToday && !done ? 'today' : '', s.optional ? 'optional' : ''].join(' ').trim();
-    const noClick = s.rest && !s.optional;
-    return `
-    <div class="${cls}" onclick="${noClick ? '' : `toggleFitDay(${i})`}" style="${noClick ? 'cursor:default;' : ''}">
-      <div class="fit-day-cb">${done ? fitCheckSvg() : ''}</div>
-      <div class="fit-day-name">${s.day}</div>
-      ${s.rest && !s.optional
-        ? `<div class="fit-rest">Rest day</div>`
-        : `<div class="fit-workout-name">${s.name}${s.detail ? ` <span style="color:var(--muted);font-weight:400;">· ${s.detail}</span>` : ''}${s.optional ? ' <span class="fit-optional-tag">Optional</span>' : ''}</div>
-           <div class="fit-day-meta"><span>${s.time}</span><span style="color:var(--muted2)">·</span><span>${s.duration}</span></div>`
-      }
-    </div>`;
-  }).join('');
+  // Progress tracker
+  const nonRestIdx = SAT_FIRST.filter(i => !SCHEDULE[i].rest);
+  const doneCount  = nonRestIdx.filter(i => !!thisWk[i]).length;
+  const totalCount = nonRestIdx.length;
+  document.getElementById('fit-tracker-label').textContent = isCurWk ? 'This Week' : 'Week Progress';
+  document.getElementById('fit-done').textContent  = doneCount;
+  document.getElementById('fit-total').textContent = totalCount;
+  document.getElementById('fit-progress').style.width =
+    totalCount ? Math.min(100, (doneCount / totalCount) * 100) + '%' : '0%';
 
-  // Streak — count consecutive completed weeks (all non-rest days done)
+  // Streak (always off the real current week, not the navigated week)
   const nonRestDays = SCHEDULE.map((s,i) => ({i, rest: s.rest})).filter(x => !x.rest).map(x => x.i);
-  let streak = 0;
-  let checkWk = fitWeekKey();
+  let streak = 0, checkWk = FIT_THISWK;
   for (let w = 0; w < 52; w++) {
     const wkData = data[checkWk] || {};
     const allDone = nonRestDays.every(i => wkData[i]);
-    if (w === 0 && !allDone) break; // current week not done yet — streak from previous
+    if (w === 0 && !allDone) break;
     if (w > 0 && !allDone) break;
     if (w > 0) streak++;
-    // step back one week
     const d = new Date(checkWk + 'T12:00:00');
     d.setDate(d.getDate() - 7);
     checkWk = d.toISOString().slice(0,10);
   }
-  // Also count current week if fully done
-  const curDone = nonRestDays.every(i => thisWk[i]);
-  if (curDone) streak++;
-
+  if (nonRestDays.every(i => (data[FIT_THISWK] || {})[i])) streak++;
   document.getElementById('fit-streak-display').textContent =
     streak > 0 ? `${streak} week streak 🔥` : '';
 
+  // Nav header
+  const satDate = new Date(wk + 'T12:00:00');
+  const friDate = new Date(wk + 'T12:00:00'); friDate.setDate(friDate.getDate() + 6);
+  document.getElementById('fit-week-title').innerHTML =
+    `Week of ${fmt(satDate)}` + (isCurWk ? ' <span class="now-dot"></span>' : '');
+  document.getElementById('fit-week-range').textContent = `${fmt(satDate)} – ${fmt(friDate)}`;
+
+  // Blocks
+  const checkSvg = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+    <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6"
+          stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  document.getElementById('fit-blocks').innerHTML = SAT_FIRST.map(i => {
+    const s       = SCHEDULE[i];
+    const done    = !!thisWk[i];
+    const isToday = isCurWk && i === todayDI;
+
+    if (s.rest && !s.optional) {
+      return `
+      <div class="block" style="opacity:0.38;cursor:default;">
+        <div class="cb"></div>
+        <div class="block-body">
+          <div class="block-top">
+            <span class="block-day">${s.day}</span>
+            <span class="block-meta"><span>Rest day</span></span>
+            ${isToday ? '<span class="today-badge">Today</span>' : ''}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    const meta = [s.time, s.duration].filter(Boolean)
+      .map((p, pi) => pi === 0 ? `<span>${p}</span>` : `<span class="sep">·</span><span>${p}</span>`)
+      .join('');
+
+    return `
+    <div class="block ${done ? 'done' : ''} ${isToday ? 'today-block' : ''}"
+         onclick="toggleFitDay(${i})">
+      <div class="cb">${done ? checkSvg : ''}</div>
+      <div class="block-body">
+        <div class="block-top">
+          <span class="block-day">${s.day}</span>
+          <span class="block-meta">${meta}</span>
+          ${isToday ? '<span class="today-badge">Today</span>' : ''}
+          ${s.optional ? '<span class="fit-optional-tag">Optional</span>' : ''}
+        </div>
+        <div class="block-goal">${s.name}${s.detail ? ` · ${s.detail}` : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
+
+document.getElementById('fit-prev').addEventListener('click', () => {
+  fitCurrentWeek = shiftFitWeek(fitCurrentWeek, -1); renderFitness();
+});
+document.getElementById('fit-next').addEventListener('click', () => {
+  fitCurrentWeek = shiftFitWeek(fitCurrentWeek, +1); renderFitness();
+});
 
 // ─────────────────────────────────────────────────────────
 // STARTUP: PURGE PAST FITNESS + WEIGHT DATA
