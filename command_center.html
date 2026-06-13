@@ -1538,12 +1538,6 @@
       <div class="fit-schedule" id="fit-schedule"></div>
     </div>
 
-    <!-- 14-day log -->
-    <div class="card">
-      <div class="tracker-label" style="margin-bottom:14px;">Last 14 Days</div>
-      <div class="fit-log" id="fit-log"></div>
-    </div>
-
   </div>
 
   <!-- ── FINANCES ──────────────────────────────────────────── -->
@@ -2379,33 +2373,6 @@ function renderFitness() {
   document.getElementById('fit-streak-display').textContent =
     streak > 0 ? `${streak} week streak 🔥` : '';
 
-  // 14-day log
-  const rows = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() - i);
-    const dayI  = d.getDay();
-    // Find the Sat–Fri week key for this date
-    const sat   = new Date(d); sat.setDate(d.getDate() - (dayI + 1) % 7);
-    const wkKey = sat.toISOString().slice(0,10);
-    const wkD   = data[wkKey] || {};
-    const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    const sched = SCHEDULE[dayI];
-    const completed = wkD[dayI];
-    rows.push({ label, sched, completed, isRest: sched.rest });
-  }
-
-  document.getElementById('fit-log').innerHTML = rows.map(r => `
-    <div class="fit-log-row">
-      <span class="fit-log-date">${r.label}</span>
-      <div class="fit-log-dots">
-        ${r.isRest
-          ? `<span class="fit-log-empty">Rest</span>`
-          : r.completed
-            ? `<span class="fit-dot">${r.sched.name}</span>`
-            : `<span class="fit-log-empty">—</span>`
-        }
-      </div>
-    </div>`).join('');
 }
 
 // ─────────────────────────────────────────────────────────
