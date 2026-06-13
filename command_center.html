@@ -1778,13 +1778,25 @@ function saveData(d) { localStorage.setItem('cc_v4', JSON.stringify(d)); }
 function initData() {
   let d = loadData();
   if (!d) { d = JSON.parse(JSON.stringify(DEFAULTS)); saveData(d); return d; }
-  // Migration: remove any block dated 2026-06-06 that snuck in before this fix
   let dirty = false;
+  // Migration: remove any block dated 2026-06-06 that snuck in before this fix
   Object.keys(d.weeks || {}).forEach(wk => {
     const before = d.weeks[wk].length;
     d.weeks[wk] = d.weeks[wk].filter(b => b.date !== '2026-06-06');
     if (d.weeks[wk].length !== before) dirty = true;
   });
+  // Migration v5: reset completion for May 30 and June 7 weeks; backfill missing weeks
+  if ((d['data-version'] || 0) < 5) {
+    if (!d.weeks) d.weeks = {};
+    ['2026-05-30', '2026-06-06'].forEach(wk => {
+      if (d.weeks[wk]) d.weeks[wk].forEach(b => { b.done = false; });
+    });
+    Object.keys(DEFAULTS.weeks).forEach(wk => {
+      if (!d.weeks[wk]) d.weeks[wk] = JSON.parse(JSON.stringify(DEFAULTS.weeks[wk]));
+    });
+    d['data-version'] = 5;
+    dirty = true;
+  }
   if (dirty) saveData(d);
   return d;
 }
@@ -1804,7 +1816,7 @@ function satWeekKey(date) {
 function satWeekRange(key, firstBlockDate) {
   const startStr = firstBlockDate || key;
   const start = new Date(startStr + 'T12:00:00');
-  const end   = new Date(key + 'T12:00:00');
+  const end   = new Date(startStr + 'T12:00:00');
   end.setDate(end.getDate() + 6);
   const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   return `${fmt(start)} – ${fmt(end)}`;
@@ -1903,10 +1915,11 @@ function renderTracker() {
 }
 
 function renderNav() {
-  const cur    = currentWeek === THISWK;
-  const blocks = DATA.weeks[currentWeek] || [];
-  const firstBlockDate = blocks.length
-    ? blocks.reduce((min, b) => b.date < min ? b.date : min, blocks[0].date)
+  const cur       = currentWeek === THISWK;
+  const allBlocks = DATA.weeks[currentWeek] || [];
+  const scope     = cur ? allBlocks.filter(b => b.date >= TODAY_STR) : allBlocks;
+  const firstBlockDate = (scope.length ? scope : allBlocks).length
+    ? (scope.length ? scope : allBlocks).reduce((min, b) => b.date < min ? b.date : min, (scope.length ? scope : allBlocks)[0].date)
     : currentWeek;
   const start = new Date(firstBlockDate + 'T12:00:00');
   const label = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
