@@ -1242,7 +1242,29 @@
       flex-shrink: 0;
     }
 
-    .dream-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+    .dream-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+
+    /* Time breakdown */
+    .tb-period {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .tb-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .tb-row:last-child { margin-bottom: 0; }
+    .tb-legend { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+    .tb-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .tb-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
     .dream-item {
       display: block;
@@ -3394,6 +3416,121 @@ renderSkills();
 // MAIN
 // ─────────────────────────────────────────────────────────
 
+function renderTimeBreakdown() {
+  const CAT_COLORS = {
+    Writing:  '#F5A623',
+    Fitness:  '#4A90D9',
+    Work:     '#6B7280',
+    Personal: '#8B7FD4',
+    Finance:  '#4CAF85',
+  };
+  const CAT_ORDER = ['Writing', 'Fitness', 'Work', 'Personal', 'Finance'];
+
+  function fmtMins(m) {
+    const h = Math.floor(m / 60), rem = Math.round(m % 60);
+    return h > 0 ? (rem > 0 ? `${h}h ${rem}m` : `${h}h`) : `${rem}m`;
+  }
+
+  function pieHtml(minsMap, label) {
+    const total = CAT_ORDER.reduce((s, c) => s + (minsMap[c] || 0), 0);
+    const S = 72, r = S / 2, cx = r, cy = r;
+
+    if (!total) {
+      return `
+        <div class="tb-period">${label}</div>
+        <div class="tb-row">
+          <svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" style="flex-shrink:0;">
+            <circle cx="${r}" cy="${r}" r="${r - 1}" fill="#F0F0F0" stroke="#E0E0E0" stroke-width="1"/>
+          </svg>
+          <span style="font-size:11px;color:var(--muted);font-style:italic;">No data yet</span>
+        </div>`;
+    }
+
+    const segs = CAT_ORDER.filter(c => (minsMap[c] || 0) > 0)
+      .map(c => ({ color: CAT_COLORS[c], v: minsMap[c], label: c }));
+
+    let ang = -Math.PI / 2;
+    const paths = segs.map(seg => {
+      const slice = (seg.v / total) * 2 * Math.PI;
+      const end   = ang + slice;
+      const x1 = cx + r * Math.cos(ang),  y1 = cy + r * Math.sin(ang);
+      const x2 = cx + r * Math.cos(end),  y2 = cy + r * Math.sin(end);
+      const big = slice > Math.PI ? 1 : 0;
+      const d   = `M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${big},1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
+      ang = end;
+      return `<path d="${d}" fill="${seg.color}"/>`;
+    });
+
+    const legend = segs.map(seg =>
+      `<div class="tb-legend-item">
+        <div class="tb-dot" style="background:${seg.color};"></div>
+        <span>${seg.label} · ${fmtMins(seg.v)}</span>
+      </div>`
+    ).join('');
+
+    return `
+      <div class="tb-period">${label}</div>
+      <div class="tb-row">
+        <svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" style="flex-shrink:0;">
+          ${paths.join('')}
+          <circle cx="${r}" cy="${r}" r="${(r * 0.38).toFixed(1)}" fill="white"/>
+        </svg>
+        <div class="tb-legend">${legend}</div>
+      </div>`;
+  }
+
+  const fitData  = loadFitness();
+  const todayDI  = new Date().getDay();
+
+  // ── Today ──
+  const todayMap = {};
+  (DATA.weeks[THISWK] || []).filter(b => b.done && b.date === TODAY_STR).forEach(b => {
+    todayMap.Writing = (todayMap.Writing || 0) + Math.round(b.duration * 60);
+  });
+  SCHED.filter(s => !s.rest && s.dayIndex === todayDI).forEach(s => {
+    if ((fitData[FIT_THISWK] || {})[s.id]) todayMap.Fitness = (todayMap.Fitness || 0) + parseFitMins(s.duration);
+  });
+  TASKS.filter(t => t.done && t.doneDate === TODAY_STR).forEach(t => {
+    const c = t.cat || 'Personal';
+    todayMap[c] = (todayMap[c] || 0) + (t.mins || 0);
+  });
+
+  // ── This Week ──
+  const weekMap = {};
+  (DATA.weeks[THISWK] || []).filter(b => b.done).forEach(b => {
+    weekMap.Writing = (weekMap.Writing || 0) + Math.round(b.duration * 60);
+  });
+  SCHED.filter(s => !s.rest).forEach(s => {
+    if ((fitData[FIT_THISWK] || {})[s.id]) weekMap.Fitness = (weekMap.Fitness || 0) + parseFitMins(s.duration);
+  });
+  TASKS.filter(t => t.done).forEach(t => {
+    const c = t.cat || 'Personal';
+    weekMap[c] = (weekMap[c] || 0) + (t.mins || 0);
+  });
+
+  // ── All Time ──
+  const allMap = {};
+  Object.values(DATA.weeks).flat().filter(b => b.done).forEach(b => {
+    allMap.Writing = (allMap.Writing || 0) + Math.round(b.duration * 60);
+  });
+  Object.values(fitData).forEach(wkData => {
+    SCHED.filter(s => !s.rest).forEach(s => {
+      if (wkData[s.id]) allMap.Fitness = (allMap.Fitness || 0) + parseFitMins(s.duration);
+    });
+  });
+  TASKS.filter(t => t.done).forEach(t => {
+    const c = t.cat || 'Personal';
+    allMap[c] = (allMap[c] || 0) + (t.mins || 0);
+  });
+
+  return `
+    <div class="rock-label" style="margin-bottom:8px;">Time Breakdown</div>
+    ${pieHtml(todayMap, 'Today')}
+    ${pieHtml(weekMap, 'This Week')}
+    ${pieHtml(allMap, 'All Time')}
+  `;
+}
+
 function parseFitMins(str) {
   if (!str) return 0;
   if (str.includes('2 hrs')) return 120;
@@ -3571,26 +3708,29 @@ function renderRocks() {
 
     </div>
 
-    <div class="sc-card rock-dreams">
-      <div class="rock-label">Dream Goals</div>
-      <div class="dream-list">
-        <div class="dream-item">
-          <span class="dream-goal">Sell a screenplay for $300,000</span>
-          <span class="dream-date">by Jan 1, 2028</span>
-        </div>
-        <div class="dream-item">
-          <span class="dream-goal">Create and showrun a hit show on television</span>
-          <span class="dream-date">by Jan 1, 2030</span>
-        </div>
-        <div class="dream-item">
-          <span class="dream-goal">Direct a feature film</span>
-          <span class="dream-date">by Jan 1, 2033</span>
-        </div>
-        <div class="dream-item">
-          <span class="dream-goal">Marry a wonderful man</span>
-          <span class="dream-date">by Jan 1, 2030</span>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="sc-card rock-dreams" style="padding:12px 14px;">
+        <div class="rock-label">Dream Goals</div>
+        <div class="dream-list">
+          <div class="dream-item">
+            <span class="dream-goal">Sell a screenplay for $300,000</span>
+            <span class="dream-date">by Jan 1, 2028</span>
+          </div>
+          <div class="dream-item">
+            <span class="dream-goal">Create and showrun a hit show on television</span>
+            <span class="dream-date">by Jan 1, 2030</span>
+          </div>
+          <div class="dream-item">
+            <span class="dream-goal">Direct a feature film</span>
+            <span class="dream-date">by Jan 1, 2033</span>
+          </div>
+          <div class="dream-item">
+            <span class="dream-goal">Marry a wonderful man</span>
+            <span class="dream-date">by Jan 1, 2030</span>
+          </div>
         </div>
       </div>
+      <div class="sc-card" style="padding:12px 14px;">${renderTimeBreakdown()}</div>
     </div>
   `;
 }
