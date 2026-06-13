@@ -1112,7 +1112,7 @@
     /* ── MAIN / ROCKS ────────────────────────────────────── */
     .rocks-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 14px;
     }
 
@@ -1120,10 +1120,72 @@
       .rocks-grid { grid-template-columns: 1fr; }
     }
 
-    .rock-card.rock-dreams {
+    .rock-card.rock-dreams,
+    .sc-card.rock-dreams {
       background: #FFFBEF;
       border-color: #F5A623;
     }
+
+    .sc-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sc-rows { display: flex; flex-direction: column; gap: 4px; }
+
+    .sc-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .sc-row-label { font-size: 12px; color: var(--muted); }
+    .sc-row-stat  { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; }
+
+    .sc-bar {
+      height: 5px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 2px;
+    }
+
+    .sc-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+    .sc-stats-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .sc-stat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 8px 4px 6px;
+      border-radius: 8px;
+    }
+
+    .sc-stat-num { font-size: 22px; font-weight: 800; line-height: 1; }
+    .sc-stat-lbl { font-size: 10px; font-weight: 600; text-align: center; color: var(--muted); line-height: 1.2; }
+
+    .sc-met  { background: rgba(76,175,133,0.08); }
+    .sc-met  .sc-stat-num { color: #4CAF85; }
+
+    .sc-prog { background: #FFFBEB; }
+    .sc-prog .sc-stat-num { color: #F5A623; }
+
+    .sc-none { background: rgba(74,144,217,0.08); }
+    .sc-none .sc-stat-num { color: #4A90D9; }
 
     .dream-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
 
@@ -3247,85 +3309,103 @@ function parseFitMins(str) {
 }
 
 function renderRocks() {
-  const checkSvg = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-    <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
   // ── Writing ──
-  const allBlocks = Object.values(DATA.weeks).flat();
-  const outlineBlocks = allBlocks.filter(b => /^outline$/i.test(b.goal));
-  const draftBlocks   = allBlocks.filter(b => /^write scenes$|^assemble draft$|^read through$|^final fixes$|^submit$/i.test(b.goal));
-  const outlineDone   = outlineBlocks.filter(b => b.done).length;
-  const draftDone     = draftBlocks.filter(b => b.done).length;
-  const nextBlock     = allBlocks
-    .filter(b => !b.done && b.date >= TODAY_STR)
-    .sort((a, b) => a.date.localeCompare(b.date))[0];
-  const daysLeft = Math.max(0, daysFrom('2026-06-29'));
-  const durFmt = b => b.duration % 1 ? b.duration.toFixed(1) : b.duration;
+  const thisWkBlocks = DATA.weeks[THISWK] || [];
+  const lastWkKey    = shiftSatWeek(THISWK, -1);
+  const lastWkBlocks = DATA.weeks[lastWkKey] || [];
+  const twDone  = thisWkBlocks.filter(b => b.done).length;
+  const twTotal = thisWkBlocks.length;
+  const lwDone  = lastWkBlocks.filter(b => b.done).length;
+  const lwTotal = lastWkBlocks.length;
 
   // ── Fitness ──
-  const fitData  = loadFitness();
-  const fitWk    = fitWeekKey();
-  const wkFit    = fitData[fitWk] || {};
-  const todayDI  = new Date().getDay();
-  const nonRest  = SCHED.filter(s => !s.rest);
-  const fitDone  = nonRest.filter(s => !!wkFit[s.id]).length;
+  const fitData    = loadFitness();
+  const nonRest    = SCHED.filter(s => !s.rest);
+  const thisFit    = fitData[FIT_THISWK] || {};
+  const lastFitKey = shiftFitWeek(FIT_THISWK, -1);
+  const lastFit    = fitData[lastFitKey] || {};
+  const ftDone  = nonRest.filter(s => !!thisFit[s.id]).length;
+  const ftTotal = nonRest.length;
+  const flDone  = nonRest.filter(s => !!lastFit[s.id]).length;
+
+  // ── Finances ──
+  const f = FIN;
+  const LOAN_START = 110000;
+  const finPcts = [
+    pct(f.netWorth.current, -110000, 0),
+    pct(f.retirement.current, 0, 65000),
+    pct(f.emergencyU.current, 0, 24000),
+    pct(f.emergencyS.current, 0, 1000),
+    pct(f.car.current, 0, 23000),
+    pct(f.tech.current, 0, 1500),
+    pct(f.feCarRepair.current, 0, 1000),
+    pct(f.feTV.current, 0, 180),
+    pct(f.feChair.current, 0, 300),
+    pct(f.feLaptop.current, 0, 1500),
+    pct(LOAN_START - f.loans.current, 0, LOAN_START),
+  ];
+  const finMet  = finPcts.filter(p => p >= 100).length;
+  const finProg = finPcts.filter(p => p > 0 && p < 100).length;
+  const finNone = finPcts.filter(p => p === 0).length;
+
+  function scBar(done, total, color) {
+    const w = total ? (done / total) * 100 : 0;
+    return `<div class="sc-bar"><div class="sc-fill" style="width:${w.toFixed(1)}%;background:${color};"></div></div>`;
+  }
 
   document.getElementById('main-rocks').innerHTML = `
-    <div class="rock-card" style="display:flex;flex-direction:column;gap:0;">
-      <!-- Writing section -->
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div class="rock-label">Writing</div>
-        <div class="rock-script" style="font-size:22px;font-weight:800;letter-spacing:-0.3px;">Lucidity</div>
-        <div class="rock-sub">Big Break · ${daysLeft} days left</div>
-        <div class="rock-progress-row">
-          <span class="rock-progress-label">Outline</span>
-          <div class="rock-bar"><div class="rock-fill" style="width:${outlineBlocks.length ? (outlineDone/outlineBlocks.length)*100 : 0}%"></div></div>
-          <span class="rock-progress-frac">${outlineDone}/${outlineBlocks.length}</span>
+    <div class="sc-card">
+      <div class="rock-label">Writing</div>
+      <div class="sc-rows">
+        <div class="sc-row">
+          <span class="sc-row-label">This week</span>
+          <span class="sc-row-stat">${twDone} / ${twTotal} blocks</span>
         </div>
-        <div class="rock-progress-row">
-          <span class="rock-progress-label">Draft</span>
-          <div class="rock-bar"><div class="rock-fill" style="width:${draftBlocks.length ? (draftDone/draftBlocks.length)*100 : 0}%"></div></div>
-          <span class="rock-progress-frac">${draftDone}/${draftBlocks.length}</span>
+        ${scBar(twDone, twTotal, '#4CAF85')}
+        <div class="sc-row" style="margin-top:6px;">
+          <span class="sc-row-label">Last week</span>
+          <span class="sc-row-stat">${lwDone} / ${lwTotal} blocks</span>
         </div>
-        <div class="rock-next">${nextBlock
-          ? `Next: ${nextBlock.day} · ${nextBlock.time} · ${durFmt(nextBlock)}h`
-          : 'All blocks complete ✓'}</div>
-      </div>
-      <!-- Divider -->
-      <div style="border-top:1px solid var(--border);margin:14px 0;"></div>
-      <!-- Fitness section -->
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div class="rock-label">Fitness</div>
-        <div class="rock-script" style="font-size:20px;font-weight:800;color:#4A90D9;">${fitDone} / ${nonRest.length} done this week</div>
-        ${(() => {
-          const wEntries = loadWeight();
-          if (!wEntries.length) return '';
-          const curW = wtCurrentWeekAvg(wEntries);
-          const wP2  = wtProgressPct(wEntries, 145, curW);
-          const wClr = wtBarColor(wP2);
-          return `<div style="display:flex;align-items:center;gap:6px;margin:-2px 0 2px;">
-            <span style="font-size:11px;font-weight:600;color:${wClr};">${curW} lbs</span>
-            <span style="font-size:11px;color:var(--muted);">→ 145 lbs goal</span>
-          </div>
-          <div class="rock-bar" style="margin-bottom:2px;"><div class="rock-fill" style="width:${wP2.toFixed(1)}%;background:${wClr};"></div></div>`;
-        })()}
-        <div class="rock-fit-list">
-          ${[0,1,2,3,4,5,6].map(dayI => {
-            const s    = schedForDay(dayI);
-            const done = SCHED.filter(w => w.dayIndex === dayI).some(w => !!wkFit[w.id]);
-            const today = dayI === todayDI;
-            const cls  = [done ? 'done' : '', s.rest ? 'rest' : '', today ? 'today' : ''].filter(Boolean).join(' ');
-            return `<div class="rock-fit-row ${cls}">
-              <span class="rock-fit-dow">${s.day.slice(0,3)}</span>
-              <span class="rock-fit-name">${s.rest ? 'Rest' : s.name}</span>
-              ${done ? `<span class="rock-fit-tick">✓</span>` : ''}
-            </div>`;
-          }).join('')}
-        </div>
+        ${scBar(lwDone, lwTotal, '#4CAF85')}
       </div>
     </div>
 
-    <div class="rock-card rock-dreams">
+    <div class="sc-card">
+      <div class="rock-label">Fitness</div>
+      <div class="sc-rows">
+        <div class="sc-row">
+          <span class="sc-row-label">This week</span>
+          <span class="sc-row-stat">${ftDone} / ${ftTotal} workouts</span>
+        </div>
+        ${scBar(ftDone, ftTotal, '#4A90D9')}
+        <div class="sc-row" style="margin-top:6px;">
+          <span class="sc-row-label">Last week</span>
+          <span class="sc-row-stat">${flDone} / ${ftTotal} workouts</span>
+        </div>
+        ${scBar(flDone, ftTotal, '#4A90D9')}
+      </div>
+    </div>
+
+    <div class="sc-card">
+      <div class="rock-label">Finances</div>
+      <div class="sc-stats-row">
+        <div class="sc-stat sc-met">
+          <div class="sc-stat-num">${finMet}</div>
+          <div class="sc-stat-lbl">Goals met</div>
+        </div>
+        <div class="sc-stat sc-prog">
+          <div class="sc-stat-num">${finProg}</div>
+          <div class="sc-stat-lbl">In progress</div>
+        </div>
+        <div class="sc-stat sc-none">
+          <div class="sc-stat-num">${finNone}</div>
+          <div class="sc-stat-lbl">Not started</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);">of ${finPcts.length} total goals</div>
+    </div>
+
+    <div class="sc-card rock-dreams">
       <div class="rock-label">Dream Goals</div>
       <div class="dream-list">
         <div class="dream-item">
@@ -3346,7 +3426,6 @@ function renderRocks() {
         </div>
       </div>
     </div>
-
   `;
 }
 
