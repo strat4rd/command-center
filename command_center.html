@@ -3496,12 +3496,11 @@ function renderRocks() {
       <div class="foc-section">
         <div class="foc-label">Writing</div>
         <div class="fin-pills">
-          <span class="fin-pill ${twPillClass}">${twDone} done this week</span>
+          <span class="fin-pill ${twPillClass}">${twDone}/${twTotal} this week</span>
           <span class="fin-pill ${lwPillClass}">${lwDone} done last week</span>
-          <span class="fin-pill fin-pill-none">${atWPct}% Completion Rate</span>
+          <span class="fin-pill fin-pill-none">${atWPct}% All-time Completion Rate</span>
         </div>
         <div class="wk-grid">${writeBoxes}</div>
-        ${legend}
       </div>
 
       <div class="foc-divider"></div>
@@ -3511,10 +3510,9 @@ function renderRocks() {
         <div class="fin-pills">
           <span class="fin-pill ${ftPillClass}">${ftDone}/${ftTotal} this week</span>
           <span class="fin-pill ${flPillClass}">${flDone}/${ftTotal} last week</span>
-          <span class="fin-pill fin-pill-none">${atFPct}% Completion Rate</span>
+          <span class="fin-pill fin-pill-none">${atFPct}% All-time Completion Rate</span>
         </div>
         <div class="wk-grid">${fitBoxes}</div>
-        ${legend}
       </div>
 
       <div class="foc-divider"></div>
