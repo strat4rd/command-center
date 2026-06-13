@@ -1195,6 +1195,7 @@
     .fin-pill-met  { background: rgba(76,175,133,0.12); color: #4CAF85; }
     .fin-pill-prog { background: #FFFBEB;               color: #F5A623; }
     .fin-pill-none { background: rgba(74,144,217,0.10); color: #4A90D9; }
+    .fin-pill-red  { background: #FFEBEB;               color: #C0504D; }
 
     /* Week boxes */
     .wk-grid {
@@ -3387,7 +3388,7 @@ function renderRocks() {
     } else if (donePct >= 75) {
       bg = '#FFF8E7'; border = '#F5A623';
     } else {
-      bg = '#EFF6FF'; border = '#4A90D9';
+      bg = '#FFEBEB'; border = '#E8A0A0';
     }
     const curRing = isCur ? 'outline:2px solid #333;outline-offset:2px;' : '';
     return `<div class="wk-box" style="background:${bg};border-color:${border};${curRing}" title="Week of ${wk}">${inner}</div>`;
@@ -3397,7 +3398,7 @@ function renderRocks() {
     <div class="wk-legend">
       <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#4CAF85;border-color:#3D9E76;"></div>100%</div>
       <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#FFF8E7;border-color:#F5A623;"></div>75%+</div>
-      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#EFF6FF;border-color:#4A90D9;"></div>&lt;75%</div>
+      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#FFEBEB;border-color:#E8A0A0;"></div>&lt;75%</div>
     </div>`;
 
   // ── Writing ──
@@ -3477,9 +3478,9 @@ function renderRocks() {
       <div class="foc-section">
         <div class="foc-label">Writing</div>
         <div class="fin-pills">
-          <span class="fin-pill fin-pill-prog">${twDone} done this week</span>
-          <span class="fin-pill fin-pill-prog">${lwDone} done last week</span>
-          <span class="fin-pill fin-pill-prog">${atWPct}% Completion Rate</span>
+          <span class="fin-pill fin-pill-red">${twDone} done this week</span>
+          <span class="fin-pill fin-pill-red">${lwDone} done last week</span>
+          <span class="fin-pill fin-pill-red">${atWPct}% Completion Rate</span>
         </div>
         <div class="wk-grid">${writeBoxes}</div>
         ${legend}
@@ -3490,9 +3491,9 @@ function renderRocks() {
       <div class="foc-section">
         <div class="foc-label">Fitness</div>
         <div class="fin-pills">
-          <span class="fin-pill fin-pill-none">${ftDone}/${ftTotal} this week</span>
-          <span class="fin-pill fin-pill-none">${flDone}/${ftTotal} last week</span>
-          <span class="fin-pill fin-pill-none">${atFPct}% Completion Rate</span>
+          <span class="fin-pill fin-pill-red">${ftDone}/${ftTotal} this week</span>
+          <span class="fin-pill fin-pill-red">${flDone}/${ftTotal} last week</span>
+          <span class="fin-pill fin-pill-red">${atFPct}% Completion Rate</span>
         </div>
         <div class="wk-grid">${fitBoxes}</div>
         ${legend}
