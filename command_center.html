@@ -1700,35 +1700,8 @@ const CONTESTS = [
 // ─────────────────────────────────────────────────────────
 
 const DEFAULTS = {
-  'data-version': 4,
+  'data-version': 6,
   weeks: {
-    '2026-05-30': [
-      { id: 'w0-a',     day: 'Saturday',  date: '2026-05-30', time: '8:30 PM',  duration: 1.5,  goal: 'Outline',      done: false },
-      { id: 'w0-b',     day: 'Sunday',    date: '2026-05-31', time: '7:00 AM',  duration: 1.5,  goal: 'Outline',      done: false },
-      { id: 'w0-c',     day: 'Sunday',    date: '2026-05-31', time: '12:30 PM', duration: 1.5,  goal: 'Outline',      done: false },
-      { id: 'w0-d',     day: 'Monday',    date: '2026-06-01', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w0-d-eve', day: 'Monday',    date: '2026-06-01', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w0-e',     day: 'Tuesday',   date: '2026-06-02', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w0-e-eve', day: 'Tuesday',   date: '2026-06-02', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w0-f',     day: 'Wednesday', date: '2026-06-03', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w0-f-eve', day: 'Wednesday', date: '2026-06-03', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w0-g',     day: 'Thursday',  date: '2026-06-04', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w0-g-eve', day: 'Thursday',  date: '2026-06-04', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-    ],
-    '2026-06-06': [
-      { id: 'w1-s1',    day: 'Sunday',    date: '2026-06-07', time: '7:00 AM',  duration: 1.5,  goal: 'Outline',      done: false },
-      { id: 'w1-s2',    day: 'Sunday',    date: '2026-06-07', time: '9:00 AM',  duration: 1.5,  goal: 'Outline',      done: false },
-      { id: 'w1-s3',    day: 'Sunday',    date: '2026-06-07', time: '12:30 PM', duration: 1.5,  goal: 'Outline',      done: false },
-      { id: 'w1-s4',    day: 'Sunday',    date: '2026-06-07', time: '2:00 PM',  duration: 0.5,  goal: 'Outline',      done: false },
-      { id: 'w1-d',     day: 'Monday',    date: '2026-06-08', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w1-d-eve', day: 'Monday',    date: '2026-06-08', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w1-e',     day: 'Tuesday',   date: '2026-06-09', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w1-e-eve', day: 'Tuesday',   date: '2026-06-09', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w1-f',     day: 'Wednesday', date: '2026-06-10', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w1-f-eve', day: 'Wednesday', date: '2026-06-10', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w1-g',     day: 'Thursday',  date: '2026-06-11', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w1-g-eve', day: 'Thursday',  date: '2026-06-11', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-    ],
     '2026-06-13': [
       { id: 'w2-a',     day: 'Saturday',  date: '2026-06-13', time: '9:00 AM',  duration: 1.5,  goal: 'Write scenes', done: false },
       { id: 'w2-b',     day: 'Saturday',  date: '2026-06-13', time: '1:00 PM',  duration: 1.5,  goal: 'Write scenes', done: false },
@@ -1776,6 +1749,19 @@ function loadData() {
 function saveData(d) { localStorage.setItem('cc_v4', JSON.stringify(d)); }
 
 function initData() {
+  // Scrub past weeks from cc_v3 (legacy storage key) if present
+  try {
+    const raw3 = localStorage.getItem('cc_v3');
+    if (raw3) {
+      const d3 = JSON.parse(raw3);
+      if (d3 && d3.weeks) {
+        delete d3.weeks['2026-05-30'];
+        delete d3.weeks['2026-06-06'];
+        localStorage.setItem('cc_v3', JSON.stringify(d3));
+      }
+    }
+  } catch {}
+
   let d = loadData();
   if (!d) { d = JSON.parse(JSON.stringify(DEFAULTS)); saveData(d); return d; }
   let dirty = false;
@@ -1785,16 +1771,15 @@ function initData() {
     d.weeks[wk] = d.weeks[wk].filter(b => b.date !== '2026-06-06');
     if (d.weeks[wk].length !== before) dirty = true;
   });
-  // Migration v5: reset completion for May 30 and June 7 weeks; backfill missing weeks
-  if ((d['data-version'] || 0) < 5) {
+  // Migration v6: delete May 30 and Jun 7 weeks; backfill current/future weeks
+  if ((d['data-version'] || 0) < 6) {
     if (!d.weeks) d.weeks = {};
-    ['2026-05-30', '2026-06-06'].forEach(wk => {
-      if (d.weeks[wk]) d.weeks[wk].forEach(b => { b.done = false; });
-    });
+    delete d.weeks['2026-05-30'];
+    delete d.weeks['2026-06-06'];
     Object.keys(DEFAULTS.weeks).forEach(wk => {
       if (!d.weeks[wk]) d.weeks[wk] = JSON.parse(JSON.stringify(DEFAULTS.weeks[wk]));
     });
-    d['data-version'] = 5;
+    d['data-version'] = 6;
     dirty = true;
   }
   if (dirty) saveData(d);
