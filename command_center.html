@@ -2879,7 +2879,7 @@ function renderWeight() {
   const weekAvg    = wtCurrentWeekAvg(entries);
   const startLbs   = loadWeightStart();
   const currentStr = weekAvg != null ? `This week avg: ${weekAvg} lbs` : 'No weight logged';
-  const startedStr = startLbs !== null ? `Started: ${startLbs.toFixed(1)} lbs` : '';
+  const startedStr = startLbs !== null ? `Starting Weight: ${startLbs.toFixed(1)} lbs` : '';
 
   const p1 = wtProgressPct(entries, 152, weekAvg);
   const p2 = wtProgressPct(entries, 145, weekAvg);
