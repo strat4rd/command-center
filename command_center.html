@@ -2896,16 +2896,32 @@ function wtChartSvg(entries) {
   const L = 28, R = W - 10, T = 8, B = H - 18;
   const chartW = R - L, chartH = B - T;
 
-  const weeklyAvgs = wtWeeklyAverages(entries);
-  const allLbs = weeklyAvgs.map(w => w.avg);
-  const rawMin = allLbs.length ? Math.min(...allLbs, 145) : 145;
-  const rawMax = allLbs.length ? Math.max(...allLbs, 155) : 160;
-  const yMin = Math.floor(rawMin - 3);
-  const yMax = Math.ceil(rawMax + 3);
+  const nov1 = new Date('2026-11-01T12:00:00');
 
-  const xEndDate   = new Date('2026-11-01T12:00:00');
-  const xStartDate = weeklyAvgs.length ? new Date(weeklyAvgs[0].weekStart + 'T12:00:00') : new Date();
-  const xSpan = Math.max(xEndDate - xStartDate, 14 * 86400000);
+  // Y-axis: 5 lbs below lowest entry, max(5 above highest, 165); always include goal lines
+  const allWeights = entries.map(e => e.weight);
+  const dataMin = allWeights.length ? Math.min(...allWeights) : 155;
+  const dataMax = allWeights.length ? Math.max(...allWeights) : 160;
+  const yMin = Math.floor(Math.min(dataMin - 5, 143));
+  const yMax = Math.max(Math.ceil(dataMax + 5), 165);
+
+  // X-axis: 2-week left pad; if data spans < 8 weeks zoom to first+10wks, else go to Nov 1
+  let xStartDate, xEndDate;
+  if (!entries.length) {
+    xStartDate = new Date(); xEndDate = nov1;
+  } else {
+    const firstMs = new Date(entries[0].date + 'T12:00:00').getTime();
+    const lastMs  = new Date(entries[entries.length - 1].date + 'T12:00:00').getTime();
+    const dataDays = (lastMs - firstMs) / 86400000;
+    xStartDate = new Date(firstMs - 14 * 86400000);
+    if (dataDays > 56) {
+      xEndDate = nov1;
+    } else {
+      xEndDate = new Date(firstMs + 70 * 86400000);
+      if (xEndDate > nov1) xEndDate = nov1;
+    }
+  }
+  const xSpan = Math.max(xEndDate - xStartDate, 7 * 86400000);
 
   function xPos(dateStr) {
     const d = new Date(dateStr + 'T12:00:00');
@@ -2915,12 +2931,10 @@ function wtChartSvg(entries) {
     return T + ((yMax - lbs) / (yMax - yMin)) * chartH;
   }
 
-  // One dot per week, plotted at Wednesday midpoint
-  const points = weeklyAvgs.map(w => {
-    const wed = new Date(w.weekStart + 'T12:00:00');
-    wed.setDate(wed.getDate() + 3);
-    return { x: xPos(wed.toISOString().slice(0, 10)), y: yPos(w.avg), avg: w.avg, label: w.label, n: w.n };
-  });
+  // Individual daily data points (sorted entries assumed)
+  const points = entries.map(e => ({
+    x: xPos(e.date), y: yPos(e.weight), weight: e.weight, date: e.date,
+  }));
 
   // Y-axis gridlines every 5 lbs
   const yTicks = [];
@@ -2928,12 +2942,12 @@ function wtChartSvg(entries) {
 
   // X-axis monthly ticks
   const xTicks = [];
-  const cur = new Date(xStartDate); cur.setDate(1);
-  if (cur < xStartDate) cur.setMonth(cur.getMonth() + 1);
-  while (cur <= xEndDate) {
-    const x = xPos(cur.toISOString().slice(0, 10));
-    if (x >= L && x <= R) xTicks.push({ x, label: cur.toLocaleDateString('en-US', { month: 'short' }) });
-    cur.setMonth(cur.getMonth() + 1);
+  const tickCur = new Date(xStartDate); tickCur.setDate(1);
+  if (tickCur < xStartDate) tickCur.setMonth(tickCur.getMonth() + 1);
+  while (tickCur <= xEndDate) {
+    const x = xPos(tickCur.toISOString().slice(0, 10));
+    if (x >= L && x <= R) xTicks.push({ x, label: tickCur.toLocaleDateString('en-US', { month: 'short' }) });
+    tickCur.setMonth(tickCur.getMonth() + 1);
   }
 
   const y152 = yPos(152);
@@ -2955,7 +2969,7 @@ function wtChartSvg(entries) {
     <text x="${(R-1)}" y="${(y145-3).toFixed(1)}" text-anchor="end" font-size="9" fill="#4A90D9" font-weight="600">145</text>
     ${xTicks.map(t => `<text x="${t.x.toFixed(1)}" y="${(B+11)}" text-anchor="middle" font-size="10" fill="#C0C8D4">${t.label}</text>`).join('')}
     ${linePath ? `<path d="${linePath}" fill="none" stroke="#4CAF85" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
-    ${points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#4CAF85" stroke="white" stroke-width="1.2"><title>${p.label}: ${p.avg} lbs (${p.n} day${p.n !== 1 ? 's' : ''})</title></circle>`).join('')}
+    ${points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#4CAF85" stroke="white" stroke-width="1.2"><title>${p.date}: ${p.weight} lbs</title></circle>`).join('')}
     ${points.length === 0 ? `<text x="${((L+R)/2)}" y="${((T+B)/2+4)}" text-anchor="middle" font-size="10" fill="#C0C8D4" font-style="italic">Log weight to see progress</text>` : ''}
   </svg>`;
 }
