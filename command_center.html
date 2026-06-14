@@ -1679,6 +1679,9 @@
     <!-- Weight: goal cards + log + chart in one row -->
     <div id="wt-top" style="margin-bottom:16px;"></div>
 
+    <!-- Weight log history (debug panel) -->
+    <div id="wt-log-history" style="margin-bottom:16px;"></div>
+
     <!-- Progress tracker -->
     <div class="card" style="margin-bottom:16px;">
       <div class="tracker-row">
@@ -2816,6 +2819,7 @@ function loadWeight() {
 }
 function saveWeight(arr) {
   localStorage.setItem('cc_weight', JSON.stringify(arr));
+  console.log('[cc_weight] saved (' + arr.length + ' entries):', JSON.parse(JSON.stringify(arr)));
 }
 
 function logWeight() {
@@ -2831,6 +2835,7 @@ function logWeight() {
   saveWeight(entries);
   inp.value = '';
   renderWeight();
+  renderWeightHistory();
   renderRocks();
 }
 
@@ -2972,13 +2977,30 @@ function saveWeightStart(n) { localStorage.setItem('cc_weight_start', String(n))
       dirty = true;
     }
   });
-  if (!entries.find(e => e.date === '2026-06-13')) {
+  if (entries.length === 0) {
     entries.push({ date: '2026-06-13', weight: 159.8 });
-    entries.sort((a, b) => a.date.localeCompare(b.date));
     dirty = true;
   }
   if (dirty) saveWeight(entries);
 })();
+
+function renderWeightHistory() {
+  const el = document.getElementById('wt-log-history');
+  if (!el) return;
+  const entries = loadWeight();
+  const rows = [...entries].reverse().map(e =>
+    `<div style="display:flex;gap:20px;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px;">
+      <span style="color:var(--muted);min-width:96px;">${e.date}</span>
+      <span style="font-weight:600;color:var(--text);">${e.weight} lbs</span>
+    </div>`
+  ).join('');
+  el.innerHTML = `<div class="card" style="margin-bottom:0;">
+    <div class="tracker-label" style="margin-bottom:8px;">Weight Log — ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} stored in localStorage</div>
+    ${entries.length
+      ? rows
+      : '<div style="font-size:13px;color:var(--muted);font-style:italic;padding:6px 0;">No entries yet.</div>'}
+  </div>`;
+}
 
 function renderWeight() {
   const entries    = loadWeight();
@@ -3019,6 +3041,7 @@ function renderWeight() {
         <div class="wt-chart-wrap">${wtChartSvg(entries)}</div>
       </div>
     </div>`;
+  renderWeightHistory();
 }
 
 renderWeight();
