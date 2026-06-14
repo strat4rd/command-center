@@ -2905,21 +2905,14 @@ function wtChartSvg(entries) {
   const yMin = Math.floor(Math.min(dataMin - 5, 143));
   const yMax = Math.max(Math.ceil(dataMax + 5), 165);
 
-  // X-axis: 2-week left pad; if data spans < 8 weeks zoom to first+10wks, else go to Nov 1
+  // X-axis: 2-day left pad before earliest entry, always end at Nov 1
   let xStartDate, xEndDate;
   if (!entries.length) {
     xStartDate = new Date(); xEndDate = nov1;
   } else {
     const firstMs = new Date(entries[0].date + 'T12:00:00').getTime();
-    const lastMs  = new Date(entries[entries.length - 1].date + 'T12:00:00').getTime();
-    const dataDays = (lastMs - firstMs) / 86400000;
-    xStartDate = new Date(firstMs - 14 * 86400000);
-    if (dataDays > 56) {
-      xEndDate = nov1;
-    } else {
-      xEndDate = new Date(firstMs + 70 * 86400000);
-      if (xEndDate > nov1) xEndDate = nov1;
-    }
+    xStartDate = new Date(firstMs - 2 * 86400000);
+    xEndDate = nov1;
   }
   const xSpan = Math.max(xEndDate - xStartDate, 7 * 86400000);
 
