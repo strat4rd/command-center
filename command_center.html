@@ -1503,6 +1503,7 @@
           <span id="deck-avail-display" style="font-size:15px;font-weight:700;color:var(--text);"></span>
           <span style="font-size:13px;color:var(--muted);">hrs available today</span>
           <span id="deck-stats" style="font-size:12px;font-weight:600;"></span>
+          <span id="deck-pdt-debug" style="font-size:11px;color:var(--muted2);margin-left:6px;"></span>
         </div>
       </div>
       <div id="deck-list" class="t-list"></div>
@@ -2394,43 +2395,36 @@ function fmtMins(total) {
 }
 
 function calcAvailableHoursNow() {
-  // All times in PDT (UTC-6 in summer). End of day = 10 pm PDT.
-  const nowUtcMs = Date.now();
-  const pdt = new Date(nowUtcMs - 6 * 3600000);
-  const dayI = pdt.getUTCDay();           // 0=Sun … 6=Sat
+  // PDT = UTC-6
+  const pdt = new Date(Date.now() - 6 * 3600000);
+  const dayI     = pdt.getUTCDay();
   const minOfDay = pdt.getUTCHours() * 60 + pdt.getUTCMinutes();
 
-  const MORNING_START = 7 * 60;       // 7:00 AM = 420
-  const MORNING_END   = 9 * 60;       // 9:00 AM = 540
-  const EVE_START     = 18 * 60 + 30; // 6:30 PM = 1110
-  const END_OF_DAY    = 22 * 60;      // 10:00 PM = 1320
+  const END_OF_DAY = 22 * 60; // 10:00 PM = 1320 min
 
-  if (dayI === 0 || dayI === 6) {
-    // Weekend: remaining time to 10 pm minus fixed commitments
-    if (minOfDay >= END_OF_DAY) return 0;
-    const remaining = END_OF_DAY - minOfDay;
-    const deduct = dayI === 0 ? 120 : 60; // Sun: John Reed 2h; Sat: long run 1h
-    return Math.round(Math.max(0, (remaining - deduct) / 60) * 4) / 4;
+  if (dayI >= 1 && dayI <= 5) {
+    // Weekday: periods are 7:00–9:00 AM and 6:30–10:00 PM
+    const periods = [
+      { start: 7 * 60,       end: 9 * 60       }, // 420–540
+      { start: 18 * 60 + 30, end: END_OF_DAY   }, // 1110–1320
+    ];
+    let mins = 0;
+    for (const p of periods) {
+      if (minOfDay < p.start) {
+        mins += p.end - p.start;       // before period: add full duration
+      } else if (minOfDay < p.end) {
+        mins += p.end - minOfDay;      // inside period: add remaining time
+      }
+      // past period: add 0
+    }
+    return Math.round((mins / 60) * 4) / 4;
   }
 
-  // Weekday: sum all future available window time (7–9 am and 6:30–10 pm)
-  let mins = 0;
-
-  // Morning window contribution
-  if (minOfDay < MORNING_START) {
-    mins += MORNING_END - MORNING_START; // full morning = 120 min
-  } else if (minOfDay < MORNING_END) {
-    mins += MORNING_END - minOfDay;      // remaining morning
-  }
-
-  // Evening window contribution
-  if (minOfDay < EVE_START) {
-    mins += END_OF_DAY - EVE_START;      // full evening = 210 min = 3.5h
-  } else if (minOfDay < END_OF_DAY) {
-    mins += END_OF_DAY - minOfDay;       // remaining evening
-  }
-
-  return Math.round((mins / 60) * 4) / 4;
+  // Weekend: current time until 10 PM minus fixed commitments
+  if (minOfDay >= END_OF_DAY) return 0;
+  const remaining = END_OF_DAY - minOfDay;
+  const deduct = dayI === 0 ? 120 : 60; // Sun: John Reed 2h; Sat: long run 1h
+  return Math.round(Math.max(0, (remaining - deduct) / 60) * 4) / 4;
 }
 
 function renderTasks() {
@@ -3914,6 +3908,13 @@ function renderDeck() {
   const availMins = availHrs * 60;
   const dispEl = document.getElementById('deck-avail-display');
   if (dispEl) dispEl.textContent = availHrs % 1 === 0 ? availHrs : availHrs.toFixed(1);
+
+  // DEBUG: show raw PDT hour to verify timezone
+  const pdtNow = new Date(Date.now() - 6 * 3600000);
+  const pdtH = pdtNow.getUTCHours();
+  const pdtM = String(pdtNow.getUTCMinutes()).padStart(2, '0');
+  const debugEl = document.getElementById('deck-pdt-debug');
+  if (debugEl) debugEl.textContent = `PDT now: ${pdtH}:${pdtM}`;
   const items     = [];
 
   // Today's writing blocks
