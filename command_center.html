@@ -2355,7 +2355,7 @@ function calcAvailableHoursNow() {
     if (minOfDay >= END_OF_DAY) return 0;
     const remaining = END_OF_DAY - minOfDay;
     const deduct = dayI === 0 ? 120 : 60; // Sun: John Reed 2 hr; Sat: long run 1 hr
-    return Math.max(0, (remaining - deduct) / 60);
+    return Math.round(Math.max(0, (remaining - deduct) / 60) * 4) / 4;
   }
 
   // Weekday: two windows — 7-9 am and 6:30-10 pm
@@ -2366,7 +2366,7 @@ function calcAvailableHoursNow() {
   else if (minOfDay <  MORNING_END)   mins = (MORNING_END - minOfDay) + EVE_TOTAL;
   else if (minOfDay <  EVE_START)     mins = EVE_TOTAL;
   else if (minOfDay <  END_OF_DAY)    mins = END_OF_DAY - minOfDay;
-  return mins / 60;
+  return Math.round((mins / 60) * 4) / 4;
 }
 
 function renderTasks() {
