@@ -2394,33 +2394,42 @@ function fmtMins(total) {
 }
 
 function calcAvailableHoursNow() {
-  // All times in PST (UTC-7). End of day = 10 pm PST.
+  // All times in PDT (UTC-6 in summer). End of day = 10 pm PDT.
   const nowUtcMs = Date.now();
-  const pst = new Date(nowUtcMs - 7 * 3600000);
-  const dayI = pst.getUTCDay();           // 0=Sun … 6=Sat
-  const minOfDay = pst.getUTCHours() * 60 + pst.getUTCMinutes();
+  const pdt = new Date(nowUtcMs - 6 * 3600000);
+  const dayI = pdt.getUTCDay();           // 0=Sun … 6=Sat
+  const minOfDay = pdt.getUTCHours() * 60 + pdt.getUTCMinutes();
 
-  const MORNING_START = 7 * 60;    // 420
-  const MORNING_END   = 9 * 60;    // 540
-  const EVE_START     = 18 * 60 + 30; // 1110
-  const END_OF_DAY    = 22 * 60;   // 1320
+  const MORNING_START = 7 * 60;       // 7:00 AM = 420
+  const MORNING_END   = 9 * 60;       // 9:00 AM = 540
+  const EVE_START     = 18 * 60 + 30; // 6:30 PM = 1110
+  const END_OF_DAY    = 22 * 60;      // 10:00 PM = 1320
 
   if (dayI === 0 || dayI === 6) {
-    // Weekend: current time → 10 pm minus fixed commitments
+    // Weekend: remaining time to 10 pm minus fixed commitments
     if (minOfDay >= END_OF_DAY) return 0;
     const remaining = END_OF_DAY - minOfDay;
-    const deduct = dayI === 0 ? 120 : 60; // Sun: John Reed 2 hr; Sat: long run 1 hr
+    const deduct = dayI === 0 ? 120 : 60; // Sun: John Reed 2h; Sat: long run 1h
     return Math.round(Math.max(0, (remaining - deduct) / 60) * 4) / 4;
   }
 
-  // Weekday: two windows — 7-9 am and 6:30-10 pm
-  const MORNING_TOTAL = MORNING_END - MORNING_START; // 120
-  const EVE_TOTAL     = END_OF_DAY - EVE_START;      // 210
+  // Weekday: sum all future available window time (7–9 am and 6:30–10 pm)
   let mins = 0;
-  if      (minOfDay <  MORNING_START) mins = MORNING_TOTAL + EVE_TOTAL;
-  else if (minOfDay <  MORNING_END)   mins = (MORNING_END - minOfDay) + EVE_TOTAL;
-  else if (minOfDay <  EVE_START)     mins = EVE_TOTAL;
-  else if (minOfDay <  END_OF_DAY)    mins = END_OF_DAY - minOfDay;
+
+  // Morning window contribution
+  if (minOfDay < MORNING_START) {
+    mins += MORNING_END - MORNING_START; // full morning = 120 min
+  } else if (minOfDay < MORNING_END) {
+    mins += MORNING_END - minOfDay;      // remaining morning
+  }
+
+  // Evening window contribution
+  if (minOfDay < EVE_START) {
+    mins += END_OF_DAY - EVE_START;      // full evening = 210 min = 3.5h
+  } else if (minOfDay < END_OF_DAY) {
+    mins += END_OF_DAY - minOfDay;       // remaining evening
+  }
+
   return Math.round((mins / 60) * 4) / 4;
 }
 
