@@ -1994,6 +1994,25 @@ let currentWeek = satWeekKey(new Date());
 const TODAY_STR = todayStr();
 const THISWK    = satWeekKey(new Date());
 
+// One-time date purges for writing blocks
+function loadWritePurgedDates()  { try { return JSON.parse(localStorage.getItem('cc_write_purged_dates') || '[]'); } catch { return []; } }
+function saveWritePurgedDates(d) { localStorage.setItem('cc_write_purged_dates', JSON.stringify(d)); }
+
+(function applyWriteDatePurges() {
+  const purged = loadWritePurgedDates();
+  if (!purged.includes('2026-06-13')) {
+    purged.push('2026-06-13');
+    saveWritePurgedDates(purged);
+  }
+  let dirty = false;
+  Object.keys(DATA.weeks).forEach(wk => {
+    const before = DATA.weeks[wk].length;
+    DATA.weeks[wk] = DATA.weeks[wk].filter(b => !purged.includes(b.date));
+    if (DATA.weeks[wk].length !== before) dirty = true;
+  });
+  if (dirty) saveData(DATA);
+})();
+
 // ─────────────────────────────────────────────────────────
 // RENDER
 // ─────────────────────────────────────────────────────────
