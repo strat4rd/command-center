@@ -662,6 +662,23 @@
     }
     .t-queue-btn:hover { border-color: var(--accent-rim); color: var(--accent); }
 
+    .t-icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 5px;
+      color: var(--muted);
+      border-radius: 4px;
+      flex-shrink: 0;
+      line-height: 1;
+      opacity: 0;
+      transition: opacity 0.12s, color 0.12s;
+    }
+    .t-item:hover .t-icon-btn { opacity: 1; }
+    .t-icon-btn:hover { color: var(--text); background: var(--surface2); }
+    .t-del-btn:hover  { color: #EF4444 !important; }
+
     .t-add-form {
       display: flex;
       gap: 8px;
@@ -1473,9 +1490,11 @@
   <!-- ── MAIN ──────────────────────────────────────────────── -->
   <div class="tab-panel active" id="panel-main">
 
-    <div style="margin-bottom:20px;">
+    <div style="margin-bottom:14px;">
 <div class="rocks-grid" id="main-rocks"></div>
     </div>
+
+    <div id="main-time-breakdown" style="margin-bottom:20px;"></div>
 
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
@@ -2339,9 +2358,28 @@ function renderTasks() {
     <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 
+  const CATS = ['Personal','Writing','Work','Fitness','Finance'];
+
   function taskRow(t, opts = {}) {
     const isQueued = opts.queued;
     const isDone   = t.done;
+
+    if (editingTaskId === t.id) {
+      return `<div class="t-item" style="cursor:default;flex-wrap:wrap;gap:6px;" onclick="event.stopPropagation()">
+        <div class="t-cb"></div>
+        <input id="t-edit-name-${t.id}" class="t-text-input" value="${t.name.replace(/"/g,'&quot;')}"
+               style="flex:1;font-size:13px;min-width:120px;"
+               onkeydown="if(event.key==='Enter')saveEditTask('${t.id}');else if(event.key==='Escape')cancelEditTask();">
+        <input type="number" id="t-edit-mins-${t.id}" class="t-mins-input" value="${t.mins}" min="1" style="width:56px;">
+        <select id="t-edit-cat-${t.id}" class="t-select" style="font-size:12px;">
+          ${CATS.map(c=>`<option value="${c}"${t.cat===c?' selected':''}>${c}</option>`).join('')}
+        </select>
+        <button class="journal-save-btn" style="padding:4px 12px;font-size:12px;"
+                onclick="event.stopPropagation();saveEditTask('${t.id}')">Save</button>
+        <button class="fin-cancel-btn" onclick="event.stopPropagation();cancelEditTask()">Cancel</button>
+      </div>`;
+    }
+
     const minsSpan = isDone
       ? `<span class="t-mins">${t.mins}m</span>`
       : `<span class="t-mins editable" title="Click to edit time" onclick="event.stopPropagation();editTaskMins(event,'${t.id}')">${t.mins}m</span>`;
@@ -2351,6 +2389,8 @@ function renderTasks() {
       ${minsSpan}
       <span class="t-cat-pill t-cat-${t.cat}">${t.cat}</span>
       ${!isDone ? `<button class="t-queue-btn" onclick="event.stopPropagation();queueTask('${t.id}')">${isQueued ? 'Unqueue' : 'Queue for later'}</button>` : ''}
+      ${!isDone ? `<button class="t-icon-btn" title="Edit" onclick="event.stopPropagation();startEditTask('${t.id}')">✎</button>` : ''}
+      <button class="t-icon-btn t-del-btn" title="Delete" onclick="event.stopPropagation();deleteTask('${t.id}')">✕</button>
     </div>`;
   }
 
@@ -2425,6 +2465,45 @@ function editTaskMins(e, id) {
     if (ev.key === 'Enter')  { inp.blur(); }
     if (ev.key === 'Escape') { committed = true; renderTasks(); }
   });
+}
+
+let editingTaskId = null;
+
+function deleteTask(id) {
+  TASKS = TASKS.filter(t => t.id !== id);
+  saveTasks(TASKS);
+  renderTasks();
+  renderDeck();
+}
+
+function startEditTask(id) {
+  editingTaskId = id;
+  renderTasks();
+  requestAnimationFrame(() => {
+    const inp = document.getElementById('t-edit-name-' + id);
+    if (inp) { inp.focus(); inp.select(); }
+  });
+}
+
+function saveEditTask(id) {
+  if (editingTaskId !== id) return;
+  const t = TASKS.find(t => t.id === id);
+  if (!t) return;
+  const name = document.getElementById('t-edit-name-' + id)?.value.trim();
+  const mins = parseInt(document.getElementById('t-edit-mins-' + id)?.value, 10);
+  const cat  = document.getElementById('t-edit-cat-' + id)?.value;
+  if (name) t.name = name;
+  if (mins > 0) t.mins = mins;
+  if (cat)  t.cat  = cat;
+  saveTasks(TASKS);
+  editingTaskId = null;
+  renderTasks();
+  renderDeck();
+}
+
+function cancelEditTask() {
+  editingTaskId = null;
+  renderTasks();
 }
 
 function addTask() {
@@ -3496,10 +3575,12 @@ function renderTimeBreakdown() {
   });
 
   return `
-    <div class="rock-label" style="margin-bottom:8px;">Time Breakdown</div>
-    ${pieHtml(todayMap, 'Today')}
-    ${pieHtml(weekMap, 'This Week')}
-    ${pieHtml(allMap, 'All Time')}
+    <div class="rock-label" style="margin-bottom:12px;">Time Breakdown</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+      <div>${pieHtml(todayMap, 'Today')}</div>
+      <div>${pieHtml(weekMap, 'This Week')}</div>
+      <div>${pieHtml(allMap, 'All Time')}</div>
+    </div>
   `;
 }
 
@@ -3680,29 +3761,26 @@ function renderRocks() {
 
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:14px;">
-      <div class="sc-card rock-dreams" style="padding:12px 14px;">
-        <div class="rock-label">Dream Goals</div>
-        <div class="dream-list">
-          <div class="dream-item">
-            <span class="dream-goal">Sell a screenplay for $300,000</span>
-            <span class="dream-date">by Jan 1, 2028</span>
-          </div>
-          <div class="dream-item">
-            <span class="dream-goal">Create and showrun a hit show on television</span>
-            <span class="dream-date">by Jan 1, 2030</span>
-          </div>
-          <div class="dream-item">
-            <span class="dream-goal">Direct a feature film</span>
-            <span class="dream-date">by Jan 1, 2033</span>
-          </div>
-          <div class="dream-item">
-            <span class="dream-goal">Marry a wonderful man</span>
-            <span class="dream-date">by Jan 1, 2030</span>
-          </div>
+    <div class="sc-card rock-dreams" style="padding:12px 14px;">
+      <div class="rock-label">Dream Goals</div>
+      <div class="dream-list">
+        <div class="dream-item">
+          <span class="dream-goal">Sell a screenplay for $300,000</span>
+          <span class="dream-date">by Jan 1, 2028</span>
+        </div>
+        <div class="dream-item">
+          <span class="dream-goal">Create and showrun a hit show on television</span>
+          <span class="dream-date">by Jan 1, 2030</span>
+        </div>
+        <div class="dream-item">
+          <span class="dream-goal">Direct a feature film</span>
+          <span class="dream-date">by Jan 1, 2033</span>
+        </div>
+        <div class="dream-item">
+          <span class="dream-goal">Marry a wonderful man</span>
+          <span class="dream-date">by Jan 1, 2030</span>
         </div>
       </div>
-      <div class="sc-card" style="padding:12px 14px;">${renderTimeBreakdown()}</div>
     </div>
   `;
 }
@@ -3845,6 +3923,8 @@ function addWritingBlock() {
 
 function renderMain() {
   renderRocks();
+  document.getElementById('main-time-breakdown').innerHTML =
+    `<div class="sc-card" style="padding:14px 20px;">${renderTimeBreakdown()}</div>`;
   renderDeck();
 }
 
