@@ -2794,10 +2794,6 @@ document.getElementById('fit-next').addEventListener('click', () => {
   });
   if (fitDirty) saveFitness(fitness);
 
-  // Remove cc_weight entries recorded before today
-  const weight = loadWeight();
-  const trimmed = weight.filter(e => e.date >= TODAY_STR);
-  if (trimmed.length !== weight.length) saveWeight(trimmed);
 })();
 
 // One-time date overrides for fitness (keyed by YYYY-MM-DD)
@@ -2829,8 +2825,8 @@ function logWeight() {
   const entries = loadWeight();
   const today = TODAY_STR;
   const idx = entries.findIndex(e => e.date === today);
-  if (idx >= 0) entries[idx].lbs = val;
-  else entries.push({ date: today, lbs: val });
+  if (idx >= 0) entries[idx].weight = val;
+  else entries.push({ date: today, weight: val });
   entries.sort((a,b) => a.date.localeCompare(b.date));
   saveWeight(entries);
   inp.value = '';
@@ -2838,46 +2834,46 @@ function logWeight() {
   renderRocks();
 }
 
-function wtMondayOf(dateStr) {
+function wtSaturdayOf(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
-  const daysFromMon = (d.getDay() + 6) % 7;
-  d.setDate(d.getDate() - daysFromMon);
+  const daysSinceSat = (d.getDay() + 1) % 7;
+  d.setDate(d.getDate() - daysSinceSat);
   return d.toISOString().slice(0, 10);
 }
 
 function wtWeeklyAverages(entries) {
   const weekMap = {};
   entries.forEach(e => {
-    const wk = wtMondayOf(e.date);
+    const wk = wtSaturdayOf(e.date);
     if (!weekMap[wk]) weekMap[wk] = { sum: 0, n: 0 };
-    weekMap[wk].sum += e.lbs;
+    weekMap[wk].sum += e.weight;
     weekMap[wk].n++;
   });
   return Object.entries(weekMap)
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([wk, v]) => {
       const avg = Math.round((v.sum / v.n) * 10) / 10;
-      const monDate = new Date(wk + 'T12:00:00');
-      const label = monDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' wk';
+      const satDate = new Date(wk + 'T12:00:00');
+      const label = satDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' wk';
       return { weekStart: wk, avg, n: v.n, label };
     });
 }
 
 function wtCurrentWeekAvg(entries) {
   if (!entries.length) return null;
-  const thisWeek = wtMondayOf(TODAY_STR);
-  const thisWeekEntries = entries.filter(e => wtMondayOf(e.date) === thisWeek);
+  const thisWeek = wtSaturdayOf(TODAY_STR);
+  const thisWeekEntries = entries.filter(e => wtSaturdayOf(e.date) === thisWeek);
   if (thisWeekEntries.length) {
-    const avg = thisWeekEntries.reduce((s, e) => s + e.lbs, 0) / thisWeekEntries.length;
+    const avg = thisWeekEntries.reduce((s, e) => s + e.weight, 0) / thisWeekEntries.length;
     return Math.round(avg * 10) / 10;
   }
-  return entries[entries.length - 1].lbs;
+  return entries[entries.length - 1].weight;
 }
 
 function wtProgressPct(entries, target, currentLbs) {
   if (!entries.length) return 0;
-  const cur   = currentLbs != null ? currentLbs : entries[entries.length - 1].lbs;
-  const start = entries[0].lbs;
+  const cur   = currentLbs != null ? currentLbs : entries[entries.length - 1].weight;
+  const start = entries[0].weight;
   if (start <= target) return 100;
   if (cur <= target)   return 100;
   if (cur >= start)    return 0;
@@ -2964,6 +2960,24 @@ function saveWeightStart(n) { localStorage.setItem('cc_weight_start', String(n))
 
 (function initWeightStart() {
   if (loadWeightStart() === null) saveWeightStart(161.0);
+})();
+
+(function initWeightData() {
+  let entries = loadWeight();
+  let dirty = false;
+  entries.forEach(e => {
+    if (e.lbs !== undefined && e.weight === undefined) {
+      e.weight = e.lbs;
+      delete e.lbs;
+      dirty = true;
+    }
+  });
+  if (!entries.find(e => e.date === '2026-06-13')) {
+    entries.push({ date: '2026-06-13', weight: 159.8 });
+    entries.sort((a, b) => a.date.localeCompare(b.date));
+    dirty = true;
+  }
+  if (dirty) saveWeight(entries);
 })();
 
 function renderWeight() {
