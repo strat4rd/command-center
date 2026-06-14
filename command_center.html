@@ -2369,13 +2369,15 @@ let TASKS = initTasks();
 TASKS.forEach(t => { if (t.queued === undefined) t.queued = false; });
 // Archive completed tasks from previous days into cc_time_log, then purge them
 (function() {
-  const toArchive = TASKS.filter(t => !t.queued && t.done && t.doneDate && t.doneDate !== TODAY_STR);
+  // Include tasks without doneDate (completed before date-tracking was added)
+  const toArchive = TASKS.filter(t => !t.queued && t.done && t.doneDate !== TODAY_STR);
   if (toArchive.length) {
     const log = loadTimeLog();
     toArchive.forEach(t => {
       const cat = t.cat || 'Personal';
-      if (!log[t.doneDate]) log[t.doneDate] = {};
-      log[t.doneDate][cat] = (log[t.doneDate][cat] || 0) + (t.mins || 0);
+      const date = t.doneDate || '0000-00-00';
+      if (!log[date]) log[date] = {};
+      log[date][cat] = (log[date][cat] || 0) + (t.mins || 0);
     });
     saveTimeLog(log);
   }
