@@ -3841,6 +3841,15 @@ function renderDeck() {
     name: t.name, mins: t.mins, cat: t.cat, done: false,
   }));
 
+  // Today's completed tasks — show crossed out at bottom
+  TASKS.filter(t => t.done && t.doneDate === TODAY_STR).forEach(t => items.push({
+    type: 'task', id: t.id,
+    name: t.name, mins: t.mins, cat: t.cat, done: true,
+  }));
+
+  // Done items sink to the bottom
+  items.sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0));
+
   const incompleteMins = items.filter(i => !i.done).reduce((s,i) => s + i.mins, 0);
   const over = incompleteMins > availMins;
   const statsEl = document.getElementById('deck-stats');
@@ -3881,7 +3890,11 @@ function toggleDeckItem(type, id) {
     renderFitness();
   } else if (type === 'task') {
     const t = TASKS.find(t => t.id === id);
-    if (t) { t.done = !t.done; saveTasks(TASKS); renderTasks(); }
+    if (t) {
+      t.done = !t.done;
+      if (t.done) { t.queued = false; t.doneDate = TODAY_STR; } else { t.doneDate = null; }
+      saveTasks(TASKS); renderTasks();
+    }
   }
   renderMain();
 }
