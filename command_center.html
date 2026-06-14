@@ -2350,6 +2350,13 @@ function saveTasks(tasks) {
   localStorage.setItem('cc_tasks', JSON.stringify(tasks));
 }
 
+function loadTimeLog() {
+  try { return JSON.parse(localStorage.getItem('cc_time_log') || '{}'); } catch { return {}; }
+}
+function saveTimeLog(log) {
+  localStorage.setItem('cc_time_log', JSON.stringify(log));
+}
+
 function initTasks() {
   const d = loadTasks();
   if (d) return d;
@@ -2360,14 +2367,23 @@ function initTasks() {
 let TASKS = initTasks();
 // ensure all tasks have queued field
 TASKS.forEach(t => { if (t.queued === undefined) t.queued = false; });
-// purge completed tasks from previous days
+// Archive completed tasks from previous days into cc_time_log, then purge them
 (function() {
+  const toArchive = TASKS.filter(t => !t.queued && t.done && t.doneDate && t.doneDate !== TODAY_STR);
+  if (toArchive.length) {
+    const log = loadTimeLog();
+    toArchive.forEach(t => {
+      const cat = t.cat || 'Personal';
+      if (!log[t.doneDate]) log[t.doneDate] = {};
+      log[t.doneDate][cat] = (log[t.doneDate][cat] || 0) + (t.mins || 0);
+    });
+    saveTimeLog(log);
+  }
   const before = TASKS.length;
   TASKS = TASKS.filter(t => t.queued || !t.done || t.doneDate === TODAY_STR);
-  // remove deleted task from any saved localStorage data
   TASKS = TASKS.filter(t => t.name !== 'Build AM transition plan for CEO');
   if (TASKS.length !== before) saveTasks(TASKS);
-})();;
+})();
 
 function fmtMins(total) {
   if (total < 60) return `${total}m`;
@@ -3612,6 +3628,7 @@ function renderTimeBreakdown() {
 
   const fitData  = loadFitness();
   const todayDI  = new Date().getDay();
+  const timeLog  = loadTimeLog();
 
   // ── Today ──
   const todayMap = {};
@@ -3634,9 +3651,18 @@ function renderTimeBreakdown() {
   SCHED.filter(s => !s.rest).forEach(s => {
     if ((fitData[FIT_THISWK] || {})[s.id]) weekMap.Fitness = (weekMap.Fitness || 0) + parseFitMins(s.duration);
   });
+  // Live tasks completed today
   TASKS.filter(t => t.done).forEach(t => {
     const c = t.cat || 'Personal';
     weekMap[c] = (weekMap[c] || 0) + (t.mins || 0);
+  });
+  // Archived task time from this week (dates >= this week's Saturday)
+  Object.entries(timeLog).forEach(([date, cats]) => {
+    if (date >= THISWK) {
+      Object.entries(cats).forEach(([cat, mins]) => {
+        weekMap[cat] = (weekMap[cat] || 0) + mins;
+      });
+    }
   });
 
   // ── All Time ──
@@ -3649,9 +3675,16 @@ function renderTimeBreakdown() {
       if (wkData[s.id]) allMap.Fitness = (allMap.Fitness || 0) + parseFitMins(s.duration);
     });
   });
+  // Live tasks completed today
   TASKS.filter(t => t.done).forEach(t => {
     const c = t.cat || 'Personal';
     allMap[c] = (allMap[c] || 0) + (t.mins || 0);
+  });
+  // All archived task time
+  Object.values(timeLog).forEach(cats => {
+    Object.entries(cats).forEach(([cat, mins]) => {
+      allMap[cat] = (allMap[cat] || 0) + mins;
+    });
   });
 
   return `
