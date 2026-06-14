@@ -1503,7 +1503,6 @@
           <span id="deck-avail-display" style="font-size:15px;font-weight:700;color:var(--text);"></span>
           <span style="font-size:13px;color:var(--muted);">hrs available today</span>
           <span id="deck-stats" style="font-size:12px;font-weight:600;"></span>
-          <span id="deck-pdt-debug" style="font-size:11px;color:var(--muted2);margin-left:6px;"></span>
         </div>
       </div>
       <div id="deck-list" class="t-list"></div>
@@ -2402,28 +2401,31 @@ function calcAvailableHoursNow() {
 
   const END_OF_DAY = 22 * 60; // 10:00 PM = 1320 min
 
+  // Weekday: Mon–Fri (dayI 1–5)
   if (dayI >= 1 && dayI <= 5) {
-    // Weekday: periods are 7:00–9:00 AM and 6:30–10:00 PM
     const periods = [
-      { start: 7 * 60,       end: 9 * 60       }, // 420–540
-      { start: 18 * 60 + 30, end: END_OF_DAY   }, // 1110–1320
+      { start: 7 * 60,       end: 9 * 60     }, // 7:00–9:00 AM
+      { start: 18 * 60 + 30, end: END_OF_DAY }, // 6:30–10:00 PM
     ];
     let mins = 0;
     for (const p of periods) {
       if (minOfDay < p.start) {
-        mins += p.end - p.start;       // before period: add full duration
+        mins += p.end - p.start;   // before: full duration
       } else if (minOfDay < p.end) {
-        mins += p.end - minOfDay;      // inside period: add remaining time
+        mins += p.end - minOfDay;  // inside: remaining time
       }
-      // past period: add 0
+      // past: add 0
     }
     return Math.round((mins / 60) * 4) / 4;
   }
 
-  // Weekend: current time until 10 PM minus fixed commitments
+  // Weekend: Sat (dayI === 6) or Sun (dayI === 0)
   if (minOfDay >= END_OF_DAY) return 0;
   const remaining = END_OF_DAY - minOfDay;
-  const deduct = dayI === 0 ? 120 : 60; // Sun: John Reed 2h; Sat: long run 1h
+  // Only deduct morning workouts that haven't happened yet
+  let deduct = 0;
+  if (dayI === 0 && minOfDay < 12 * 60) deduct = 120; // Sun: John Reed 10am–12pm
+  if (dayI === 6 && minOfDay < 10 * 60) deduct = 60;  // Sat: long run (morning)
   return Math.round(Math.max(0, (remaining - deduct) / 60) * 4) / 4;
 }
 
@@ -3909,12 +3911,6 @@ function renderDeck() {
   const dispEl = document.getElementById('deck-avail-display');
   if (dispEl) dispEl.textContent = availHrs % 1 === 0 ? availHrs : availHrs.toFixed(1);
 
-  // DEBUG: show raw PDT hour to verify timezone
-  const pdtNow = new Date(Date.now() - 6 * 3600000);
-  const pdtH = pdtNow.getUTCHours();
-  const pdtM = String(pdtNow.getUTCMinutes()).padStart(2, '0');
-  const debugEl = document.getElementById('deck-pdt-debug');
-  if (debugEl) debugEl.textContent = `PDT now: ${pdtH}:${pdtM}`;
   const items     = [];
 
   // Today's writing blocks
