@@ -1481,8 +1481,8 @@
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
         <div class="tracker-label">Today's Docket</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <input type="number" id="deck-available" class="t-hours-input" value="8" min="0" max="24">
-          <span style="font-size:13px;color:var(--muted);">hrs available</span>
+          <span id="deck-avail-display" style="font-size:15px;font-weight:700;color:var(--text);"></span>
+          <span style="font-size:13px;color:var(--muted);">hrs available today</span>
           <span id="deck-stats" style="font-size:12px;font-weight:600;"></span>
         </div>
       </div>
@@ -1561,27 +1561,6 @@
   <!-- ── TASKS ────────────────────────────────────────────── -->
   <!-- ── TASKS ─────────────────────────────────────────────── -->
   <div class="tab-panel" id="panel-tasks">
-
-    <!-- Stats bar -->
-    <div class="tasks-stats card" style="margin-bottom:16px;">
-      <div class="tasks-stats-inner">
-        <div class="tasks-stat-block">
-          <div class="field-label">Remaining</div>
-          <div class="tasks-stat-val" id="t-remaining">—</div>
-        </div>
-        <div class="tasks-stat-block">
-          <div class="field-label">Available today</div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <input type="number" id="t-available" class="t-hours-input" value="8" min="0" max="24">
-            <span style="font-size:13px;color:var(--muted);">hrs</span>
-          </div>
-        </div>
-        <div class="tasks-stat-block">
-          <div class="field-label">Fit in day?</div>
-          <div class="tasks-stat-val" id="t-fit">—</div>
-        </div>
-      </div>
-    </div>
 
     <!-- Task list -->
     <div class="card" style="margin-bottom:16px;">
@@ -2321,40 +2300,41 @@ function fmtMins(total) {
   return m ? `${h}h ${m}m` : `${h}h`;
 }
 
-function calcAvailableHours() {
-  const WAKING = 16;
-  const dayI = new Date().getDay();
-  const isWeekday = dayI >= 1 && dayI <= 5;
-  const dayJobHrs = isWeekday ? 9 : 0;
-  const writingMins = Object.values(DATA.weeks || {}).flat()
-    .filter(b => b.date === TODAY_STR)
-    .reduce((s, b) => s + b.duration * 60, 0);
-  const fitSched = schedForDay(dayI);
-  const fitMins = (!fitSched.rest && !fitSched.optional) ? parseFitMins(fitSched.duration) : 0;
-  const miscHrs = 1.5;
-  const free = WAKING - dayJobHrs - (writingMins / 60) - (fitMins / 60) - miscHrs;
-  return Math.min(WAKING, Math.max(0, free));
+function calcAvailableHoursNow() {
+  // All times in PST (UTC-7). End of day = 10 pm PST.
+  const nowUtcMs = Date.now();
+  const pst = new Date(nowUtcMs - 7 * 3600000);
+  const dayI = pst.getUTCDay();           // 0=Sun … 6=Sat
+  const minOfDay = pst.getUTCHours() * 60 + pst.getUTCMinutes();
+
+  const MORNING_START = 7 * 60;    // 420
+  const MORNING_END   = 9 * 60;    // 540
+  const EVE_START     = 18 * 60 + 30; // 1110
+  const END_OF_DAY    = 22 * 60;   // 1320
+
+  if (dayI === 0 || dayI === 6) {
+    // Weekend: current time → 10 pm minus fixed commitments
+    if (minOfDay >= END_OF_DAY) return 0;
+    const remaining = END_OF_DAY - minOfDay;
+    const deduct = dayI === 0 ? 120 : 60; // Sun: John Reed 2 hr; Sat: long run 1 hr
+    return Math.max(0, (remaining - deduct) / 60);
+  }
+
+  // Weekday: two windows — 7-9 am and 6:30-10 pm
+  const MORNING_TOTAL = MORNING_END - MORNING_START; // 120
+  const EVE_TOTAL     = END_OF_DAY - EVE_START;      // 210
+  let mins = 0;
+  if      (minOfDay <  MORNING_START) mins = MORNING_TOTAL + EVE_TOTAL;
+  else if (minOfDay <  MORNING_END)   mins = (MORNING_END - minOfDay) + EVE_TOTAL;
+  else if (minOfDay <  EVE_START)     mins = EVE_TOTAL;
+  else if (minOfDay <  END_OF_DAY)    mins = END_OF_DAY - minOfDay;
+  return mins / 60;
 }
 
 function renderTasks() {
   const active   = TASKS.filter(t => !t.done && !t.queued);
   const queued   = TASKS.filter(t => !t.done && t.queued);
   const done     = TASKS.filter(t => t.done);
-  const totalMins = active.reduce((s, t) => s + t.mins, 0);
-  const available = parseFloat(document.getElementById('t-available').value) || 0;
-  const availMins = available * 60;
-
-  document.getElementById('t-remaining').textContent = fmtMins(totalMins);
-
-  const fitEl = document.getElementById('t-fit');
-  if (totalMins <= availMins) {
-    fitEl.textContent = 'Yes';
-    fitEl.style.color = '#4CAF85';
-  } else {
-    fitEl.textContent = `${fmtMins(totalMins - availMins)} over`;
-    fitEl.style.color = '#EF4444';
-  }
-
   const check = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
     <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
@@ -2458,14 +2438,6 @@ function addTask() {
   document.getElementById('t-new-mins').value = '';
   renderTasks();
 }
-
-document.getElementById('t-available').addEventListener('input', renderTasks);
-
-// Set auto-calculated available hours as default
-(function() {
-  const autoHrs = calcAvailableHours();
-  document.getElementById('t-available').value = autoHrs.toFixed(1);
-})();
 
 renderTasks();
 
@@ -3736,8 +3708,10 @@ function renderRocks() {
 }
 
 function renderDeck() {
-  const availHrs  = parseFloat(document.getElementById('deck-available').value) || 8;
+  const availHrs  = calcAvailableHoursNow();
   const availMins = availHrs * 60;
+  const dispEl = document.getElementById('deck-avail-display');
+  if (dispEl) dispEl.textContent = availHrs % 1 === 0 ? availHrs : availHrs.toFixed(1);
   const items     = [];
 
   // Today's writing blocks
@@ -3874,7 +3848,6 @@ function renderMain() {
   renderDeck();
 }
 
-document.getElementById('deck-available').addEventListener('input', renderDeck);
 
 // ─────────────────────────────────────────────────────────
 // VETTER
