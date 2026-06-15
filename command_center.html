@@ -2394,8 +2394,8 @@ function fmtMins(total) {
 }
 
 function calcAvailableHoursNow() {
-  // PDT = UTC-6
-  const pdt = new Date(Date.now() - 6 * 3600000);
+  // PDT = UTC-7
+  const pdt = new Date(Date.now() - 7 * 3600000);
   const dayI     = pdt.getUTCDay();
   const minOfDay = pdt.getUTCHours() * 60 + pdt.getUTCMinutes();
 
@@ -2420,13 +2420,9 @@ function calcAvailableHoursNow() {
   }
 
   // Weekend: Sat (dayI === 6) or Sun (dayI === 0)
+  // No workout deductions — just remaining clock time until 10 PM
   if (minOfDay >= END_OF_DAY) return 0;
-  const remaining = END_OF_DAY - minOfDay;
-  // Only deduct morning workouts that haven't happened yet
-  let deduct = 0;
-  if (dayI === 0 && minOfDay < 12 * 60) deduct = 120; // Sun: John Reed 10am–12pm
-  if (dayI === 6 && minOfDay < 10 * 60) deduct = 60;  // Sat: long run (morning)
-  return Math.round(Math.max(0, (remaining - deduct) / 60) * 4) / 4;
+  return Math.round(((END_OF_DAY - minOfDay) / 60) * 4) / 4;
 }
 
 function renderTasks() {
