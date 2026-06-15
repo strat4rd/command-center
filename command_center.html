@@ -1209,7 +1209,7 @@
       white-space: nowrap;
     }
 
-    .fin-pill-met  { background: rgba(76,175,133,0.12); color: #4CAF85; }
+    .fin-pill-met  { background: #E8F5EE;               color: #4CAF85; }
     .fin-pill-prog { background: #FFFBEB;               color: #F5A623; }
     .fin-pill-none { background: rgba(74,144,217,0.10); color: #4A90D9; }
     .fin-pill-red  { background: #FFEBEB;               color: #C0504D; }
@@ -3781,13 +3781,14 @@ function renderRocks() {
   // On-track logic for current week: compare done vs expected pace (Sat–Fri, 7 days)
   function thisWeekPillClass(done, total, hasData) {
     if (!hasData || total === 0) return 'fin-pill-gray';
-    if (done >= total) return 'fin-pill-met';
     const jsDay = new Date().getDay(); // 0=Sun … 6=Sat
     const dayIndex = (jsDay + 1) % 7; // 0=Sat, 1=Sun, …, 6=Fri
     const daysElapsed = dayIndex + 1; // 1–7
     const expected = (daysElapsed / 7) * total;
-    if (done >= expected) return 'fin-pill-prog'; // on track or ahead → gold
-    return 'fin-pill-red';                        // behind pace → red
+    const blocksShort = Math.max(0, Math.ceil(expected) - done);
+    if (blocksShort === 0) return 'fin-pill-met';  // on track or ahead → green
+    if (blocksShort === 1) return 'fin-pill-prog'; // 1 behind → gold
+    return 'fin-pill-red';                         // 2+ behind → red
   }
 
   const twPillClass = thisWeekPillClass(twDone, twTotal, twTotal > 0);
