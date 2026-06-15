@@ -3769,7 +3769,7 @@ function renderRocks() {
   const atWTotal = allWkBlocks.length;
   const atWPct  = atWTotal ? Math.round((atWDone / atWTotal) * 100) : 0;
 
-  // Pill classes: gray=no data, red=<75%, gold=75-99%, green=100%
+  // Pill classes: gray=no data, red=behind, gold=on-track, green=100%
   function pillClass(done, total, hasData) {
     if (!hasData || total === 0) return 'fin-pill-gray';
     const p = (done / total) * 100;
@@ -3778,7 +3778,19 @@ function renderRocks() {
     return 'fin-pill-red';
   }
 
-  const twPillClass = pillClass(twDone, twTotal, twTotal > 0);
+  // On-track logic for current week: compare done vs expected pace (Sat–Fri, 7 days)
+  function thisWeekPillClass(done, total, hasData) {
+    if (!hasData || total === 0) return 'fin-pill-gray';
+    if (done >= total) return 'fin-pill-met';
+    const jsDay = new Date().getDay(); // 0=Sun … 6=Sat
+    const dayIndex = (jsDay + 1) % 7; // 0=Sat, 1=Sun, …, 6=Fri
+    const daysElapsed = dayIndex + 1; // 1–7
+    const expected = (daysElapsed / 7) * total;
+    if (done >= expected) return 'fin-pill-prog'; // on track or ahead → gold
+    return 'fin-pill-red';                        // behind pace → red
+  }
+
+  const twPillClass = thisWeekPillClass(twDone, twTotal, twTotal > 0);
   const lwPillClass = pillClass(lwDone, lwTotal, lwTotal > 0);
 
   const writeBoxes = writeWeeks.map(wk => {
@@ -3801,7 +3813,7 @@ function renderRocks() {
   const atFTotal  = (fitAllWks.length || 1) * ftTotal;
   const atFPct    = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
 
-  const ftPillClass = pillClass(ftDone, ftTotal, FIT_THISWK in fitData);
+  const ftPillClass = thisWeekPillClass(ftDone, ftTotal, FIT_THISWK in fitData);
   const flPillClass = pillClass(flDone, ftTotal, lastFitKey in fitData);
 
   const fitKeys   = Object.keys(fitData).sort();
