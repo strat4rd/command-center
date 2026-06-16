@@ -341,12 +341,22 @@
     .block.done .block-day { text-decoration: line-through; }
 
     .block.missed { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.30); }
-    .block.missed .block-day { color: #B91C1C; text-decoration: line-through; }
-    .block.missed .cb { background: #EF4444; border-color: #EF4444; }
-    .block.missed .cb svg { display: block; }
+    .block.missed .block-goal { text-decoration: line-through; color: var(--muted); }
     .t-item.missed .t-cb { background: #EF4444; border-color: #EF4444; }
     .t-item.missed .t-cb svg { display: block; }
     .t-item.missed .t-name { text-decoration: line-through; color: #EF4444; }
+
+    .fit-block-actions { margin-left: auto; display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+    .fit-miss-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 13px; font-weight: 700; line-height: 1;
+      padding: 2px 5px; color: var(--muted2); border-radius: 4px;
+      flex-shrink: 0; opacity: 0;
+      transition: opacity 0.12s, color 0.12s, background 0.12s;
+    }
+    .block:hover .fit-miss-btn { opacity: 1; }
+    .fit-miss-btn:hover { color: #EF4444; background: rgba(239,68,68,0.08); }
+    .fit-miss-btn.missed-active { opacity: 1; color: #EF4444; }
 
     .cb {
       width: 20px;
@@ -2644,11 +2654,34 @@ function toggleFitDay(id) {
   const wk   = fitCurrentWeek;
   if (!data[wk]) data[wk] = {};
   const cur = data[wk][id];
-  if (!cur) data[wk][id] = 'done';
-  else if (cur === 'done' || cur === true) data[wk][id] = 'missed';
-  else delete data[wk][id];
+  if (cur === true || cur === 'done') delete data[wk][id];
+  else data[wk][id] = 'done';
   saveFitness(data);
   renderFitness();
+}
+
+function setFitDone(id) {
+  const data = loadFitness();
+  const wk   = fitCurrentWeek;
+  if (!data[wk]) data[wk] = {};
+  const cur = data[wk][id];
+  if (cur === true || cur === 'done') delete data[wk][id];
+  else data[wk][id] = 'done';
+  saveFitness(data);
+  renderFitness();
+  renderMain();
+}
+
+function setFitMissed(id) {
+  const data = loadFitness();
+  const wk   = fitCurrentWeek;
+  if (!data[wk]) data[wk] = {};
+  const cur = data[wk][id];
+  if (cur === 'missed') delete data[wk][id];
+  else data[wk][id] = 'missed';
+  saveFitness(data);
+  renderFitness();
+  renderMain();
 }
 
 function editWorkout(id) { fitEditingId = id; fitShowAdd = false; renderFitness(); }
@@ -2733,10 +2766,6 @@ function renderFitness() {
   const checkSvg = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
     <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6"
           stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  const missedXSvg = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-    <path d="M1.5 1.5L7.5 7.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
-    <path d="M7.5 1.5L1.5 7.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
-  </svg>`;
 
   const fitOverrides = loadFitOverrides();
   // Returns the ISO date string for a given dayIndex within the displayed week
@@ -2802,16 +2831,18 @@ function renderFitness() {
       .join('');
 
     return `
-    <div class="block ${done ? 'done' : ''} ${missed ? 'missed' : ''} ${isToday ? 'today-block' : ''}"
-         onclick="toggleFitDay('${id}')">
-      <div class="cb">${done ? checkSvg : missed ? missedXSvg : ''}</div>
+    <div class="block ${done ? 'done' : ''} ${missed ? 'missed' : ''} ${isToday ? 'today-block' : ''}" style="cursor:default;">
+      <div class="cb" onclick="setFitDone('${id}')" style="cursor:pointer;" title="${done ? 'Mark incomplete' : 'Mark complete'}">${done ? checkSvg : ''}</div>
       <div class="block-body">
         <div class="block-top">
           <span class="block-day">${day}</span>
           <span class="block-meta">${meta}</span>
           ${isToday ? '<span class="today-badge">Today</span>' : ''}
           ${optional ? '<span class="fit-optional-tag">Optional</span>' : ''}
-          <button class="fit-edit-btn" onclick="event.stopPropagation();editWorkout('${id}')" title="Edit">✎</button>
+          <div class="fit-block-actions">
+            <button class="fit-miss-btn${missed ? ' missed-active' : ''}" onclick="setFitMissed('${id}')" title="${missed ? 'Clear missed' : 'Mark as missed'}">✕</button>
+            <button class="fit-edit-btn" style="margin-left:0;" onclick="editWorkout('${id}')" title="Edit">✎</button>
+          </div>
         </div>
         <div class="block-goal">${name}${detail ? ` · ${detail}` : ''}</div>
       </div>
@@ -4026,9 +4057,8 @@ function toggleDeckItem(type, id) {
     const wk = fitWeekKey();
     if (!fitData[wk]) fitData[wk] = {};
     const cur = fitData[wk][id];
-    if (!cur) fitData[wk][id] = 'done';
-    else if (cur === 'done' || cur === true) fitData[wk][id] = 'missed';
-    else delete fitData[wk][id];
+    if (cur === true || cur === 'done') delete fitData[wk][id];
+    else fitData[wk][id] = 'done';
     saveFitness(fitData);
     renderFitness();
   } else if (type === 'task') {
