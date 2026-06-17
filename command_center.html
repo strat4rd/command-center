@@ -2181,6 +2181,7 @@ function renderBlocks() {
   }
 
   // For weekend blocks, replace time with positional label per day
+  // Compute order from original storage (time order within each day) before any resorting
   const WEEKEND_LABELS = ['Morning block', 'Mid-day block 1', 'Mid-day block 2', 'Evening block'];
   const weekendDayOrder = {};
   blocks.forEach(b => {
@@ -2190,7 +2191,19 @@ function renderBlocks() {
     }
   });
 
-  list.innerHTML = blocks.map(b => {
+  // For the current week: today first, future next (ascending), past last (most recent first)
+  const ordered = currentWeek === THISWK
+    ? [...blocks].sort((a, b) => {
+        const ga = a.date === TODAY_STR ? 0 : a.date > TODAY_STR ? 1 : 2;
+        const gb = b.date === TODAY_STR ? 0 : b.date > TODAY_STR ? 1 : 2;
+        if (ga !== gb) return ga - gb;
+        return ga === 2
+          ? b.date.localeCompare(a.date)   // past: descending date (most recent first)
+          : a.date.localeCompare(b.date);   // today + future: ascending
+      })
+    : blocks;
+
+  list.innerHTML = ordered.map(b => {
     const isToday   = b.date === TODAY_STR;
     const isPast    = b.date < TODAY_STR;
     const isWeekend = b.day === 'Saturday' || b.day === 'Sunday';
