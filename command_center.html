@@ -1890,18 +1890,18 @@ const CONTESTS = [
 // ─────────────────────────────────────────────────────────
 
 const DEFAULTS = {
-  'data-version': 7,
+  'data-version': 8,
   weeks: {
     '2026-06-13': [
       { id: 'w2-sa',    day: 'Saturday',  date: '2026-06-13', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w2-sb',    day: 'Saturday',  date: '2026-06-13', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w2-sc',    day: 'Saturday',  date: '2026-06-13', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w2-sd',    day: 'Saturday',  date: '2026-06-13', time: '6:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-ua',    day: 'Sunday',    date: '2026-06-14', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-ub',    day: 'Sunday',    date: '2026-06-14', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-uc',    day: 'Sunday',    date: '2026-06-14', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-ud',    day: 'Sunday',    date: '2026-06-14', time: '6:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-f',     day: 'Monday',    date: '2026-06-15', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
+      { id: 'w2-ua',    day: 'Sunday',    date: '2026-06-14', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: true },
+      { id: 'w2-ub',    day: 'Sunday',    date: '2026-06-14', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: true },
+      { id: 'w2-uc',    day: 'Sunday',    date: '2026-06-14', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: true },
+      { id: 'w2-ud',    day: 'Sunday',    date: '2026-06-14', time: '6:00 PM',  duration: 1,    goal: 'Write scenes', done: true },
+      { id: 'w2-f',     day: 'Monday',    date: '2026-06-15', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: true },
       { id: 'w2-f-eve', day: 'Monday',    date: '2026-06-15', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w2-g',     day: 'Tuesday',   date: '2026-06-16', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
       { id: 'w2-g-eve', day: 'Tuesday',   date: '2026-06-16', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
@@ -2006,6 +2006,20 @@ function initData() {
       if (!d.weeks[wk]) d.weeks[wk] = JSON.parse(JSON.stringify(DEFAULTS.weeks[wk]));
     });
     d['data-version'] = 7;
+    dirty = true;
+  }
+  // Migration v8: restore Sun Jun 14 and Mon Jun 15 morning writing completions.
+  // Targets both pre-v7 IDs (w2-ua…) and post-v7 IDs (wb-20260613-ua…).
+  if ((d['data-version'] || 0) < 8) {
+    const doneIds = new Set([
+      'w2-ua','w2-ub','w2-uc','w2-ud',
+      'wb-20260613-ua','wb-20260613-ub','wb-20260613-uc','wb-20260613-ud',
+      'w2-f',
+    ]);
+    Object.keys(d.weeks || {}).forEach(wk => {
+      (d.weeks[wk] || []).forEach(b => { if (doneIds.has(b.id)) b.done = true; });
+    });
+    d['data-version'] = 8;
     dirty = true;
   }
   if (dirty) saveData(d);
