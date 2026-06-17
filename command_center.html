@@ -328,10 +328,10 @@
       border-radius: 9px;
       padding: 12px 14px;
       display: grid;
-      grid-template-columns: 20px 1fr;
+      grid-template-columns: 1fr;
       gap: 12px;
       align-items: start;
-      cursor: pointer;
+      cursor: default;
       transition: border-color 0.15s, background 0.15s;
     }
 
@@ -360,23 +360,6 @@
     .fit-pill:hover { border-color: var(--border); background: var(--surface); }
     .fit-pill-done.active   { background: #4CAF85; border-color: #4CAF85; color: #ffffff; }
     .fit-pill-missed.active { background: #F2D9D9; border-color: #D4AAAA; color: #B05555; }
-
-    .cb {
-      width: 20px;
-      height: 20px;
-      border: 1.5px solid var(--border-d);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      margin-top: 2px;
-      transition: background 0.15s, border-color 0.15s;
-    }
-
-    .block.done .cb     { background: var(--accent); border-color: var(--accent); }
-    .cb svg             { display: none; }
-    .block.done .cb svg { display: block; }
 
     .block-body { min-width: 0; }
 
@@ -2206,6 +2189,7 @@ function renderBlocks() {
   list.innerHTML = ordered.map(b => {
     const isToday   = b.date === TODAY_STR;
     const isPast    = b.date < TODAY_STR;
+    const isFuture  = b.date > TODAY_STR;
     const isWeekend = b.day === 'Saturday' || b.day === 'Sunday';
     const dur = b.duration === 1 ? '1 hr'
       : `${b.duration % 1 ? b.duration.toFixed(1) : b.duration} hrs`;
@@ -2213,15 +2197,10 @@ function renderBlocks() {
     const timeLabel = isWeekend
       ? (WEEKEND_LABELS[posIdx] || WEEKEND_LABELS[WEEKEND_LABELS.length - 1])
       : b.time;
+    const pillOpacity = isFuture ? '0.2' : isPast ? '0.5' : '1';
     return `
-    <div class="block ${isPast ? 'past' : ''} ${b.done ? 'done' : ''} ${isToday ? 'today-block' : ''}"
-         onclick="toggleBlock('${b.id}')">
-      <div class="cb">
-        <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-          <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6"
-                stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
+    <div class="block ${isPast ? 'past' : ''} ${b.done ? 'done' : ''} ${b.missed ? 'missed' : ''} ${isToday ? 'today-block' : ''}"
+         style="cursor:default;grid-template-columns:1fr;">
       <div class="block-body">
         <div class="block-top">
           <span class="block-day">${b.day}</span>
@@ -2229,6 +2208,10 @@ function renderBlocks() {
             <span>${timeLabel}</span><span class="sep">·</span><span>${dur}</span>
           </span>
           ${isToday ? '<span class="today-badge">Today</span>' : ''}
+          <div class="fit-status-pills" style="opacity:${pillOpacity};">
+            <button class="fit-pill fit-pill-done${b.done ? ' active' : ''}" onclick="setWritingDone('${b.id}')" title="${b.done ? 'Mark incomplete' : 'Mark complete'}">Completed</button>
+            <button class="fit-pill fit-pill-missed${b.missed ? ' active' : ''}" onclick="setWritingMissed('${b.id}')" title="${b.missed ? 'Clear' : 'Mark as not completed'}">Not completed</button>
+          </div>
         </div>
         <div class="block-goal">${b.goal}</div>
       </div>
@@ -2254,6 +2237,30 @@ function toggleBlock(id) {
   const b = blocks.find(x => x.id === id);
   if (!b) return;
   b.done = !b.done;
+  saveData(DATA);
+  renderTracker();
+  renderBlocks();
+}
+
+function setWritingDone(id) {
+  const blocks = DATA.weeks[currentWeek];
+  if (!blocks) return;
+  const b = blocks.find(x => x.id === id);
+  if (!b) return;
+  if (b.done) { b.done = false; }
+  else { b.done = true; delete b.missed; }
+  saveData(DATA);
+  renderTracker();
+  renderBlocks();
+}
+
+function setWritingMissed(id) {
+  const blocks = DATA.weeks[currentWeek];
+  if (!blocks) return;
+  const b = blocks.find(x => x.id === id);
+  if (!b) return;
+  if (b.missed) { delete b.missed; }
+  else { b.missed = true; b.done = false; }
   saveData(DATA);
   renderTracker();
   renderBlocks();
