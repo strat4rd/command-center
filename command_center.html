@@ -336,15 +336,17 @@
     }
 
     .block:hover       { border-color: var(--border-d); background: var(--surface); }
-    .block.today-block { border-color: var(--accent-rim); background: var(--surface); }
     .block.done        { opacity: 0.4; }
     .block.done .block-day { text-decoration: line-through; }
 
-    .block.missed { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.30); }
+    .block.missed { background: #FFF0F0; border-color: #F5C0C0; }
     .block.missed .block-goal { text-decoration: line-through; color: var(--muted); }
     .t-item.missed .t-cb { background: #EF4444; border-color: #EF4444; }
     .t-item.missed .t-cb svg { display: block; }
     .t-item.missed .t-name { text-decoration: line-through; color: #EF4444; }
+
+    /* today-block comes after missed so it always wins when both classes are present */
+    .block.today-block { border-color: var(--accent-rim); background: var(--surface); }
 
     .fit-block-actions { margin-left: auto; display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
     .fit-miss-btn {
@@ -355,8 +357,8 @@
       transition: opacity 0.12s, color 0.12s, background 0.12s;
     }
     .block:hover .fit-miss-btn { opacity: 1; }
-    .fit-miss-btn:hover { color: #EF4444; background: rgba(239,68,68,0.08); }
-    .fit-miss-btn.missed-active { opacity: 1; color: #EF4444; }
+    .fit-miss-btn:hover { color: #C08080; background: rgba(192,128,128,0.10); }
+    .fit-miss-btn.missed-active { opacity: 1; color: #C08080; }
 
     .cb {
       width: 20px;
