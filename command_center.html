@@ -341,9 +341,10 @@
     .block.past .block-day  { color: var(--muted); }
     .block.past .block-goal { color: var(--muted2); border-left-color: var(--border-d); }
 
-    .t-item.missed .t-cb { background: #EF4444; border-color: #EF4444; }
+    .t-item.missed { background: #FDF5F5; border-radius: 4px; }
+    .t-item.missed .t-cb { background: #B05555; border-color: #B05555; }
     .t-item.missed .t-cb svg { display: block; }
-    .t-item.missed .t-name { text-decoration: line-through; color: #EF4444; }
+    .t-item.missed .t-name { text-decoration: line-through; color: #B05555; }
 
     /* today-block comes after past so it always wins */
     .block.today-block { border-color: var(--accent-rim); background: var(--surface); }
@@ -1518,8 +1519,15 @@
 
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
-        <div class="tracker-label">Today's Docket</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="tracker-label">Docket</div>
+          <div style="display:flex;align-items:center;gap:2px;">
+            <button class="nav-btn" onclick="shiftDeckDate(-1)">&#8249;</button>
+            <span id="deck-date-label" style="font-size:13px;font-weight:600;color:var(--text);min-width:104px;text-align:center;"></span>
+            <button class="nav-btn" id="deck-next-btn" onclick="shiftDeckDate(1)">&#8250;</button>
+          </div>
+        </div>
+        <div id="deck-avail-row" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span id="deck-avail-display" style="font-size:15px;font-weight:700;color:var(--text);"></span>
           <span style="font-size:13px;color:var(--muted);">hrs available today</span>
           <span id="deck-stats" style="font-size:12px;font-weight:600;"></span>
@@ -2241,7 +2249,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('panel-' + t).classList.add('active');
-    if (t === 'main') renderMain();
+    if (t === 'main') { deckViewDate = TODAY_STR; renderMain(); }
   });
 });
 
@@ -3966,13 +3974,76 @@ function renderRocks() {
   `;
 }
 
+let deckViewDate = TODAY_STR;
+
+function loadDeckHistory()  { try { return JSON.parse(localStorage.getItem('cc_deck_history') || '{}'); } catch { return {}; } }
+function saveDeckHistory(h) { localStorage.setItem('cc_deck_history', JSON.stringify(h)); }
+
+function snapshotDeck(items) {
+  const h = loadDeckHistory();
+  h[TODAY_STR] = items.map(i => Object.assign({}, i));
+  const keys = Object.keys(h).sort();
+  if (keys.length > 30) keys.slice(0, keys.length - 30).forEach(k => delete h[k]);
+  saveDeckHistory(h);
+}
+
+function shiftDeckDate(delta) {
+  const d = new Date(deckViewDate + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  const next = d.toISOString().slice(0, 10);
+  if (next > TODAY_STR) return;
+  deckViewDate = next;
+  renderDeck();
+}
+
+function renderDeckItemHtml(item, interactive) {
+  const catCls = { Writing:'t-cat-Writing', Fitness:'t-cat-Fitness', Work:'t-cat-Work', Personal:'t-cat-Personal', Finance:'t-cat-Finance' };
+  const checkSvg    = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const missedXSvg  = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 1.5L7.5 7.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/><path d="M7.5 1.5L1.5 7.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+  const cls    = ['t-item', item.done ? 'done' : '', item.missed ? 'missed' : ''].filter(Boolean).join(' ');
+  const action = interactive ? `onclick="toggleDeckItem('${item.type}','${item.id}')"` : `style="cursor:default;"`;
+  return `<div class="${cls}" ${action}>
+    <div class="t-cb">${item.done ? checkSvg : item.missed ? missedXSvg : ''}</div>
+    <span class="t-name">${item.name}</span>
+    <span class="t-mins">${item.mins}m</span>
+    <span class="t-cat-pill ${catCls[item.cat]||'t-cat-Personal'}">${item.cat}</span>
+  </div>`;
+}
+
 function renderDeck() {
+  const isToday = deckViewDate === TODAY_STR;
+
+  // Date label
+  const dateLblEl = document.getElementById('deck-date-label');
+  if (dateLblEl) {
+    dateLblEl.textContent = isToday
+      ? 'Today'
+      : new Date(deckViewDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+
+  // Next button: dim when already on today
+  const nextBtn = document.getElementById('deck-next-btn');
+  if (nextBtn) { nextBtn.style.opacity = isToday ? '0.3' : '1'; nextBtn.style.pointerEvents = isToday ? 'none' : ''; }
+
+  // Available-hours row: only relevant for today
+  const availRow = document.getElementById('deck-avail-row');
+  if (availRow) availRow.style.display = isToday ? '' : 'none';
+
+  if (!isToday) {
+    const snap = loadDeckHistory()[deckViewDate] || [];
+    document.getElementById('deck-list').innerHTML = snap.length
+      ? snap.map(item => renderDeckItemHtml(item, false)).join('')
+      : '<div class="empty">No history saved for this day.</div>';
+    return;
+  }
+
+  // ── Today's live docket ──
   const availHrs  = calcAvailableHoursNow();
   const availMins = availHrs * 60;
   const dispEl = document.getElementById('deck-avail-display');
   if (dispEl) dispEl.textContent = availHrs % 1 === 0 ? availHrs : availHrs.toFixed(1);
 
-  const items     = [];
+  const items = [];
 
   // Today's writing blocks
   Object.values(DATA.weeks).flat()
@@ -3985,7 +4056,7 @@ function renderDeck() {
     }));
 
   // Today's fitness workouts
-  const todayDI      = new Date().getDay();
+  const todayDI       = new Date().getDay();
   const todayWorkouts = SCHED.filter(w => w.dayIndex === todayDI && !w.rest);
   if (todayWorkouts.length) {
     const fitData = loadFitness();
@@ -4003,19 +4074,19 @@ function renderDeck() {
     });
   }
 
-  // Active (not done, not queued) tasks from cc_tasks
+  // Active tasks
   TASKS.filter(t => !t.done && !t.queued).forEach(t => items.push({
     type: 'task', id: t.id,
     name: t.name, mins: t.mins, cat: t.cat, done: false,
   }));
 
-  // Today's completed tasks — show crossed out at bottom
+  // Completed tasks (today)
   TASKS.filter(t => t.done && t.doneDate === TODAY_STR).forEach(t => items.push({
     type: 'task', id: t.id,
     name: t.name, mins: t.mins, cat: t.cat, done: true,
   }));
 
-  // Done and missed items sink to the bottom
+  // Done/missed sink to bottom
   items.sort((a, b) => ((a.done || a.missed) ? 1 : 0) - ((b.done || b.missed) ? 1 : 0));
 
   const incompleteMins = items.filter(i => !i.done && !i.missed).reduce((s,i) => s + i.mins, 0);
@@ -4028,22 +4099,11 @@ function renderDeck() {
   badge.style.color = over ? '#EF4444' : '#4CAF85';
   statsEl.appendChild(badge);
 
-  const catCls = { Writing:'t-cat-Writing', Fitness:'t-cat-Fitness', Work:'t-cat-Work', Personal:'t-cat-Personal', Finance:'t-cat-Finance' };
-  const checkSvg = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-    <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  const missedXSvg = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none">
-    <path d="M1.5 1.5L7.5 7.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
-    <path d="M7.5 1.5L1.5 7.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
-  </svg>`;
+  // Persist snapshot for history navigation
+  snapshotDeck(items);
 
   document.getElementById('deck-list').innerHTML = items.length
-    ? items.map(item => `
-      <div class="t-item ${item.done ? 'done' : ''} ${item.missed ? 'missed' : ''}" onclick="toggleDeckItem('${item.type}','${item.id}')">
-        <div class="t-cb">${item.done ? checkSvg : item.missed ? missedXSvg : ''}</div>
-        <span class="t-name">${item.name}</span>
-        <span class="t-mins">${item.mins}m</span>
-        <span class="t-cat-pill ${catCls[item.cat]||'t-cat-Personal'}">${item.cat}</span>
-      </div>`).join('')
+    ? items.map(item => renderDeckItemHtml(item, true)).join('')
     : '<div class="empty">Nothing on today\'s deck.</div>';
 }
 
