@@ -2147,9 +2147,8 @@ function renderTracker() {
 function renderNav() {
   const cur       = currentWeek === THISWK;
   const allBlocks = DATA.weeks[currentWeek] || [];
-  const scope     = cur ? allBlocks.filter(b => b.date >= TODAY_STR) : allBlocks;
-  const firstBlockDate = (scope.length ? scope : allBlocks).length
-    ? (scope.length ? scope : allBlocks).reduce((min, b) => b.date < min ? b.date : min, (scope.length ? scope : allBlocks)[0].date)
+  const firstBlockDate = allBlocks.length
+    ? allBlocks.reduce((min, b) => b.date < min ? b.date : min, allBlocks[0].date)
     : currentWeek;
   const start = new Date(firstBlockDate + 'T12:00:00');
   const label = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -2159,11 +2158,8 @@ function renderNav() {
 }
 
 function renderBlocks() {
-  const list = document.getElementById('js-blocks');
-  let blocks = DATA.weeks[currentWeek] || [];
-  if (currentWeek === THISWK) {
-    blocks = blocks.filter(b => b.date >= TODAY_STR);
-  }
+  const list   = document.getElementById('js-blocks');
+  const blocks = DATA.weeks[currentWeek] || [];
 
   if (!blocks.length) {
     list.innerHTML = '<div class="empty">No sessions scheduled for this week.</div>';
@@ -2182,6 +2178,7 @@ function renderBlocks() {
 
   list.innerHTML = blocks.map(b => {
     const isToday   = b.date === TODAY_STR;
+    const isPast    = b.date < TODAY_STR;
     const isWeekend = b.day === 'Saturday' || b.day === 'Sunday';
     const dur = b.duration === 1 ? '1 hr'
       : `${b.duration % 1 ? b.duration.toFixed(1) : b.duration} hrs`;
@@ -2190,7 +2187,7 @@ function renderBlocks() {
       ? (WEEKEND_LABELS[posIdx] || WEEKEND_LABELS[WEEKEND_LABELS.length - 1])
       : b.time;
     return `
-    <div class="block ${b.done ? 'done' : ''} ${isToday ? 'today-block' : ''}"
+    <div class="block ${isPast ? 'past' : ''} ${b.done ? 'done' : ''} ${isToday ? 'today-block' : ''}"
          onclick="toggleBlock('${b.id}')">
       <div class="cb">
         <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
