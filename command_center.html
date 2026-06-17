@@ -3845,9 +3845,10 @@ function renderRocks() {
   const twTotal = thisWkBlocks.length;
   const lwDone  = lastWkBlocks.filter(b => b.done).length;
   const lwTotal = lastWkBlocks.length;
-  const atWDone = allWkBlocks.filter(b => b.done).length;
-  const atWTotal = allWkBlocks.length;
-  const atWPct  = atWTotal ? Math.round((atWDone / atWTotal) * 100) : 0;
+  const pastAndTodayBlocks = allWkBlocks.filter(b => b.date <= TODAY_STR);
+  const atWDone  = pastAndTodayBlocks.filter(b => b.done).length;
+  const atWTotal = pastAndTodayBlocks.length;
+  const atWPct   = atWTotal ? Math.round((atWDone / atWTotal) * 100) : 0;
 
   // Pill classes: gray=no data, red=behind, gold=on-track, green=100%
   function pillClass(done, total, hasData) {
@@ -3889,10 +3890,17 @@ function renderRocks() {
   const ftTotal = nonRest.length;
   const ftDone  = nonRest.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length;
   const flDone  = nonRest.filter(s => { const v = lastFit[s.id]; return v === true || v === 'done'; }).length;
-  const fitAllWks = Object.values(fitData);
-  const atFDone   = fitAllWks.reduce((sum, wk) => sum + nonRest.filter(s => { const v = wk[s.id]; return v === true || v === 'done'; }).length, 0);
-  const atFTotal  = (fitAllWks.length || 1) * ftTotal;
-  const atFPct    = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
+  const fitAllEntries = Object.entries(fitData);
+  const fitDayOff     = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 };
+  const fitDueInWk    = wkKey => nonRest.filter(s => {
+    const d = new Date(wkKey + 'T12:00:00');
+    d.setDate(d.getDate() + fitDayOff[s.dayIndex]);
+    return d.toISOString().slice(0, 10) <= TODAY_STR;
+  });
+  const atFDone  = fitAllEntries.reduce((sum, [wk, wkData]) =>
+    sum + fitDueInWk(wk).filter(s => { const v = wkData[s.id]; return v === true || v === 'done'; }).length, 0);
+  const atFTotal = fitAllEntries.reduce((sum, [wk]) => sum + fitDueInWk(wk).length, 0);
+  const atFPct   = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
 
   const ftPillClass = thisWeekPillClass(ftDone, ftTotal, FIT_THISWK in fitData);
   const flPillClass = pillClass(flDone, ftTotal, lastFitKey in fitData);
