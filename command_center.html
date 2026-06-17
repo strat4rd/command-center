@@ -336,15 +336,16 @@
     }
 
     .block:hover       { border-color: var(--border-d); background: var(--surface); }
-    .block.done        { opacity: 0.4; }
-    .block.done .block-day { text-decoration: line-through; }
+    .block.done        { }
+    .block.past        { background: #F8F8F8; }
+    .block.past .block-day  { color: var(--muted); }
+    .block.past .block-goal { color: var(--muted2); border-left-color: var(--border-d); }
 
-    .block.missed .block-goal { text-decoration: line-through; color: var(--muted); }
     .t-item.missed .t-cb { background: #EF4444; border-color: #EF4444; }
     .t-item.missed .t-cb svg { display: block; }
     .t-item.missed .t-name { text-decoration: line-through; color: #EF4444; }
 
-    /* today-block comes after missed so it always wins when both classes are present */
+    /* today-block comes after past so it always wins */
     .block.today-block { border-color: var(--accent-rim); background: var(--surface); }
 
     .fit-status-pills { margin-left: auto; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
@@ -358,7 +359,6 @@
     .fit-pill:hover { border-color: var(--border); background: var(--surface); }
     .fit-pill-done.active   { background: #4CAF85; border-color: #4CAF85; color: #ffffff; }
     .fit-pill-missed.active { background: #F2D9D9; border-color: #D4AAAA; color: #B05555; }
-    .fit-pills-past { opacity: 0.45; }
 
     .cb {
       width: 20px;
@@ -2832,14 +2832,14 @@ function renderFitness() {
       .join('');
 
     return `
-    <div class="block ${done ? 'done' : ''} ${missed ? 'missed' : ''} ${isToday ? 'today-block' : ''}" style="cursor:default;grid-template-columns:1fr;">
+    <div class="block ${isPast ? 'past' : ''} ${done ? 'done' : ''} ${missed ? 'missed' : ''} ${isToday ? 'today-block' : ''}" style="cursor:default;grid-template-columns:1fr;">
       <div class="block-body">
         <div class="block-top">
           <span class="block-day">${day}</span>
           <span class="block-meta">${meta}</span>
           ${isToday ? '<span class="today-badge">Today</span>' : ''}
           ${optional ? '<span class="fit-optional-tag">Optional</span>' : ''}
-          <div class="fit-status-pills${isPast && !done && !missed ? ' fit-pills-past' : ''}">
+          <div class="fit-status-pills">
             <button class="fit-pill fit-pill-done${done ? ' active' : ''}" onclick="setFitDone('${id}')" title="${done ? 'Mark incomplete' : 'Mark complete'}">Completed</button>
             <button class="fit-pill fit-pill-missed${missed ? ' active' : ''}" onclick="setFitMissed('${id}')" title="${missed ? 'Clear' : 'Mark as not completed'}">Not completed</button>
             <button class="fit-edit-btn" style="margin-left:2px;" onclick="editWorkout('${id}')" title="Edit">✎</button>
