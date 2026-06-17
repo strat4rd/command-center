@@ -348,17 +348,18 @@
     /* today-block comes after missed so it always wins when both classes are present */
     .block.today-block { border-color: var(--accent-rim); background: var(--surface); }
 
-    .fit-block-actions { margin-left: auto; display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
-    .fit-miss-btn {
-      background: none; border: none; cursor: pointer;
-      font-size: 13px; font-weight: 700; line-height: 1;
-      padding: 2px 5px; color: var(--muted2); border-radius: 4px;
-      flex-shrink: 0; opacity: 0;
-      transition: opacity 0.12s, color 0.12s, background 0.12s;
+    .fit-status-pills { margin-left: auto; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .fit-pill {
+      font-size: 11px; font-weight: 600; padding: 3px 9px;
+      border-radius: 20px; border: 1px solid var(--border-d);
+      color: var(--muted); background: var(--surface2);
+      cursor: pointer; white-space: nowrap; flex-shrink: 0; line-height: 1.4;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
     }
-    .block:hover .fit-miss-btn { opacity: 1; }
-    .fit-miss-btn:hover { color: #C08080; background: rgba(192,128,128,0.10); }
-    .fit-miss-btn.missed-active { opacity: 1; color: #C08080; }
+    .fit-pill:hover { border-color: var(--border); background: var(--surface); }
+    .fit-pill-done.active   { background: #4CAF85; border-color: #4CAF85; color: #ffffff; }
+    .fit-pill-missed.active { background: #F2D9D9; border-color: #D4AAAA; color: #B05555; }
+    .fit-pills-past { opacity: 0.45; }
 
     .cb {
       width: 20px;
@@ -2792,11 +2793,11 @@ function renderFitness() {
     const done    = fitVal === true || fitVal === 'done';
     const missed  = fitVal === 'missed';
     const isToday = isCurWk && workout.dayIndex === todayDI;
+    const isPast  = dateKey < TODAY_STR;
 
     if (fitEditingId === id) {
       return `
-      <div class="block" style="cursor:default;">
-        <div class="cb"></div>
+      <div class="block" style="cursor:default;grid-template-columns:1fr;">
         <div class="block-body" style="width:100%;">
           <div style="display:flex;flex-direction:column;gap:8px;">
             <input id="fit-edit-name" class="t-text-input" value="${name.replace(/"/g,'&quot;')}" placeholder="Workout name" style="font-size:13px;">
@@ -2815,8 +2816,7 @@ function renderFitness() {
 
     if (rest && !optional) {
       return `
-      <div class="block" style="opacity:0.38;cursor:default;">
-        <div class="cb"></div>
+      <div class="block" style="opacity:0.38;cursor:default;grid-template-columns:1fr;">
         <div class="block-body">
           <div class="block-top">
             <span class="block-day">${day}</span>
@@ -2833,17 +2833,17 @@ function renderFitness() {
       .join('');
 
     return `
-    <div class="block ${done ? 'done' : ''} ${missed ? 'missed' : ''} ${isToday ? 'today-block' : ''}" style="cursor:default;">
-      <div class="cb" onclick="setFitDone('${id}')" style="cursor:pointer;" title="${done ? 'Mark incomplete' : 'Mark complete'}">${done ? checkSvg : ''}</div>
+    <div class="block ${done ? 'done' : ''} ${missed ? 'missed' : ''} ${isToday ? 'today-block' : ''}" style="cursor:default;grid-template-columns:1fr;">
       <div class="block-body">
         <div class="block-top">
           <span class="block-day">${day}</span>
           <span class="block-meta">${meta}</span>
           ${isToday ? '<span class="today-badge">Today</span>' : ''}
           ${optional ? '<span class="fit-optional-tag">Optional</span>' : ''}
-          <div class="fit-block-actions">
-            <button class="fit-miss-btn${missed ? ' missed-active' : ''}" onclick="setFitMissed('${id}')" title="${missed ? 'Clear missed' : 'Mark as missed'}">✕</button>
-            <button class="fit-edit-btn" style="margin-left:0;" onclick="editWorkout('${id}')" title="Edit">✎</button>
+          <div class="fit-status-pills${isPast && !done && !missed ? ' fit-pills-past' : ''}">
+            <button class="fit-pill fit-pill-done${done ? ' active' : ''}" onclick="setFitDone('${id}')" title="${done ? 'Mark incomplete' : 'Mark complete'}">Completed</button>
+            <button class="fit-pill fit-pill-missed${missed ? ' active' : ''}" onclick="setFitMissed('${id}')" title="${missed ? 'Clear' : 'Mark as not completed'}">Not completed</button>
+            <button class="fit-edit-btn" style="margin-left:2px;" onclick="editWorkout('${id}')" title="Edit">✎</button>
           </div>
         </div>
         <div class="block-goal">${name}${detail ? ` · ${detail}` : ''}</div>
