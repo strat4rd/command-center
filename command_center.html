@@ -1873,18 +1873,15 @@ const CONTESTS = [
 // ─────────────────────────────────────────────────────────
 
 const DEFAULTS = {
-  'data-version': 8,
+  'data-version': 9,
   weeks: {
-    '2026-06-13': [
-      { id: 'w2-sa',    day: 'Saturday',  date: '2026-06-13', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-sb',    day: 'Saturday',  date: '2026-06-13', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-sc',    day: 'Saturday',  date: '2026-06-13', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-sd',    day: 'Saturday',  date: '2026-06-13', time: '6:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-ua',    day: 'Sunday',    date: '2026-06-14', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: true },
-      { id: 'w2-ub',    day: 'Sunday',    date: '2026-06-14', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: true },
-      { id: 'w2-uc',    day: 'Sunday',    date: '2026-06-14', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: true },
-      { id: 'w2-ud',    day: 'Sunday',    date: '2026-06-14', time: '6:00 PM',  duration: 1,    goal: 'Write scenes', done: true },
-      { id: 'w2-f',     day: 'Monday',    date: '2026-06-15', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: true },
+    // Week of Sun Jun 14 – Sat Jun 20
+    '2026-06-14': [
+      { id: 'w2-ua',    day: 'Sunday',    date: '2026-06-14', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: true  },
+      { id: 'w2-ub',    day: 'Sunday',    date: '2026-06-14', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: true  },
+      { id: 'w2-uc',    day: 'Sunday',    date: '2026-06-14', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: true  },
+      { id: 'w2-ud',    day: 'Sunday',    date: '2026-06-14', time: '6:00 PM',  duration: 1,    goal: 'Write scenes', done: true  },
+      { id: 'w2-f',     day: 'Monday',    date: '2026-06-15', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: true  },
       { id: 'w2-f-eve', day: 'Monday',    date: '2026-06-15', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w2-g',     day: 'Tuesday',   date: '2026-06-16', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
       { id: 'w2-g-eve', day: 'Tuesday',   date: '2026-06-16', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
@@ -1892,12 +1889,13 @@ const DEFAULTS = {
       { id: 'w2-h-eve', day: 'Wednesday', date: '2026-06-17', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w2-i',     day: 'Thursday',  date: '2026-06-18', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
       { id: 'w2-i-eve', day: 'Thursday',  date: '2026-06-18', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-    ],
-    '2026-06-20': [
       { id: 'w3-sa',    day: 'Saturday',  date: '2026-06-20', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w3-sb',    day: 'Saturday',  date: '2026-06-20', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w3-sc',    day: 'Saturday',  date: '2026-06-20', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w3-sd',    day: 'Saturday',  date: '2026-06-20', time: '6:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
+    ],
+    // Week of Sun Jun 21 – Sat Jun 27
+    '2026-06-21': [
       { id: 'w3-ua',    day: 'Sunday',    date: '2026-06-21', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w3-ub',    day: 'Sunday',    date: '2026-06-21', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w3-uc',    day: 'Sunday',    date: '2026-06-21', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
@@ -2005,6 +2003,29 @@ function initData() {
     d['data-version'] = 8;
     dirty = true;
   }
+  // Migration v9: switch from Saturday-keyed weeks to Sunday-keyed weeks (Sun–Sat).
+  // Redistribute all writing blocks by their actual dates into new Sunday-keyed buckets.
+  if ((d['data-version'] || 0) < 9) {
+    if (!d.weeks) d.weeks = {};
+    const allBlocks = Object.values(d.weeks).flat();
+    const newWeeksMap = {};
+    allBlocks.forEach(b => {
+      const dt = new Date(b.date + 'T12:00:00');
+      dt.setDate(dt.getDate() - dt.getDay()); // roll back to Sunday
+      const sunKey = dt.toISOString().slice(0, 10);
+      if (!newWeeksMap[sunKey]) newWeeksMap[sunKey] = [];
+      newWeeksMap[sunKey].push(b);
+    });
+    Object.values(newWeeksMap).forEach(blocks => {
+      blocks.sort((a, b) => a.date.localeCompare(b.date));
+    });
+    d.weeks = newWeeksMap;
+    Object.keys(DEFAULTS.weeks).forEach(wk => {
+      if (!d.weeks[wk]) d.weeks[wk] = JSON.parse(JSON.stringify(DEFAULTS.weeks[wk]));
+    });
+    d['data-version'] = 9;
+    dirty = true;
+  }
   if (dirty) saveData(d);
   return d;
 }
@@ -2013,15 +2034,14 @@ function initData() {
 // WEEK UTILITIES
 // ─────────────────────────────────────────────────────────
 
-// Weeks run Saturday–Friday. Key = "YYYY-MM-DD" of the opening Saturday.
-function satWeekKey(date) {
+// Weeks run Sunday–Saturday. Key = "YYYY-MM-DD" of the opening Sunday.
+function sunWeekKey(date) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const day = d.getDay(); // 0=Sun … 6=Sat
-  d.setDate(d.getDate() - (day + 1) % 7); // step back to most-recent Saturday
+  d.setDate(d.getDate() - d.getDay()); // step back to most-recent Sunday
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function satWeekRange(key, firstBlockDate) {
+function weekRange(key, firstBlockDate) {
   const startStr = firstBlockDate || key;
   const start = new Date(startStr + 'T12:00:00');
   const end   = new Date(startStr + 'T12:00:00');
@@ -2030,7 +2050,7 @@ function satWeekRange(key, firstBlockDate) {
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
-function shiftSatWeek(key, delta) {
+function shiftSunWeek(key, delta) {
   const d = new Date(key + 'T12:00:00');
   d.setDate(d.getDate() + delta * 7);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -2051,9 +2071,9 @@ function todayStr() {
 // ─────────────────────────────────────────────────────────
 
 let DATA        = initData();
-let currentWeek = satWeekKey(new Date());
+let currentWeek = sunWeekKey(new Date());
 const TODAY_STR = todayStr();
-const THISWK    = satWeekKey(new Date());
+const THISWK    = sunWeekKey(new Date());
 
 // One-time date purges for writing blocks
 function loadWritePurgedDates()  { try { return JSON.parse(localStorage.getItem('cc_write_purged_dates') || '[]'); } catch { return []; } }
@@ -2151,7 +2171,7 @@ function renderNav() {
   const label = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   document.getElementById('js-week-title').innerHTML =
     `Week of ${label}` + (cur ? ' <span class="now-dot"></span>' : '');
-  document.getElementById('js-week-range').textContent = satWeekRange(currentWeek, firstBlockDate);
+  document.getElementById('js-week-range').textContent = weekRange(currentWeek, firstBlockDate);
 }
 
 function renderBlocks() {
@@ -2267,10 +2287,10 @@ function setWritingMissed(id) {
 }
 
 document.getElementById('js-prev').addEventListener('click', () => {
-  currentWeek = shiftSatWeek(currentWeek, -1); renderAll();
+  currentWeek = shiftSunWeek(currentWeek, -1); renderAll();
 });
 document.getElementById('js-next').addEventListener('click', () => {
-  currentWeek = shiftSatWeek(currentWeek, +1); renderAll();
+  currentWeek = shiftSunWeek(currentWeek, +1); renderAll();
 });
 
 document.querySelectorAll('.tab').forEach(tab => {
@@ -2661,10 +2681,10 @@ renderTasks();
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 function fitWeekKey() {
-  // Sat–Fri week keyed by Saturday date (matches writing view)
+  // Sun–Sat week keyed by Sunday date (matches writing view)
   const d = new Date();
   d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - (d.getDay() + 1) % 7);
+  d.setDate(d.getDate() - d.getDay());
   return d.toISOString().slice(0,10);
 }
 
@@ -2770,8 +2790,8 @@ function renderFitness() {
   const isCurWk = wk === FIT_THISWK;
   const fmt     = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-  // Ordered display: Sat first, then Sun–Fri; multiple workouts per day
-  const ordered = [6, 0, 1, 2, 3, 4, 5].flatMap(dayI => SCHED.filter(w => w.dayIndex === dayI));
+  // Ordered display: Sun first, then Mon–Sat; multiple workouts per day
+  const ordered = [0, 1, 2, 3, 4, 5, 6].flatMap(dayI => SCHED.filter(w => w.dayIndex === dayI));
 
   // Progress tracker
   const nonRestWk = ordered.filter(w => !w.rest);
@@ -2798,22 +2818,22 @@ function renderFitness() {
   document.getElementById('fit-streak-display').textContent = streak > 0 ? `${streak} week streak 🔥` : '';
 
   // Nav
-  const satDate = new Date(wk + 'T12:00:00');
-  const friDate = new Date(wk + 'T12:00:00'); friDate.setDate(friDate.getDate() + 6);
+  const sunDate = new Date(wk + 'T12:00:00');
+  const satDate = new Date(wk + 'T12:00:00'); satDate.setDate(satDate.getDate() + 6);
   document.getElementById('fit-week-title').innerHTML =
-    `Week of ${fmt(satDate)}` + (isCurWk ? ' <span class="now-dot"></span>' : '');
-  document.getElementById('fit-week-range').textContent = `${fmt(satDate)} – ${fmt(friDate)}`;
+    `Week of ${fmt(sunDate)}` + (isCurWk ? ' <span class="now-dot"></span>' : '');
+  document.getElementById('fit-week-range').textContent = `${fmt(sunDate)} – ${fmt(satDate)}`;
 
   const checkSvg = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
     <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6"
           stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
   const fitOverrides = loadFitOverrides();
-  // Returns the ISO date string for a given dayIndex within the displayed week
+  // Returns the ISO date string for a given dayIndex within the displayed week.
+  // wkKey is the Sunday start; dayI 0=Sun … 6=Sat maps directly to offset.
   function dateForDayI(wkKey, dayI) {
-    const off = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 };
     const d = new Date(wkKey + 'T12:00:00');
-    d.setDate(d.getDate() + off[dayI]);
+    d.setDate(d.getDate() + dayI);
     return d.toISOString().slice(0, 10);
   }
 
@@ -2928,8 +2948,26 @@ document.getElementById('fit-next').addEventListener('click', () => {
 // STARTUP: PURGE PAST FITNESS + WEIGHT DATA
 // ─────────────────────────────────────────────────────────
 
+(function migrateFitnessWeekKeys() {
+  // Rename any Saturday-keyed fitness entries to the following Sunday (Sun–Sat standard).
+  const fitness = loadFitness();
+  let changed = false;
+  const newFitness = {};
+  Object.keys(fitness).forEach(wk => {
+    const dt = new Date(wk + 'T12:00:00');
+    if (dt.getDay() === 6) { // Saturday key → shift to Sunday
+      const sunKey = new Date(dt.getTime() + 86400000).toISOString().slice(0, 10);
+      newFitness[sunKey] = Object.assign({}, newFitness[sunKey] || {}, fitness[wk]);
+      changed = true;
+    } else {
+      newFitness[wk] = Object.assign({}, newFitness[wk] || {}, fitness[wk]);
+    }
+  });
+  if (changed) saveFitness(newFitness);
+})();
+
 (function purgePastFitnessAndWeight() {
-  // Remove cc_fitness weeks older than the current Sat–Fri week
+  // Remove cc_fitness weeks older than the current Sun–Sat week
   const currentFitWk = fitWeekKey();
   const fitness = loadFitness();
   let fitDirty = false;
@@ -2980,17 +3018,16 @@ function logWeight() {
   renderRocks();
 }
 
-function wtSaturdayOf(dateStr) {
+function wtSundayOf(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
-  const daysSinceSat = (d.getDay() + 1) % 7;
-  d.setDate(d.getDate() - daysSinceSat);
+  d.setDate(d.getDate() - d.getDay());
   return d.toISOString().slice(0, 10);
 }
 
 function wtWeeklyAverages(entries) {
   const weekMap = {};
   entries.forEach(e => {
-    const wk = wtSaturdayOf(e.date);
+    const wk = wtSundayOf(e.date);
     if (!weekMap[wk]) weekMap[wk] = { sum: 0, n: 0 };
     weekMap[wk].sum += e.weight;
     weekMap[wk].n++;
@@ -3007,8 +3044,8 @@ function wtWeeklyAverages(entries) {
 
 function wtCurrentWeekAvg(entries) {
   if (!entries.length) return null;
-  const thisWeek = wtSaturdayOf(TODAY_STR);
-  const thisWeekEntries = entries.filter(e => wtSaturdayOf(e.date) === thisWeek);
+  const thisWeek = wtSundayOf(TODAY_STR);
+  const thisWeekEntries = entries.filter(e => wtSundayOf(e.date) === thisWeek);
   if (thisWeekEntries.length) {
     const avg = thisWeekEntries.reduce((s, e) => s + e.weight, 0) / thisWeekEntries.length;
     return Math.round(avg * 10) / 10;
@@ -3749,7 +3786,7 @@ function renderTimeBreakdown() {
     const c = t.cat || 'Personal';
     weekMap[c] = (weekMap[c] || 0) + (t.mins || 0);
   });
-  // Archived task time from this week (dates >= this week's Saturday)
+  // Archived task time from this week (dates >= this week's Sunday)
   Object.entries(timeLog).forEach(([date, cats]) => {
     if (date >= THISWK) {
       Object.entries(cats).forEach(([cat, mins]) => {
@@ -3801,9 +3838,9 @@ function parseFitMins(str) {
 
 function renderRocks() {
   // ── Helpers ──
-  const DEADLINE_WK = satWeekKey(new Date('2026-06-29T12:00:00'));
+  const DEADLINE_WK = sunWeekKey(new Date('2026-06-29T12:00:00'));
 
-  function satWeeksBetween(startKey, endKey) {
+  function sunWeeksBetween(startKey, endKey) {
     const weeks = [];
     const cur = new Date(startKey + 'T12:00:00');
     const end = new Date(endKey   + 'T12:00:00');
@@ -3842,10 +3879,10 @@ function renderRocks() {
   // ── Writing ──
   const allWritingKeys = Object.keys(DATA.weeks).sort();
   const wStartKey  = allWritingKeys.length ? allWritingKeys[0] : THISWK;
-  const writeWeeks = satWeeksBetween(wStartKey, THISWK);  // stop at current week
+  const writeWeeks = sunWeeksBetween(wStartKey, THISWK);  // stop at current week
 
   const thisWkBlocks = DATA.weeks[THISWK] || [];
-  const lastWkKey    = shiftSatWeek(THISWK, -1);
+  const lastWkKey    = shiftSunWeek(THISWK, -1);
   const lastWkBlocks = DATA.weeks[lastWkKey] || [];
   const allWkBlocks  = Object.values(DATA.weeks).flat();
   const twDone  = thisWkBlocks.filter(b => b.done).length;
@@ -3866,11 +3903,11 @@ function renderRocks() {
     return 'fin-pill-red';
   }
 
-  // On-track logic for current week: compare done vs expected pace (Sat–Fri, 7 days)
+  // On-track logic for current week: compare done vs expected pace (Sun–Sat, 7 days)
   function thisWeekPillClass(done, total, hasData) {
     if (!hasData || total === 0) return 'fin-pill-gray';
     const jsDay = new Date().getDay(); // 0=Sun … 6=Sat
-    const dayIndex = (jsDay + 1) % 7; // 0=Sat, 1=Sun, …, 6=Fri
+    const dayIndex = jsDay; // 0=Sun, 1=Mon, …, 6=Sat
     const daysElapsed = dayIndex + 1; // 1–7
     const expected = (daysElapsed / 7) * total;
     const blocksShort = Math.max(0, Math.ceil(expected) - done);
@@ -3898,10 +3935,10 @@ function renderRocks() {
   const ftDone  = nonRest.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length;
   const flDone  = nonRest.filter(s => { const v = lastFit[s.id]; return v === true || v === 'done'; }).length;
   const fitAllEntries = Object.entries(fitData);
-  const fitDayOff     = { 6: 0, 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 };
+  // wkKey is Sunday; dayIndex 0=Sun … 6=Sat maps directly to the offset from that Sunday
   const fitDueInWk    = wkKey => nonRest.filter(s => {
     const d = new Date(wkKey + 'T12:00:00');
-    d.setDate(d.getDate() + fitDayOff[s.dayIndex]);
+    d.setDate(d.getDate() + s.dayIndex);
     return d.toISOString().slice(0, 10) <= TODAY_STR;
   });
   const atFDone  = fitAllEntries.reduce((sum, [wk, wkData]) =>
@@ -3914,7 +3951,7 @@ function renderRocks() {
 
   const fitKeys   = Object.keys(fitData).sort();
   const fStartKey = fitKeys.length && fitKeys[0] < FIT_THISWK ? fitKeys[0] : FIT_THISWK;
-  const fitWeeks  = satWeeksBetween(fStartKey, FIT_THISWK);  // stop at current week
+  const fitWeeks  = sunWeeksBetween(fStartKey, FIT_THISWK);  // stop at current week
 
   const fitBoxes = fitWeeks.map(wk => {
     const wkData = fitData[wk] || {};
