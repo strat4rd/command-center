@@ -2939,30 +2939,19 @@ function renderFitness() {
       </div>`;
     }
 
-    if (rest && !optional) {
-      return `
-      <div class="block" style="opacity:0.38;cursor:default;grid-template-columns:1fr;">
-        <div class="block-body">
-          <div class="block-top">
-            <span class="block-day">${day}</span>
-            <span class="block-meta"><span>Rest day</span></span>
-            ${isToday ? '<span class="today-badge">Today</span>' : ''}
-            <button class="fit-edit-btn" onclick="event.stopPropagation();editWorkout('${id}')" title="Edit">✎</button>
-          </div>
-        </div>
-      </div>`;
-    }
-
-    const meta = [time, duration].filter(Boolean)
-      .map((p, pi) => pi === 0 ? `<span>${p}</span>` : `<span class="sep">·</span><span>${p}</span>`)
-      .join('');
+    const displayName = rest ? 'Rest day' : name;
+    const meta = (!rest && [time, duration].filter(Boolean).length)
+      ? [time, duration].filter(Boolean)
+          .map((p, pi) => pi === 0 ? `<span>${p}</span>` : `<span class="sep">·</span><span>${p}</span>`)
+          .join('')
+      : '';
 
     return `
     <div class="block ${isPast ? 'past' : ''} ${done ? 'done' : ''} ${missed ? 'missed' : ''} ${isToday ? 'today-block' : ''}" style="cursor:default;grid-template-columns:1fr;">
       <div class="block-body">
         <div class="block-top">
           <span class="block-day">${day}</span>
-          <span class="block-meta">${meta}</span>
+          ${meta ? `<span class="block-meta">${meta}</span>` : ''}
           ${isToday ? '<span class="today-badge">Today</span>' : ''}
           ${optional ? '<span class="fit-optional-tag">Optional</span>' : ''}
           <div class="fit-status-pills">
@@ -2971,7 +2960,7 @@ function renderFitness() {
             <button class="fit-edit-btn" style="margin-left:2px;" onclick="editWorkout('${id}')" title="Edit">✎</button>
           </div>
         </div>
-        <div class="block-goal">${name}${detail ? ` · ${detail}` : ''}</div>
+        <div class="block-goal">${displayName}${!rest && detail ? ` · ${detail}` : ''}</div>
       </div>
     </div>`;
   }).join('');
