@@ -1873,7 +1873,7 @@ const CONTESTS = [
 // ─────────────────────────────────────────────────────────
 
 const DEFAULTS = {
-  'data-version': 9,
+  'data-version': 10,
   weeks: {
     // Week of Sun Jun 14 – Sat Jun 20
     '2026-06-14': [
@@ -1889,6 +1889,8 @@ const DEFAULTS = {
       { id: 'w2-h-eve', day: 'Wednesday', date: '2026-06-17', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w2-i',     day: 'Thursday',  date: '2026-06-18', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
       { id: 'w2-i-eve', day: 'Thursday',  date: '2026-06-18', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
+      { id: 'w2-j',     day: 'Friday',    date: '2026-06-19', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
+      { id: 'w2-j-eve', day: 'Friday',    date: '2026-06-19', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w3-sa',    day: 'Saturday',  date: '2026-06-20', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w3-sb',    day: 'Saturday',  date: '2026-06-20', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w3-sc',    day: 'Saturday',  date: '2026-06-20', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
@@ -2026,6 +2028,32 @@ function initData() {
     d['data-version'] = 9;
     dirty = true;
   }
+  // Migration v10: ensure every weekday (Mon–Fri) in all stored weeks has both
+  // a morning block (7:30 AM, 0.75 hr) and an evening block (7:30 PM, 1 hr).
+  if ((d['data-version'] || 0) < 10) {
+    const WD_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    Object.keys(d.weeks || {}).forEach(wk => {
+      const sunDate = new Date(wk + 'T12:00:00');
+      for (let offset = 1; offset <= 5; offset++) {
+        const dt = new Date(sunDate);
+        dt.setDate(sunDate.getDate() + offset);
+        const dateStr = dt.toISOString().slice(0, 10);
+        const dayName = WD_NAMES[offset];
+        const blocks  = d.weeks[wk];
+        const hasMorn = blocks.some(b => b.date === dateStr && b.time === '7:30 AM');
+        const hasEve  = blocks.some(b => b.date === dateStr && b.time === '7:30 PM');
+        if (!hasMorn) blocks.push({ id: `auto-${dateStr}-morn`, day: dayName, date: dateStr, time: '7:30 AM', duration: 0.75, goal: 'Write scenes', done: false });
+        if (!hasEve)  blocks.push({ id: `auto-${dateStr}-eve`,  day: dayName, date: dateStr, time: '7:30 PM', duration: 1,    goal: 'Write scenes', done: false });
+      }
+      d.weeks[wk].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+    });
+    // Also backfill any DEFAULTS weeks not yet stored
+    Object.keys(DEFAULTS.weeks).forEach(wk => {
+      if (!d.weeks[wk]) d.weeks[wk] = JSON.parse(JSON.stringify(DEFAULTS.weeks[wk]));
+    });
+    d['data-version'] = 10;
+    dirty = true;
+  }
   if (dirty) saveData(d);
   return d;
 }
@@ -2093,6 +2121,33 @@ function saveWritePurgedDates(d) { localStorage.setItem('cc_write_purged_dates',
   });
   if (dirty) saveData(DATA);
 })();
+
+// Ensure a week has morning (7:30 AM, 0.75 hr) and evening (7:30 PM, 1 hr) blocks
+// for every weekday Mon–Fri. Creates the week entry if absent. Saves on change.
+function ensureWeekDays(wk) {
+  if (!DATA.weeks[wk]) DATA.weeks[wk] = [];
+  const WD_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const sunDate  = new Date(wk + 'T12:00:00');
+  let added = false;
+  for (let offset = 1; offset <= 5; offset++) {
+    const dt = new Date(sunDate);
+    dt.setDate(sunDate.getDate() + offset);
+    const dateStr = dt.toISOString().slice(0, 10);
+    const dayName = WD_NAMES[offset];
+    const blocks  = DATA.weeks[wk];
+    const hasMorn = blocks.some(b => b.date === dateStr && b.time === '7:30 AM');
+    const hasEve  = blocks.some(b => b.date === dateStr && b.time === '7:30 PM');
+    if (!hasMorn) { blocks.push({ id: `auto-${dateStr}-morn`, day: dayName, date: dateStr, time: '7:30 AM', duration: 0.75, goal: 'Write scenes', done: false }); added = true; }
+    if (!hasEve)  { blocks.push({ id: `auto-${dateStr}-eve`,  day: dayName, date: dateStr, time: '7:30 PM', duration: 1,    goal: 'Write scenes', done: false }); added = true; }
+  }
+  if (added) {
+    DATA.weeks[wk].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+    saveData(DATA);
+  }
+}
+
+// Populate weekday blocks for the current week on load
+ensureWeekDays(currentWeek);
 
 // ─────────────────────────────────────────────────────────
 // RENDER
@@ -2287,10 +2342,10 @@ function setWritingMissed(id) {
 }
 
 document.getElementById('js-prev').addEventListener('click', () => {
-  currentWeek = shiftSunWeek(currentWeek, -1); renderAll();
+  currentWeek = shiftSunWeek(currentWeek, -1); ensureWeekDays(currentWeek); renderAll();
 });
 document.getElementById('js-next').addEventListener('click', () => {
-  currentWeek = shiftSunWeek(currentWeek, +1); renderAll();
+  currentWeek = shiftSunWeek(currentWeek, +1); ensureWeekDays(currentWeek); renderAll();
 });
 
 document.querySelectorAll('.tab').forEach(tab => {
