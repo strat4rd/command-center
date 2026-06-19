@@ -2892,7 +2892,19 @@ function renderFitness() {
     return d.toISOString().slice(0, 10);
   }
 
-  const blocks = ordered.map(workout => {
+  // For the current week: today first, then upcoming days ascending, then past days most-recent-first.
+  const displayOrdered = isCurWk
+    ? [...ordered].sort((a, b) => {
+        const da = dateForDayI(wk, a.dayIndex);
+        const db = dateForDayI(wk, b.dayIndex);
+        const ga = da === TODAY_STR ? 0 : da > TODAY_STR ? 1 : 2;
+        const gb = db === TODAY_STR ? 0 : db > TODAY_STR ? 1 : 2;
+        if (ga !== gb) return ga - gb;
+        return ga === 2 ? db.localeCompare(da) : da.localeCompare(db);
+      })
+    : ordered;
+
+  const blocks = displayOrdered.map(workout => {
     const dateKey = dateForDayI(wk, workout.dayIndex);
     const ov      = fitOverrides[dateKey];
     const { id, day } = workout;
