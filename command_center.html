@@ -1214,9 +1214,9 @@
     }
 
     .fin-pill-met  { background: #E8F5EE;               color: #4CAF85; }
-    .fin-pill-prog { background: #FFFBEB;               color: #F5A623; }
+    .fin-pill-prog { background: #FFF8E7;               color: #F5A623; }
     .fin-pill-none { background: rgba(74,144,217,0.10); color: #4A90D9; }
-    .fin-pill-red  { background: #FFEBEB;               color: #C0504D; }
+    .fin-pill-red  { background: #FEF0F0;               color: #C06060; }
     .fin-pill-gray { background: #F5F5F5;               color: #999999; }
 
     /* Week boxes */
@@ -3987,10 +3987,13 @@ function renderRocks() {
   }
 
   // On-track logic: completed / expected-so-far (blocks/workouts due up to today).
-  // >= 70% → green; anything below → gold; never red.
+  // > 90% → green; 70–90% → gold; < 70% → muted red.
   function thisWeekPillClass(done, expectedSoFar, hasData) {
     if (!hasData || expectedSoFar === 0) return 'fin-pill-gray';
-    return (done / expectedSoFar) >= 0.70 ? 'fin-pill-met' : 'fin-pill-prog';
+    const ratio = done / expectedSoFar;
+    if (ratio > 0.90) return 'fin-pill-met';
+    if (ratio >= 0.70) return 'fin-pill-prog';
+    return 'fin-pill-red';
   }
 
   const twExpected       = thisWkBlocks.filter(b => b.date <= TODAY_STR).length;
