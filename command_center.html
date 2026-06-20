@@ -2444,13 +2444,23 @@ const SCHED_DEFAULTS = [
   { id: 's-3', dayIndex: 3, day: 'Wednesday', name: 'Short run', detail: '',          time: 'Morning',  duration: '30 min',           rest: false, optional: false },
   { id: 's-4', dayIndex: 4, day: 'Thursday',  name: 'Strength',  detail: 'John Reed', time: 'Evening',  duration: '2 hrs',            rest: false, optional: false },
   { id: 's-5', dayIndex: 5, day: 'Friday',    name: 'Rest',      detail: '',          time: '',         duration: '',                 rest: true,  optional: false },
-  { id: 's-6', dayIndex: 6, day: 'Saturday',  name: 'Long run',  detail: '',          time: 'Morning',  duration: '45–60 min',        rest: false, optional: false },
+  { id: 's-6', dayIndex: 6, day: 'Saturday',  name: 'Long Run',  detail: '',          time: 'Morning',  duration: '90 min',           rest: false, optional: false },
 ];
 
 function loadSched()  { try { return JSON.parse(localStorage.getItem('cc_schedule') || 'null'); } catch { return null; } }
 function saveSched(s) { localStorage.setItem('cc_schedule', JSON.stringify(s)); }
 function initSched()  { const d = loadSched(); if (d) return d; const s = JSON.parse(JSON.stringify(SCHED_DEFAULTS)); saveSched(s); return s; }
 let SCHED = initSched();
+
+// Migration: force Saturday (s-6) to Long Run, 90 min, Morning for all weeks >= June 14
+(function migrateSaturdayLongRun() {
+  const sat = SCHED.find(w => w.dayIndex === 6 && w.id === 's-6');
+  if (sat && (sat.rest || sat.name !== 'Long Run' || sat.duration !== '90 min')) {
+    sat.name = 'Long Run'; sat.time = 'Morning'; sat.duration = '90 min';
+    sat.rest = false; sat.optional = false;
+    saveSched(SCHED);
+  }
+})();
 
 function schedForDay(dayI) {
   return SCHED.find(w => w.dayIndex === dayI && !w.rest && !w.optional)
@@ -2840,6 +2850,23 @@ function addWorkout() {
 function renderFitness() {
   const data    = loadFitness();
   const wk      = fitCurrentWeek;
+
+  // Weeks before June 14 have no data — show empty state
+  if (wk < '2026-06-14') {
+    const sunDate = new Date(wk + 'T12:00:00');
+    const satDate = new Date(wk + 'T12:00:00'); satDate.setDate(satDate.getDate() + 6);
+    const fmtD = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    document.getElementById('fit-tracker-label').textContent = 'Week Progress';
+    document.getElementById('fit-done').textContent = 0;
+    document.getElementById('fit-total').textContent = 0;
+    document.getElementById('fit-progress').style.width = '0%';
+    document.getElementById('fit-streak-display').textContent = '';
+    document.getElementById('fit-week-title').innerHTML = `Week of ${fmtD(sunDate)}`;
+    document.getElementById('fit-week-range').textContent = `${fmtD(sunDate)} – ${fmtD(satDate)}`;
+    document.getElementById('fit-blocks').innerHTML = '<div class="empty">No workout data for this week.</div>';
+    return;
+  }
+
   const thisWk  = data[wk] || {};
   const todayDI = new Date().getDay();
   const isCurWk = wk === FIT_THISWK;
@@ -3023,12 +3050,12 @@ document.getElementById('fit-next').addEventListener('click', () => {
 })();
 
 (function purgePastFitnessAndWeight() {
-  // Remove cc_fitness weeks older than the current Sun–Sat week
-  const currentFitWk = fitWeekKey();
+  // Remove cc_fitness weeks before the June 14 fitness tracking start date
+  const FIT_CUTOFF = '2026-06-14';
   const fitness = loadFitness();
   let fitDirty = false;
   Object.keys(fitness).forEach(wk => {
-    if (wk < currentFitWk) { delete fitness[wk]; fitDirty = true; }
+    if (wk < FIT_CUTOFF) { delete fitness[wk]; fitDirty = true; }
   });
   if (fitDirty) saveFitness(fitness);
 
