@@ -3986,20 +3986,16 @@ function renderRocks() {
     return 'fin-pill-red';
   }
 
-  // On-track logic for current week: compare done vs expected pace (Sun–Sat, 7 days)
-  function thisWeekPillClass(done, total, hasData) {
-    if (!hasData || total === 0) return 'fin-pill-gray';
-    const jsDay = new Date().getDay(); // 0=Sun … 6=Sat
-    const dayIndex = jsDay; // 0=Sun, 1=Mon, …, 6=Sat
-    const daysElapsed = dayIndex + 1; // 1–7
-    const expected = (daysElapsed / 7) * total;
-    const blocksShort = Math.max(0, Math.ceil(expected) - done);
-    if (blocksShort === 0) return 'fin-pill-met';  // on track or ahead → green
-    if (blocksShort === 1) return 'fin-pill-prog'; // 1 behind → gold
-    return 'fin-pill-red';                         // 2+ behind → red
+  // On-track logic: completed / expected-so-far (blocks/workouts due up to today).
+  // >= 70% → green; anything below → gold; never red.
+  function thisWeekPillClass(done, expectedSoFar, hasData) {
+    if (!hasData || expectedSoFar === 0) return 'fin-pill-gray';
+    return (done / expectedSoFar) >= 0.70 ? 'fin-pill-met' : 'fin-pill-prog';
   }
 
-  const twPillClass = thisWeekPillClass(twDone, twTotal, twTotal > 0);
+  const twExpected       = thisWkBlocks.filter(b => b.date <= TODAY_STR).length;
+  const twCompletedSoFar = thisWkBlocks.filter(b => b.date <= TODAY_STR && b.done).length;
+  const twPillClass = thisWeekPillClass(twCompletedSoFar, twExpected, twTotal > 0);
   const lwPillClass = pillClass(lwDone, lwTotal, lwTotal > 0);
 
   const writeBoxes = writeWeeks.map(wk => {
@@ -4029,7 +4025,10 @@ function renderRocks() {
   const atFTotal = fitAllEntries.reduce((sum, [wk]) => sum + fitDueInWk(wk).length, 0);
   const atFPct   = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
 
-  const ftPillClass = thisWeekPillClass(ftDone, ftTotal, FIT_THISWK in fitData);
+  const fitDueSoFar      = fitDueInWk(FIT_THISWK);
+  const ftExpectedCount  = fitDueSoFar.length;
+  const ftCompletedSoFar = fitDueSoFar.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length;
+  const ftPillClass = thisWeekPillClass(ftCompletedSoFar, ftExpectedCount, FIT_THISWK in fitData || ftExpectedCount > 0);
   const flPillClass = pillClass(flDone, ftTotal, lastFitKey in fitData);
 
   const fitKeys   = Object.keys(fitData).sort();
