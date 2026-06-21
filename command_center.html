@@ -3942,7 +3942,7 @@ function renderRocks() {
     } else if (!hasData) {
       bg = '#EFEFEF'; border = '#D0D0D0';
     } else if (donePct >= 90) {
-      bg = '#4CAF85'; border = '#3D9E76'; inner = '✓';
+      bg = '#E8F5EE'; border = '#4CAF85';
     } else if (donePct >= 70) {
       bg = '#FFF8E7'; border = '#F5A623';
     } else {
@@ -3954,7 +3954,7 @@ function renderRocks() {
 
   const legend = `
     <div class="wk-legend">
-      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#4CAF85;border-color:#3D9E76;"></div>90%+</div>
+      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#E8F5EE;border-color:#4CAF85;"></div>90%+</div>
       <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#FFF8E7;border-color:#F5A623;"></div>70%+</div>
       <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#FFEBEB;border-color:#E8A0A0;"></div>&lt;70%</div>
     </div>`;
