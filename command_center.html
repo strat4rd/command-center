@@ -3941,9 +3941,9 @@ function renderRocks() {
       bg = '#F5F5F5'; border = '#C8C8C8';
     } else if (!hasData) {
       bg = '#EFEFEF'; border = '#D0D0D0';
-    } else if (donePct >= 100) {
+    } else if (donePct >= 90) {
       bg = '#4CAF85'; border = '#3D9E76'; inner = '✓';
-    } else if (donePct >= 75) {
+    } else if (donePct >= 70) {
       bg = '#FFF8E7'; border = '#F5A623';
     } else {
       bg = '#FFEBEB'; border = '#E8A0A0';
@@ -3954,9 +3954,9 @@ function renderRocks() {
 
   const legend = `
     <div class="wk-legend">
-      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#4CAF85;border-color:#3D9E76;"></div>100%</div>
-      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#FFF8E7;border-color:#F5A623;"></div>75%+</div>
-      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#FFEBEB;border-color:#E8A0A0;"></div>&lt;75%</div>
+      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#4CAF85;border-color:#3D9E76;"></div>90%+</div>
+      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#FFF8E7;border-color:#F5A623;"></div>70%+</div>
+      <div class="wk-legend-item"><div class="wk-legend-dot" style="background:#FFEBEB;border-color:#E8A0A0;"></div>&lt;70%</div>
     </div>`;
 
   // ── Writing ──
@@ -3999,7 +3999,7 @@ function renderRocks() {
   const twExpected       = thisWkBlocks.filter(b => b.date <= TODAY_STR).length;
   const twCompletedSoFar = thisWkBlocks.filter(b => b.date <= TODAY_STR && b.done).length;
   const twPillClass = thisWeekPillClass(twCompletedSoFar, twExpected, twTotal > 0);
-  const lwPillClass = pillClass(lwDone, lwTotal, lwTotal > 0);
+  const lwPillClass = thisWeekPillClass(lwDone, lwTotal, lwTotal > 0);
 
   const writeBoxes = writeWeeks.map(wk => {
     const blocks = DATA.weeks[wk] || [];
@@ -4032,7 +4032,7 @@ function renderRocks() {
   const ftExpectedCount  = fitDueSoFar.length;
   const ftCompletedSoFar = fitDueSoFar.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length;
   const ftPillClass = thisWeekPillClass(ftCompletedSoFar, ftExpectedCount, FIT_THISWK in fitData || ftExpectedCount > 0);
-  const flPillClass = pillClass(flDone, ftTotal, lastFitKey in fitData);
+  const flPillClass = thisWeekPillClass(flDone, ftTotal, lastFitKey in fitData);
 
   const fitKeys   = Object.keys(fitData).sort();
   const fStartKey = fitKeys.length && fitKeys[0] < FIT_THISWK ? fitKeys[0] : FIT_THISWK;
