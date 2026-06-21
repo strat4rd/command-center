@@ -3991,7 +3991,7 @@ function renderRocks() {
   function thisWeekPillClass(done, expectedSoFar, hasData) {
     if (!hasData || expectedSoFar === 0) return 'fin-pill-gray';
     const ratio = done / expectedSoFar;
-    if (ratio > 0.90) return 'fin-pill-met';
+    if (ratio >= 0.90) return 'fin-pill-met';
     if (ratio >= 0.70) return 'fin-pill-prog';
     return 'fin-pill-red';
   }
