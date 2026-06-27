@@ -1873,7 +1873,7 @@ const CONTESTS = [
 // ─────────────────────────────────────────────────────────
 
 const DEFAULTS = {
-  'data-version': 10,
+  'data-version': 11,
   weeks: {
     // Week of Sun Jun 14 – Sat Jun 20
     '2026-06-14': [
@@ -1912,6 +1912,10 @@ const DEFAULTS = {
       { id: 'w3-h-eve', day: 'Thursday',  date: '2026-06-25', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
       { id: 'w3-i',     day: 'Friday',    date: '2026-06-26', time: '7:30 AM',  duration: 0.75, goal: 'Submit',       done: false },
       { id: 'w3-i-eve', day: 'Friday',    date: '2026-06-26', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
+      { id: 'auto-2026-06-27-900AM',  day: 'Saturday', date: '2026-06-27', time: '9:00 AM',  duration: 1, goal: 'Write scenes', done: false },
+      { id: 'auto-2026-06-27-1200PM', day: 'Saturday', date: '2026-06-27', time: '12:00 PM', duration: 1, goal: 'Write scenes', done: false },
+      { id: 'auto-2026-06-27-300PM',  day: 'Saturday', date: '2026-06-27', time: '3:00 PM',  duration: 1, goal: 'Write scenes', done: false },
+      { id: 'auto-2026-06-27-600PM',  day: 'Saturday', date: '2026-06-27', time: '6:00 PM',  duration: 1, goal: 'Write scenes', done: false },
     ],
   },
 };
@@ -2054,6 +2058,33 @@ function initData() {
     d['data-version'] = 10;
     dirty = true;
   }
+  // Migration v11: ensure every week >= 2026-06-21 has 4×1hr blocks for Sunday and Saturday.
+  if ((d['data-version'] || 0) < 11) {
+    const WD_NAMES_V11 = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const WEEKEND_TIMES = ['9:00 AM', '12:00 PM', '3:00 PM', '6:00 PM'];
+    Object.keys(d.weeks || {}).forEach(wk => {
+      if (wk < '2026-06-21') return;
+      const sunDate = new Date(wk + 'T12:00:00');
+      [0, 6].forEach(offset => {
+        const dt = new Date(sunDate);
+        dt.setDate(sunDate.getDate() + offset);
+        const dateStr = dt.toISOString().slice(0, 10);
+        const dayName = WD_NAMES_V11[offset];
+        const blocks  = d.weeks[wk];
+        WEEKEND_TIMES.forEach(t => {
+          if (!blocks.some(b => b.date === dateStr && b.time === t)) {
+            blocks.push({ id: `auto-${dateStr}-${t.replace(/[: ]/g,'')}`, day: dayName, date: dateStr, time: t, duration: 1, goal: 'Write scenes', done: false });
+          }
+        });
+      });
+      d.weeks[wk].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+    });
+    Object.keys(DEFAULTS.weeks).forEach(wk => {
+      if (!d.weeks[wk]) d.weeks[wk] = JSON.parse(JSON.stringify(DEFAULTS.weeks[wk]));
+    });
+    d['data-version'] = 11;
+    dirty = true;
+  }
   if (dirty) saveData(d);
   return d;
 }
@@ -2069,10 +2100,9 @@ function sunWeekKey(date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function weekRange(key, firstBlockDate) {
-  const startStr = firstBlockDate || key;
-  const start = new Date(startStr + 'T12:00:00');
-  const end   = new Date(startStr + 'T12:00:00');
+function weekRange(key) {
+  const start = new Date(key + 'T12:00:00');
+  const end   = new Date(key + 'T12:00:00');
   end.setDate(end.getDate() + 6);
   const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   return `${fmt(start)} – ${fmt(end)}`;
@@ -2122,13 +2152,17 @@ function saveWritePurgedDates(d) { localStorage.setItem('cc_write_purged_dates',
   if (dirty) saveData(DATA);
 })();
 
-// Ensure a week has morning (7:30 AM, 0.75 hr) and evening (7:30 PM, 1 hr) blocks
-// for every weekday Mon–Fri. Creates the week entry if absent. Saves on change.
+// Ensure a week has all required blocks:
+// - Mon–Fri: morning (7:30 AM, 0.75 hr) and evening (7:30 PM, 1 hr)
+// - Sunday and Saturday: 4×1hr blocks (9 AM, 12 PM, 3 PM, 6 PM)
+// Creates the week entry if absent. Saves on change.
 function ensureWeekDays(wk) {
   if (!DATA.weeks[wk]) DATA.weeks[wk] = [];
   const WD_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const WEEKEND_TIMES = ['9:00 AM', '12:00 PM', '3:00 PM', '6:00 PM'];
   const sunDate  = new Date(wk + 'T12:00:00');
   let added = false;
+  // Weekdays Mon–Fri
   for (let offset = 1; offset <= 5; offset++) {
     const dt = new Date(sunDate);
     dt.setDate(sunDate.getDate() + offset);
@@ -2140,6 +2174,20 @@ function ensureWeekDays(wk) {
     if (!hasMorn) { blocks.push({ id: `auto-${dateStr}-morn`, day: dayName, date: dateStr, time: '7:30 AM', duration: 0.75, goal: 'Write scenes', done: false }); added = true; }
     if (!hasEve)  { blocks.push({ id: `auto-${dateStr}-eve`,  day: dayName, date: dateStr, time: '7:30 PM', duration: 1,    goal: 'Write scenes', done: false }); added = true; }
   }
+  // Weekend: Sunday (offset 0) and Saturday (offset 6) — 4×1hr blocks each
+  [0, 6].forEach(offset => {
+    const dt = new Date(sunDate);
+    dt.setDate(sunDate.getDate() + offset);
+    const dateStr = dt.toISOString().slice(0, 10);
+    const dayName = WD_NAMES[offset];
+    const blocks  = DATA.weeks[wk];
+    WEEKEND_TIMES.forEach(t => {
+      if (!blocks.some(b => b.date === dateStr && b.time === t)) {
+        blocks.push({ id: `auto-${dateStr}-${t.replace(/[: ]/g,'')}`, day: dayName, date: dateStr, time: t, duration: 1, goal: 'Write scenes', done: false });
+        added = true;
+      }
+    });
+  });
   if (added) {
     DATA.weeks[wk].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
     saveData(DATA);
@@ -2217,16 +2265,12 @@ function renderTracker() {
 }
 
 function renderNav() {
-  const cur       = currentWeek === THISWK;
-  const allBlocks = DATA.weeks[currentWeek] || [];
-  const firstBlockDate = allBlocks.length
-    ? allBlocks.reduce((min, b) => b.date < min ? b.date : min, allBlocks[0].date)
-    : currentWeek;
-  const start = new Date(firstBlockDate + 'T12:00:00');
+  const cur   = currentWeek === THISWK;
+  const start = new Date(currentWeek + 'T12:00:00');
   const label = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   document.getElementById('js-week-title').innerHTML =
     `Week of ${label}` + (cur ? ' <span class="now-dot"></span>' : '');
-  document.getElementById('js-week-range').textContent = weekRange(currentWeek, firstBlockDate);
+  document.getElementById('js-week-range').textContent = weekRange(currentWeek);
 }
 
 function renderBlocks() {
