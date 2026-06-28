@@ -2478,38 +2478,90 @@ document.getElementById('j-overwhelm').addEventListener('input', function() {
 renderJournalHistory();
 
 // ─────────────────────────────────────────────────────────
-// FITNESS SCHEDULE (must be defined before TASKS for calcAvailableHours)
+// FITNESS SCHEDULE — 8-week date-anchored program (Jun 28 – Aug 22, 2026)
 // ─────────────────────────────────────────────────────────
 
-const SCHED_DEFAULTS = [
-  { id: 's-0', dayIndex: 0, day: 'Sunday',    name: 'Strength',  detail: 'John Reed', time: '10:00 AM', duration: '2 hrs incl. walk', rest: false, optional: false },
-  { id: 's-1', dayIndex: 1, day: 'Monday',    name: 'Light run', detail: '',          time: 'Morning',  duration: '30 min',           rest: false, optional: true  },
-  { id: 's-2', dayIndex: 2, day: 'Tuesday',   name: 'Rest',      detail: '',          time: '',         duration: '',                 rest: true,  optional: false },
-  { id: 's-3', dayIndex: 3, day: 'Wednesday', name: 'Short run', detail: '',          time: 'Morning',  duration: '30 min',           rest: false, optional: false },
-  { id: 's-4', dayIndex: 4, day: 'Thursday',  name: 'Strength',  detail: 'John Reed', time: 'Evening',  duration: '2 hrs',            rest: false, optional: false },
-  { id: 's-5', dayIndex: 5, day: 'Friday',    name: 'Rest',      detail: '',          time: '',         duration: '',                 rest: true,  optional: false },
-  { id: 's-6', dayIndex: 6, day: 'Saturday',  name: 'Long Run',  detail: '',          time: 'Morning',  duration: '90 min',           rest: false, optional: false },
-];
+const WEEK_PROGRAM = {
+  '2026-06-28': [ // Week 1 — Sunday omitted; program begins Monday Jun 29
+    { id: 'p1-mon', dayIndex: 1, day: 'Monday',    name: 'Walk / steps, 8,000–12,000 steps',                        rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p1-tue', dayIndex: 2, day: 'Tuesday',   name: 'Easy run, 2.15–2.25 miles',                                rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p1-wed', dayIndex: 3, day: 'Wednesday', name: 'Strength B with leg press',                                    rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p1-thu', dayIndex: 4, day: 'Thursday',  name: 'Easy run, 2.15–2.25 miles or 35–45 min brisk walk',  rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p1-fri', dayIndex: 5, day: 'Friday',    name: 'Easy run, 2.15–2.25 miles + 4 pickups',                   rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p1-sat', dayIndex: 6, day: 'Saturday',  name: 'Long easy run, 3.3 miles',                                     rest: false, optional: false, time: '', duration: '', detail: '' },
+  ],
+  '2026-07-05': [ // Week 2
+    { id: 'p2-sun', dayIndex: 0, day: 'Sunday',    name: 'Strength A',                                                   rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p2-mon', dayIndex: 1, day: 'Monday',    name: 'Walk / steps, 8,000–12,000 steps',                        rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p2-tue', dayIndex: 2, day: 'Tuesday',   name: 'Easy run, 2.15–2.25 miles',                                rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p2-wed', dayIndex: 3, day: 'Wednesday', name: 'Strength B with Bulgarian split squat',                        rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p2-thu', dayIndex: 4, day: 'Thursday',  name: 'Easy run, 2.15–2.25 miles or 35–45 min brisk walk',  rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p2-fri', dayIndex: 5, day: 'Friday',    name: 'Easy run, 2.25–2.4 miles + 4 pickups',                    rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p2-sat', dayIndex: 6, day: 'Saturday',  name: 'Long easy run, 3.5 miles',                                     rest: false, optional: false, time: '', duration: '', detail: '' },
+  ],
+  '2026-07-12': [ // Week 3
+    { id: 'p3-sun', dayIndex: 0, day: 'Sunday',    name: 'Strength A',                                                   rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p3-mon', dayIndex: 1, day: 'Monday',    name: 'Walk / steps, 8,000–12,000 steps',                        rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p3-tue', dayIndex: 2, day: 'Tuesday',   name: 'Easy run, 2.15–2.35 miles',                                rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p3-wed', dayIndex: 3, day: 'Wednesday', name: 'Strength B with leg press',                                    rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p3-thu', dayIndex: 4, day: 'Thursday',  name: 'Easy run, 2.15–2.25 miles or 35–45 min brisk walk',  rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p3-fri', dayIndex: 5, day: 'Friday',    name: 'Easy run, 2.4–2.5 miles + 5 pickups',                     rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p3-sat', dayIndex: 6, day: 'Saturday',  name: 'Long easy run, 3.6–3.7 miles',                            rest: false, optional: false, time: '', duration: '', detail: '' },
+  ],
+  '2026-07-19': [ // Week 4 — easier week
+    { id: 'p4-sun', dayIndex: 0, day: 'Sunday',    name: 'Strength A — keep it slightly easier, no grinding',        rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p4-mon', dayIndex: 1, day: 'Monday',    name: 'Walk / steps, 8,000–12,000 steps',                        rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p4-tue', dayIndex: 2, day: 'Tuesday',   name: 'Easy run, 2.15–2.25 miles',                                rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p4-wed', dayIndex: 3, day: 'Wednesday', name: 'Strength B with Bulgarian split squat — slightly easier',  rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p4-thu', dayIndex: 4, day: 'Thursday',  name: 'Walk or very easy run, 2.15 miles',                            rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p4-fri', dayIndex: 5, day: 'Friday',    name: 'Easy run, 2.15–2.3 miles + 4 pickups',                    rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p4-sat', dayIndex: 6, day: 'Saturday',  name: 'Long easy run, 3.3 miles',                                     rest: false, optional: false, time: '', duration: '', detail: '' },
+  ],
+  '2026-07-26': [ // Week 5
+    { id: 'p5-sun', dayIndex: 0, day: 'Sunday',    name: 'Strength A',                                                   rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p5-mon', dayIndex: 1, day: 'Monday',    name: 'Walk / steps, 8,000–12,000 steps',                        rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p5-tue', dayIndex: 2, day: 'Tuesday',   name: 'Easy run, 2.25–2.4 miles',                                rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p5-wed', dayIndex: 3, day: 'Wednesday', name: 'Strength B with leg press',                                    rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p5-thu', dayIndex: 4, day: 'Thursday',  name: 'Easy run, 2.15–2.3 miles or 35–45 min brisk walk',   rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p5-fri', dayIndex: 5, day: 'Friday',    name: 'Easy run, 2.5–2.6 miles + 5 pickups',                     rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p5-sat', dayIndex: 6, day: 'Saturday',  name: 'Long easy run, 3.8 miles',                                     rest: false, optional: false, time: '', duration: '', detail: '' },
+  ],
+  '2026-08-02': [ // Week 6
+    { id: 'p6-sun', dayIndex: 0, day: 'Sunday',    name: 'Strength A',                                                   rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p6-mon', dayIndex: 1, day: 'Monday',    name: 'Walk / steps, 8,000–12,000 steps',                        rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p6-tue', dayIndex: 2, day: 'Tuesday',   name: 'Easy run, 2.25–2.4 miles',                                rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p6-wed', dayIndex: 3, day: 'Wednesday', name: 'Strength B with Bulgarian split squat',                        rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p6-thu', dayIndex: 4, day: 'Thursday',  name: 'Easy run, 2.15–2.3 miles or 35–45 min brisk walk',   rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p6-fri', dayIndex: 5, day: 'Friday',    name: 'Easy run, 2.6–2.8 miles + 5–6 pickups',              rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p6-sat', dayIndex: 6, day: 'Saturday',  name: 'Long easy run, 4.0 miles',                                     rest: false, optional: false, time: '', duration: '', detail: '' },
+  ],
+  '2026-08-09': [ // Week 7
+    { id: 'p7-sun', dayIndex: 0, day: 'Sunday',    name: 'Strength A',                                                   rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p7-mon', dayIndex: 1, day: 'Monday',    name: 'Walk / steps, 8,000–12,000 steps',                        rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p7-tue', dayIndex: 2, day: 'Tuesday',   name: 'Easy run, 2.35–2.5 miles',                                rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p7-wed', dayIndex: 3, day: 'Wednesday', name: 'Strength B with leg press',                                    rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p7-thu', dayIndex: 4, day: 'Thursday',  name: 'Easy run, 2.15–2.4 miles or 35–45 min brisk walk',   rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p7-fri', dayIndex: 5, day: 'Friday',    name: 'Easy run, 2.8–3.0 miles + 6 pickups',                     rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p7-sat', dayIndex: 6, day: 'Saturday',  name: 'Long easy run, 4.2 miles',                                     rest: false, optional: false, time: '', duration: '', detail: '' },
+  ],
+  '2026-08-16': [ // Week 8 — easier week
+    { id: 'p8-sun', dayIndex: 0, day: 'Sunday',    name: 'Strength A — slightly easier',                             rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p8-mon', dayIndex: 1, day: 'Monday',    name: 'Walk / steps, 8,000–12,000 steps',                        rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p8-tue', dayIndex: 2, day: 'Tuesday',   name: 'Easy run, 2.15–2.3 miles',                                rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p8-wed', dayIndex: 3, day: 'Wednesday', name: 'Strength B with Bulgarian split squat — slightly easier',  rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p8-thu', dayIndex: 4, day: 'Thursday',  name: 'Walk or very easy run, 2.15 miles',                            rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p8-fri', dayIndex: 5, day: 'Friday',    name: 'Easy run, 2.4–2.6 miles + 4 pickups',                     rest: false, optional: false, time: '', duration: '', detail: '' },
+    { id: 'p8-sat', dayIndex: 6, day: 'Saturday',  name: 'Long easy run, 3.6–3.8 miles',                            rest: false, optional: false, time: '', duration: '', detail: '' },
+  ],
+};
 
-function loadSched()  { try { return JSON.parse(localStorage.getItem('cc_schedule') || 'null'); } catch { return null; } }
-function saveSched(s) { localStorage.setItem('cc_schedule', JSON.stringify(s)); }
-function initSched()  { const d = loadSched(); if (d) return d; const s = JSON.parse(JSON.stringify(SCHED_DEFAULTS)); saveSched(s); return s; }
-let SCHED = initSched();
+function getWeekProgram(wkKey) { return WEEK_PROGRAM[wkKey] || []; }
 
-// Migration: force Saturday (s-6) to Long Run, 90 min, Morning for all weeks >= June 14
-(function migrateSaturdayLongRun() {
-  const sat = SCHED.find(w => w.dayIndex === 6 && w.id === 's-6');
-  if (sat && (sat.rest || sat.name !== 'Long Run' || sat.duration !== '90 min')) {
-    sat.name = 'Long Run'; sat.time = 'Morning'; sat.duration = '90 min';
-    sat.rest = false; sat.optional = false;
-    saveSched(SCHED);
-  }
-})();
-
-function schedForDay(dayI) {
-  return SCHED.find(w => w.dayIndex === dayI && !w.rest && !w.optional)
-      || SCHED.find(w => w.dayIndex === dayI)
-      || { id: null, dayIndex: dayI, day: '', name: 'Rest', detail: '', time: '', duration: '', rest: true, optional: false };
+// Returns the ISO date string for dayIndex (0=Sun…6=Sat) within the given Sunday-keyed week.
+function dateForDayIndex(wkKey, dayI) {
+  const d = new Date(wkKey + 'T12:00:00');
+  d.setDate(d.getDate() + dayI);
+  return d.toISOString().slice(0, 10);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -2859,44 +2911,26 @@ function editWorkout(id) { fitEditingId = id; fitShowAdd = false; renderFitness(
 function cancelFitEdit() { fitEditingId = null; renderFitness(); }
 
 function saveWorkout(id) {
-  const w = SCHED.find(x => x.id === id);
-  if (!w) return;
-  const name = document.getElementById('fit-edit-name').value.trim();
-  const time = document.getElementById('fit-edit-time').value.trim();
-  const dur  = document.getElementById('fit-edit-dur').value.trim();
-  if (name) { w.name = name; w.rest = false; }
-  w.time     = time;
-  w.duration = dur;
-  saveSched(SCHED);
+  const workout = getWeekProgram(fitCurrentWeek).find(x => x.id === id);
+  if (!workout) return;
+  const name     = document.getElementById('fit-edit-name').value.trim();
+  const time     = document.getElementById('fit-edit-time').value.trim();
+  const dur      = document.getElementById('fit-edit-dur').value.trim();
+  const dateKey  = dateForDayIndex(fitCurrentWeek, workout.dayIndex);
+  const overrides = loadFitOverrides();
+  overrides[dateKey] = Object.assign({}, overrides[dateKey] || {}, { time, duration: dur });
+  if (name) { overrides[dateKey].name = name; overrides[dateKey].rest = false; }
+  saveFitOverrides(overrides);
   fitEditingId = null;
   renderFitness();
 }
 
-function showAddWorkout() { fitShowAdd = true; fitEditingId = null; renderFitness(); }
-
-function cancelAddWorkout() { fitShowAdd = false; renderFitness(); }
-
-function addWorkout() {
-  const dayI = parseInt(document.getElementById('fit-add-day').value, 10);
-  const name = document.getElementById('fit-add-name').value.trim();
-  const time = document.getElementById('fit-add-time').value.trim();
-  const dur  = document.getElementById('fit-add-dur').value.trim();
-  if (!name) return;
-  SCHED.push({
-    id: 'w-' + Date.now(), dayIndex: dayI, day: DAY_NAMES[dayI],
-    name, detail: '', time, duration: dur, rest: false, optional: false,
-  });
-  saveSched(SCHED);
-  fitShowAdd = false;
-  renderFitness();
-}
-
 function renderFitness() {
-  const data    = loadFitness();
-  const wk      = fitCurrentWeek;
+  const data = loadFitness();
+  const wk   = fitCurrentWeek;
 
-  // Weeks before June 14 have no data — show empty state
-  if (wk < '2026-06-14') {
+  // Weeks outside the 8-week program show an empty state
+  if (!(wk in WEEK_PROGRAM)) {
     const sunDate = new Date(wk + 'T12:00:00');
     const satDate = new Date(wk + 'T12:00:00'); satDate.setDate(satDate.getDate() + 6);
     const fmtD = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -2916,8 +2950,7 @@ function renderFitness() {
   const isCurWk = wk === FIT_THISWK;
   const fmt     = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-  // Ordered display: Sun first, then Mon–Sat; multiple workouts per day
-  const ordered = [0, 1, 2, 3, 4, 5, 6].flatMap(dayI => SCHED.filter(w => w.dayIndex === dayI));
+  const ordered = getWeekProgram(wk);
 
   // Progress tracker
   const nonRestWk = ordered.filter(w => !w.rest);
@@ -2928,19 +2961,18 @@ function renderFitness() {
   document.getElementById('fit-total').textContent = total;
   document.getElementById('fit-progress').style.width = total ? Math.min(100, (doneCount / total) * 100) + '%' : '0%';
 
-  // Streak (anchored to real current week regardless of nav)
-  const nonRestAll = SCHED.filter(w => !w.rest);
+  // Streak (counts completed weeks going backwards from current week)
   let streak = 0, checkWk = FIT_THISWK;
   for (let i = 0; i < 52; i++) {
+    const wkProg = getWeekProgram(checkWk).filter(w => !w.rest);
+    if (!wkProg.length) break;
     const wkData = data[checkWk] || {};
-    const allDone = nonRestAll.every(w => { const v = wkData[w.id]; return v === true || v === 'done'; });
-    if (i === 0 && !allDone) break;
-    if (i > 0 && !allDone) break;
-    if (i > 0) streak++;
+    const allDone = wkProg.every(w => { const v = wkData[w.id]; return v === true || v === 'done'; });
+    if (!allDone) break;
+    streak++;
     const d = new Date(checkWk + 'T12:00:00'); d.setDate(d.getDate() - 7);
     checkWk = d.toISOString().slice(0, 10);
   }
-  if (nonRestAll.every(w => { const v = (data[FIT_THISWK] || {})[w.id]; return v === true || v === 'done'; })) streak++;
   document.getElementById('fit-streak-display').textContent = streak > 0 ? `${streak} week streak 🔥` : '';
 
   // Nav
@@ -2950,24 +2982,13 @@ function renderFitness() {
     `Week of ${fmt(sunDate)}` + (isCurWk ? ' <span class="now-dot"></span>' : '');
   document.getElementById('fit-week-range').textContent = `${fmt(sunDate)} – ${fmt(satDate)}`;
 
-  const checkSvg = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-    <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6"
-          stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
   const fitOverrides = loadFitOverrides();
-  // Returns the ISO date string for a given dayIndex within the displayed week.
-  // wkKey is the Sunday start; dayI 0=Sun … 6=Sat maps directly to offset.
-  function dateForDayI(wkKey, dayI) {
-    const d = new Date(wkKey + 'T12:00:00');
-    d.setDate(d.getDate() + dayI);
-    return d.toISOString().slice(0, 10);
-  }
 
   // For the current week: today first, then upcoming days ascending, then past days most-recent-first.
   const displayOrdered = isCurWk
     ? [...ordered].sort((a, b) => {
-        const da = dateForDayI(wk, a.dayIndex);
-        const db = dateForDayI(wk, b.dayIndex);
+        const da = dateForDayIndex(wk, a.dayIndex);
+        const db = dateForDayIndex(wk, b.dayIndex);
         const ga = da === TODAY_STR ? 0 : da > TODAY_STR ? 1 : 2;
         const gb = db === TODAY_STR ? 0 : db > TODAY_STR ? 1 : 2;
         if (ga !== gb) return ga - gb;
@@ -2976,20 +2997,20 @@ function renderFitness() {
     : ordered;
 
   const blocks = displayOrdered.map(workout => {
-    const dateKey = dateForDayI(wk, workout.dayIndex);
-    const ov      = fitOverrides[dateKey];
+    const dateKey  = dateForDayIndex(wk, workout.dayIndex);
+    const ov       = fitOverrides[dateKey];
     const { id, day } = workout;
-    const name     = ov ? ov.name     : workout.name;
-    const rest     = ov ? ov.rest     : workout.rest;
-    const detail   = ov ? ov.detail   : workout.detail;
-    const time     = ov ? ov.time     : workout.time;
-    const duration = ov ? ov.duration : workout.duration;
-    const optional = ov ? ov.optional : workout.optional;
-    const fitVal  = thisWk[id];
-    const done    = fitVal === true || fitVal === 'done';
-    const missed  = fitVal === 'missed';
-    const isToday = isCurWk && workout.dayIndex === todayDI;
-    const isPast  = dateKey < TODAY_STR;
+    const name     = (ov && ov.name     != null) ? ov.name     : workout.name;
+    const rest     = (ov && ov.rest     != null) ? ov.rest     : workout.rest;
+    const detail   = (ov && ov.detail   != null) ? ov.detail   : (workout.detail   || '');
+    const time     = (ov && ov.time     != null) ? ov.time     : (workout.time     || '');
+    const duration = (ov && ov.duration != null) ? ov.duration : (workout.duration || '');
+    const optional = (ov && ov.optional != null) ? ov.optional : workout.optional;
+    const fitVal   = thisWk[id];
+    const done     = fitVal === true || fitVal === 'done';
+    const missed   = fitVal === 'missed';
+    const isToday  = isCurWk && workout.dayIndex === todayDI;
+    const isPast   = dateKey < TODAY_STR;
 
     if (fitEditingId === id) {
       return `
@@ -3036,32 +3057,7 @@ function renderFitness() {
     </div>`;
   }).join('');
 
-  const addForm = fitShowAdd ? `
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <select id="fit-add-day" class="t-select">
-          ${[6,0,1,2,3,4,5].map(i => `<option value="${i}">${DAY_NAMES[i]}</option>`).join('')}
-        </select>
-        <input id="fit-add-name" class="t-text-input" placeholder="Workout name" style="flex:2;min-width:140px;">
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <input id="fit-add-time" class="t-text-input" placeholder="Time (e.g. 7:30 AM)" style="flex:1;min-width:120px;">
-        <input id="fit-add-dur"  class="t-text-input" placeholder="Duration (e.g. 45 min)" style="flex:1;min-width:120px;">
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="journal-save-btn" style="padding:7px 16px;" onclick="addWorkout()">Add</button>
-        <button class="fin-cancel-btn" onclick="cancelAddWorkout()">Cancel</button>
-      </div>
-    </div>` : `
-    <button onclick="showAddWorkout()"
-      style="font-family:inherit;font-size:13px;font-weight:600;color:var(--accent);
-             background:var(--accent-dim);border:1px solid var(--accent-rim);
-             border-radius:8px;padding:7px 16px;cursor:pointer;">
-      + Add workout
-    </button>`;
-
-  document.getElementById('fit-blocks').innerHTML =
-    blocks + `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">${addForm}</div>`;
+  document.getElementById('fit-blocks').innerHTML = blocks;
 }
 
 document.getElementById('fit-prev').addEventListener('click', () => {
@@ -3890,7 +3886,7 @@ function renderTimeBreakdown() {
   (DATA.weeks[THISWK] || []).filter(b => b.done && b.date === TODAY_STR).forEach(b => {
     todayMap.Writing = (todayMap.Writing || 0) + Math.round(b.duration * 60);
   });
-  SCHED.filter(s => !s.rest && s.dayIndex === todayDI).forEach(s => {
+  getWeekProgram(FIT_THISWK).filter(s => !s.rest && s.dayIndex === todayDI).forEach(s => {
     const v = (fitData[FIT_THISWK] || {})[s.id];
     if (v === true || v === 'done') todayMap.Fitness = (todayMap.Fitness || 0) + parseFitMins(s.duration);
   });
@@ -3904,7 +3900,7 @@ function renderTimeBreakdown() {
   (DATA.weeks[THISWK] || []).filter(b => b.done).forEach(b => {
     weekMap.Writing = (weekMap.Writing || 0) + Math.round(b.duration * 60);
   });
-  SCHED.filter(s => !s.rest).forEach(s => {
+  getWeekProgram(FIT_THISWK).filter(s => !s.rest).forEach(s => {
     const v = (fitData[FIT_THISWK] || {})[s.id];
     if (v === true || v === 'done') weekMap.Fitness = (weekMap.Fitness || 0) + parseFitMins(s.duration);
   });
@@ -3927,8 +3923,8 @@ function renderTimeBreakdown() {
   Object.values(DATA.weeks).flat().filter(b => b.done).forEach(b => {
     allMap.Writing = (allMap.Writing || 0) + Math.round(b.duration * 60);
   });
-  Object.values(fitData).forEach(wkData => {
-    SCHED.filter(s => !s.rest).forEach(s => {
+  Object.entries(fitData).forEach(([fitWk, wkData]) => {
+    getWeekProgram(fitWk).filter(s => !s.rest).forEach(s => {
       const v = wkData[s.id];
       if (v === true || v === 'done') allMap.Fitness = (allMap.Fitness || 0) + parseFitMins(s.duration);
     });
@@ -4052,17 +4048,19 @@ function renderRocks() {
   }).join('');
 
   // ── Fitness ──
-  const fitData    = loadFitness();
-  const nonRest    = SCHED.filter(s => !s.rest);
-  const thisFit    = fitData[FIT_THISWK] || {};
-  const lastFitKey = shiftFitWeek(FIT_THISWK, -1);
-  const lastFit    = fitData[lastFitKey] || {};
-  const ftTotal = nonRest.length;
-  const ftDone  = nonRest.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length;
-  const flDone  = nonRest.filter(s => { const v = lastFit[s.id]; return v === true || v === 'done'; }).length;
+  const fitData      = loadFitness();
+  const thisNonRest  = getWeekProgram(FIT_THISWK).filter(s => !s.rest);
+  const thisFit      = fitData[FIT_THISWK] || {};
+  const lastFitKey   = shiftFitWeek(FIT_THISWK, -1);
+  const lastNonRest  = getWeekProgram(lastFitKey).filter(s => !s.rest);
+  const lastFit      = fitData[lastFitKey] || {};
+  const ftTotal = thisNonRest.length;
+  const flTotal = lastNonRest.length;
+  const ftDone  = thisNonRest.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length;
+  const flDone  = lastNonRest.filter(s => { const v = lastFit[s.id]; return v === true || v === 'done'; }).length;
   const fitAllEntries = Object.entries(fitData);
-  // wkKey is Sunday; dayIndex 0=Sun … 6=Sat maps directly to the offset from that Sunday
-  const fitDueInWk    = wkKey => nonRest.filter(s => {
+  const fitDueInWk = wkKey => getWeekProgram(wkKey).filter(s => {
+    if (s.rest) return false;
     const d = new Date(wkKey + 'T12:00:00');
     d.setDate(d.getDate() + s.dayIndex);
     return d.toISOString().slice(0, 10) <= TODAY_STR;
@@ -4076,16 +4074,18 @@ function renderRocks() {
   const ftExpectedCount  = fitDueSoFar.length;
   const ftCompletedSoFar = fitDueSoFar.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length;
   const ftPillClass = thisWeekPillClass(ftCompletedSoFar, ftExpectedCount, FIT_THISWK in fitData || ftExpectedCount > 0);
-  const flPillClass = thisWeekPillClass(flDone, ftTotal, lastFitKey in fitData);
+  const flPillClass = thisWeekPillClass(flDone, flTotal, lastFitKey in fitData);
 
   const fitKeys   = Object.keys(fitData).sort();
   const fStartKey = fitKeys.length && fitKeys[0] < FIT_THISWK ? fitKeys[0] : FIT_THISWK;
-  const fitWeeks  = sunWeeksBetween(fStartKey, FIT_THISWK);  // stop at current week
+  const fitWeeks  = sunWeeksBetween(fStartKey, FIT_THISWK);
 
   const fitBoxes = fitWeeks.map(wk => {
-    const wkData = fitData[wk] || {};
-    const done   = nonRest.filter(s => { const v = wkData[s.id]; return v === true || v === 'done'; }).length;
-    const dp     = ftTotal ? (done / ftTotal) * 100 : 0;
+    const wkProg  = getWeekProgram(wk).filter(s => !s.rest);
+    const wkData  = fitData[wk] || {};
+    const done    = wkProg.filter(s => { const v = wkData[s.id]; return v === true || v === 'done'; }).length;
+    const wkTotal = wkProg.length;
+    const dp      = wkTotal ? (done / wkTotal) * 100 : 0;
     const hasData = wk in fitData;
     return wkBox(wk, dp, FIT_THISWK, hasData);
   }).join('');
@@ -4132,7 +4132,7 @@ function renderRocks() {
         <div class="foc-label">Fitness</div>
         <div class="fin-pills">
           <span class="fin-pill ${ftPillClass}">${ftDone}/${ftTotal} this week</span>
-          <span class="fin-pill ${flPillClass}">${flDone}/${ftTotal} last week</span>
+          <span class="fin-pill ${flPillClass}">${flDone}/${flTotal} last week</span>
           <span class="fin-pill fin-pill-none">${atFPct}% All-time Completion Rate</span>
         </div>
         <div class="wk-grid">${fitBoxes}</div>
@@ -4262,7 +4262,7 @@ function renderDeck() {
 
   // Today's fitness workouts
   const todayDI       = new Date().getDay();
-  const todayWorkouts = SCHED.filter(w => w.dayIndex === todayDI && !w.rest);
+  const todayWorkouts = getWeekProgram(FIT_THISWK).filter(w => w.dayIndex === todayDI && !w.rest);
   if (todayWorkouts.length) {
     const fitData = loadFitness();
     const wkFit   = fitData[fitWeekKey()] || {};
