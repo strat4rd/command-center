@@ -1480,6 +1480,70 @@
     .rock-fit-name { color: var(--text); flex: 1; font-weight: 500; }
     .rock-fit-tick { color: #4CAF85; font-size: 12px; font-weight: 700; margin-left: auto; }
 
+    /* ── JOB PROSPECTS ───────────────────────────────────── */
+    .jobs-meta {
+      font-size: 12px; color: var(--muted);
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .jobs-meta strong { color: var(--text); }
+    .jobs-filter-row { display: flex; gap: 6px; margin-bottom: 16px; }
+    .jobs-filter-btn {
+      font-size: 12px; font-weight: 500;
+      padding: 5px 14px; border-radius: 20px;
+      border: 1px solid var(--border-d);
+      color: var(--muted); background: var(--surface2);
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+    .jobs-filter-btn.active {
+      background: var(--accent); border-color: var(--accent); color: #fff;
+    }
+    .jobs-list { display: flex; flex-direction: column; gap: 10px; }
+    .job-card {
+      background: var(--surface); border: 1px solid #e8e8f0;
+      border-radius: 10px; padding: 14px 16px;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px;
+    }
+    .job-card-body { flex: 1; min-width: 0; }
+    .job-title-row {
+      display: flex; align-items: center; gap: 8px;
+      flex-wrap: wrap; margin-bottom: 2px;
+    }
+    .job-title {
+      font-size: 14px; font-weight: 700; color: #1a1a2e; line-height: 1.3;
+    }
+    .job-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+      text-transform: uppercase; padding: 2px 8px; border-radius: 10px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .job-badge-remote {
+      background: rgba(74,144,217,0.12); color: #4A90D9;
+      border: 1px solid rgba(74,144,217,0.25);
+    }
+    .job-badge-local {
+      background: rgba(76,175,133,0.10); color: #166534;
+      border: 1px solid rgba(76,175,133,0.25);
+    }
+    .job-company { font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+    .job-meta-row {
+      font-size: 11px; color: var(--muted);
+      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+    }
+    .job-meta-sep { opacity: 0.4; }
+    .job-apply-btn {
+      font-size: 12px; font-weight: 600;
+      padding: 6px 14px; border-radius: 8px;
+      background: var(--accent-dim); color: var(--accent);
+      border: 1px solid var(--accent-rim);
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      text-decoration: none; display: inline-block;
+      transition: background 0.12s;
+    }
+    .job-apply-btn:hover { background: rgba(74,144,217,0.18); }
+
     /* ── VETTER ───────────────────────────────────────────── */
     .vetter-rocks { display: flex; flex-direction: column; gap: 10px; }
 
@@ -1533,6 +1597,7 @@
   <div class="tab" data-tab="finances">Finances</div>
   <div class="tab" data-tab="work">Day Job</div>
   <div class="tab" data-tab="vetter">Vetter</div>
+  <div class="tab" data-tab="jobs">Job Prospects</div>
 </nav>
 
 <div class="main">
@@ -1956,6 +2021,22 @@
       </div>
 
       <div id="v-verdict" class="vetter-verdict" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ── JOB PROSPECTS ────────────────────────────────────── -->
+  <div class="tab-panel" id="panel-jobs">
+    <div class="card">
+      <div class="tracker-label" style="margin-bottom:12px;">Job Prospects</div>
+      <div class="jobs-meta" id="jobs-meta"></div>
+      <div class="jobs-filter-row" id="jobs-filter-row">
+        <button class="jobs-filter-btn active" data-filter="all"  onclick="setJobFilter('all')">All</button>
+        <button class="jobs-filter-btn"        data-filter="remote" onclick="setJobFilter('remote')">Remote</button>
+        <button class="jobs-filter-btn"        data-filter="local"  onclick="setJobFilter('local')">Local</button>
+      </div>
+      <div class="jobs-list" id="jobs-list">
+        <div class="empty">Loading&hellip;</div>
+      </div>
     </div>
   </div>
 
@@ -2520,6 +2601,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('panel-' + t).classList.add('active');
     if (t === 'main') { deckViewDate = TODAY_STR; renderMain(); }
+    if (t === 'jobs') loadJobs();
   });
 });
 
@@ -4563,6 +4645,107 @@ function runVetter() {
 
 renderMain();
 renderAll();
+
+// ─────────────────────────────────────────────────────────
+// JOB PROSPECTS
+// ─────────────────────────────────────────────────────────
+
+let jobsData  = null;   // cached after first load
+let jobFilter = 'all';
+
+function fmtUpdatedAt(iso) {
+  if (!iso) return null;
+  try {
+    return new Date(iso).toLocaleString('en-US', {
+      timeZone: 'America/Los_Angeles',
+      month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+      hour12: true,
+    }) + ' PT';
+  } catch { return iso; }
+}
+
+function setJobFilter(f) {
+  jobFilter = f;
+  document.querySelectorAll('.jobs-filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === f);
+  });
+  renderJobs();
+}
+
+function renderJobs() {
+  const listEl = document.getElementById('jobs-list');
+  const metaEl = document.getElementById('jobs-meta');
+  if (!jobsData) return;
+
+  const { updated_at, jobs } = jobsData;
+  const ts = fmtUpdatedAt(updated_at);
+  metaEl.innerHTML = ts
+    ? `Last updated <strong>${ts}</strong> &nbsp;·&nbsp; ${jobs.length} listing${jobs.length !== 1 ? 's' : ''}`
+    : `${jobs.length} listing${jobs.length !== 1 ? 's' : ''}`;
+
+  if (!jobs.length || !updated_at) {
+    listEl.innerHTML = '<div class="empty">No listings yet — the daily fetch runs each morning.</div>';
+    return;
+  }
+
+  const visible = jobs.filter(j => {
+    if (jobFilter === 'remote') return j.remote;
+    if (jobFilter === 'local')  return !j.remote;
+    return true;
+  });
+
+  if (!visible.length) {
+    listEl.innerHTML = '<div class="empty">No listings match this filter.</div>';
+    return;
+  }
+
+  listEl.innerHTML = visible.map(j => {
+    const badge = j.remote
+      ? '<span class="job-badge job-badge-remote">Remote</span>'
+      : `<span class="job-badge job-badge-local">${j.distance_miles != null ? j.distance_miles + ' mi' : 'Local'}</span>`;
+
+    const metaParts = [];
+    if (j.posted)   metaParts.push(j.posted);
+    if (j.schedule) metaParts.push(j.schedule);
+    if (j.via)      metaParts.push('via ' + j.via);
+    const metaHtml = metaParts
+      .map((p, i) => i === 0 ? `<span>${p}</span>` : `<span class="job-meta-sep">·</span><span>${p}</span>`)
+      .join('');
+
+    const applyBtn = j.link
+      ? `<a class="job-apply-btn" href="${j.link.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">Apply ↗</a>`
+      : '';
+
+    return `
+    <div class="job-card">
+      <div class="job-card-body">
+        <div class="job-title-row">
+          <span class="job-title">${j.title}</span>
+          ${badge}
+        </div>
+        <div class="job-company">${j.company}${j.location ? ' &nbsp;·&nbsp; ' + j.location : ''}</div>
+        <div class="job-meta-row">${metaHtml}</div>
+      </div>
+      ${applyBtn}
+    </div>`;
+  }).join('');
+}
+
+async function loadJobs() {
+  if (jobsData) { renderJobs(); return; }  // use cache on re-open
+  document.getElementById('jobs-list').innerHTML = '<div class="empty">Loading&hellip;</div>';
+  document.getElementById('jobs-meta').innerHTML = '';
+  try {
+    const r = await fetch('jobs.json');
+    if (!r.ok) throw new Error(r.status);
+    jobsData = await r.json();
+    renderJobs();
+  } catch {
+    document.getElementById('jobs-list').innerHTML =
+      '<div class="empty">Couldn\'t load listings right now.</div>';
+  }
+}
 </script>
 
 <!-- Reset button (bottom-right corner) -->
