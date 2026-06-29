@@ -860,6 +860,53 @@
     }
     .fit-edit-btn:hover { color: var(--accent); }
 
+    /* ── FITNESS REFERENCE ───────────────────────────────── */
+    .fit-ref-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--surface); border: 1px solid #e8e8f0;
+      border-radius: 10px; cursor: pointer; user-select: none;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    .fit-ref-toggle:hover { border-color: var(--border-d); background: var(--surface2); }
+    .fit-ref-toggle-title {
+      font-size: 13px; font-weight: 700; color: #1a1a2e;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .fit-ref-toggle-title::before {
+      content: ''; display: inline-block;
+      width: 8px; height: 8px; border-radius: 50%; background: #4A90D9;
+    }
+    .fit-ref-chevron { font-size: 12px; color: var(--muted); transition: transform 0.18s; }
+    .fit-ref-chevron.open { transform: rotate(180deg); }
+    .fit-ref-body { display: none; flex-direction: column; gap: 12px; margin-top: 10px; }
+    .fit-ref-body.open { display: flex; }
+    .fit-ref-card {
+      background: var(--surface); border: 1px solid #e8e8f0;
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .fit-ref-card-title {
+      font-size: 11px; font-weight: 700;
+      color: #4A90D9; text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+    .fit-ref-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .fit-ref-table th {
+      text-align: left; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+      padding: 0 0 6px; border-bottom: 1px solid #e8e8f0;
+    }
+    .fit-ref-table th:last-child { text-align: right; }
+    .fit-ref-table td {
+      padding: 5px 0; color: #1a1a2e;
+      border-bottom: 1px solid #f2f2f7; font-size: 13px;
+    }
+    .fit-ref-table td:last-child { text-align: right; color: var(--muted); font-size: 12px; white-space: nowrap; padding-left: 12px; }
+    .fit-ref-table tr:last-child td { border-bottom: none; }
+    .fit-ref-note { font-size: 11px; color: var(--muted); margin-top: 8px; font-style: italic; }
+    .fit-ref-text { font-size: 13px; color: #1a1a2e; line-height: 1.5; }
+    .fit-ref-list { margin: 8px 0; padding-left: 18px; font-size: 13px; color: #1a1a2e; line-height: 1.65; }
+
     /* ── FINANCES ────────────────────────────────────────── */
     .fin-grid {
       display: grid;
@@ -1715,6 +1762,79 @@
       </div>
       <div class="fit-streak" id="fit-streak-display" style="text-align:right;margin:-4px 0 12px;font-size:12px;"></div>
       <div class="blocks" id="fit-blocks"></div>
+    </div>
+
+    <!-- Workout Details reference (collapsible, static) -->
+    <div style="margin-top:16px;">
+      <div class="fit-ref-toggle" onclick="toggleFitRef()">
+        <div class="fit-ref-toggle-title">Workout Details</div>
+        <div class="fit-ref-chevron" id="fit-ref-chevron">&#9660;</div>
+      </div>
+      <div class="fit-ref-body" id="fit-ref-body">
+
+        <!-- Strength A -->
+        <div class="fit-ref-card">
+          <div class="fit-ref-card-title">Strength A &mdash; main strength day</div>
+          <table class="fit-ref-table">
+            <thead><tr><th>Exercise</th><th>Sets &times; Reps</th></tr></thead>
+            <tbody>
+              <tr><td>Barbell squat</td><td>3 &times; 5&ndash;8</td></tr>
+              <tr><td>Assisted pull-up</td><td>3 &times; 6&ndash;8</td></tr>
+              <tr><td>Chest press machine</td><td>3 &times; 6&ndash;8</td></tr>
+              <tr><td>Lying leg curl</td><td>2 &times; 8&ndash;10</td></tr>
+              <tr><td>Seated row machine</td><td>2 &times; 8&ndash;10</td></tr>
+              <tr><td>Hip abduction machine</td><td>2 &times; 10&ndash;15</td></tr>
+              <tr><td>Side plank</td><td>2 &times; 20&ndash;45 sec/side</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Strength B -->
+        <div class="fit-ref-card">
+          <div class="fit-ref-card-title">Strength B &mdash; short strength day</div>
+          <table class="fit-ref-table">
+            <thead><tr><th>Exercise</th><th>Sets &times; Reps</th></tr></thead>
+            <tbody>
+              <tr><td>Barbell Romanian deadlift</td><td>2 &times; 6&ndash;8</td></tr>
+              <tr><td>Dumbbell bench press</td><td>2 &times; 6&ndash;8</td></tr>
+              <tr><td>Lat pulldown</td><td>2 &times; 6&ndash;8</td></tr>
+              <tr><td>Leg press or Bulgarian split squat</td><td>2 &times; 8&ndash;10</td></tr>
+              <tr><td>Dumbbell shoulder press</td><td>2 &times; 8&ndash;10</td></tr>
+              <tr><td>Hip adduction machine</td><td>1&ndash;2 &times; 10&ndash;15</td></tr>
+            </tbody>
+          </table>
+          <div class="fit-ref-note">The schedule specifies which variant to use for the 4th exercise each week (leg press or Bulgarian split squat).</div>
+        </div>
+
+        <!-- Friday pickups -->
+        <div class="fit-ref-card">
+          <div class="fit-ref-card-title">Friday pickups</div>
+          <div class="fit-ref-text">On Friday, the run is mostly easy.</div>
+          <ol class="fit-ref-list">
+            <li>10 minutes easy jog</li>
+            <li>Then 4&ndash;6 rounds of: 20 seconds quicker, then 90 seconds very easy jog or walk</li>
+            <li>Finish the rest of the run easy</li>
+          </ol>
+          <div class="fit-ref-note">The pickups should feel smooth and light, not like sprint intervals.</div>
+        </div>
+
+        <!-- How to handle Thursday -->
+        <div class="fit-ref-card">
+          <div class="fit-ref-card-title">How to handle Thursday</div>
+          <div class="fit-ref-text" style="margin-bottom:8px;">Thursday is intentionally flexible. Use this rule:</div>
+          <table class="fit-ref-table">
+            <thead><tr><th>How you feel</th><th>What to do</th></tr></thead>
+            <tbody>
+              <tr><td>Legs feel normal</td><td>Easy run</td></tr>
+              <tr><td>Legs feel heavy from Wednesday strength</td><td>Brisk walk</td></tr>
+              <tr><td>Low energy / poor sleep</td><td>Walk</td></tr>
+              <tr><td>Feeling good but not motivated to run</td><td>Walk is acceptable</td></tr>
+            </tbody>
+          </table>
+          <div class="fit-ref-note">Thursday is not the key run. The most important runs are Saturday, then Tuesday, then Friday.</div>
+        </div>
+
+      </div>
     </div>
 
   </div>
@@ -3111,6 +3231,13 @@ document.getElementById('fit-next').addEventListener('click', () => {
 })();
 
 renderFitness();
+
+function toggleFitRef() {
+  const body = document.getElementById('fit-ref-body');
+  const chev = document.getElementById('fit-ref-chevron');
+  const open = body.classList.toggle('open');
+  chev.classList.toggle('open', open);
+}
 
 // ─────────────────────────────────────────────────────────
 // WEIGHT TRACKING
