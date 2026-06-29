@@ -4337,15 +4337,35 @@ function renderRocks() {
 
   // ── Fitness ──
   const fitData      = loadFitness();
+  const fitCustomAll = loadFitCustom();
+
+  // Custom workouts whose date falls within a Sun-keyed week
+  const customForWk = wkKey => {
+    const wkEnd = dateForDayIndex(wkKey, 6);
+    return fitCustomAll.filter(c => c.date >= wkKey && c.date <= wkEnd);
+  };
+  // Custom workouts due on or before a cutoff date within a week
+  const customDueBy = (wkKey, upTo) => customForWk(wkKey).filter(c => c.date <= upTo);
+
   const thisNonRest  = getWeekProgram(FIT_THISWK).filter(s => !s.rest);
   const thisFit      = fitData[FIT_THISWK] || {};
   const lastFitKey   = shiftFitWeek(FIT_THISWK, -1);
   const lastNonRest  = getWeekProgram(lastFitKey).filter(s => !s.rest);
   const lastFit      = fitData[lastFitKey] || {};
-  const ftTotal = thisNonRest.length;
-  const flTotal = lastNonRest.length;
-  const ftDone  = thisNonRest.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length;
-  const flDone  = lastNonRest.filter(s => { const v = lastFit[s.id]; return v === true || v === 'done'; }).length;
+
+  const thisCustom = customForWk(FIT_THISWK);
+  const lastCustom = customForWk(lastFitKey);
+
+  // This week totals (program + custom)
+  const ftTotal = thisNonRest.length + thisCustom.length;
+  const ftDone  = thisNonRest.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length
+                + thisCustom.filter(c => { const v = thisFit[c.id]; return v === true || v === 'done'; }).length;
+
+  // Last week totals (program + custom)
+  const flTotal = lastNonRest.length + lastCustom.length;
+  const flDone  = lastNonRest.filter(s => { const v = lastFit[s.id]; return v === true || v === 'done'; }).length
+                + lastCustom.filter(c => { const v = lastFit[c.id]; return v === true || v === 'done'; }).length;
+
   const fitAllEntries = Object.entries(fitData);
   const fitDueInWk = wkKey => getWeekProgram(wkKey).filter(s => {
     if (s.rest) return false;
@@ -4354,13 +4374,18 @@ function renderRocks() {
     return d.toISOString().slice(0, 10) <= TODAY_STR;
   });
   const atFDone  = fitAllEntries.reduce((sum, [wk, wkData]) =>
-    sum + fitDueInWk(wk).filter(s => { const v = wkData[s.id]; return v === true || v === 'done'; }).length, 0);
-  const atFTotal = fitAllEntries.reduce((sum, [wk]) => sum + fitDueInWk(wk).length, 0);
+    sum + fitDueInWk(wk).filter(s => { const v = wkData[s.id]; return v === true || v === 'done'; }).length
+        + customDueBy(wk, TODAY_STR).filter(c => { const v = wkData[c.id]; return v === true || v === 'done'; }).length, 0);
+  const atFTotal = fitAllEntries.reduce((sum, [wk]) =>
+    sum + fitDueInWk(wk).length + customDueBy(wk, TODAY_STR).length, 0);
   const atFPct   = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
 
+  // Expected so far this week (program + custom due up to and including today)
   const fitDueSoFar      = fitDueInWk(FIT_THISWK);
-  const ftExpectedCount  = fitDueSoFar.length;
-  const ftCompletedSoFar = fitDueSoFar.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length;
+  const customDueSoFar   = customDueBy(FIT_THISWK, TODAY_STR);
+  const ftExpectedCount  = fitDueSoFar.length + customDueSoFar.length;
+  const ftCompletedSoFar = fitDueSoFar.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length
+                         + customDueSoFar.filter(c => { const v = thisFit[c.id]; return v === true || v === 'done'; }).length;
   const ftPillClass = thisWeekPillClass(ftCompletedSoFar, ftExpectedCount, FIT_THISWK in fitData || ftExpectedCount > 0);
   const flPillClass = thisWeekPillClass(flDone, flTotal, lastFitKey in fitData);
 
@@ -4369,12 +4394,14 @@ function renderRocks() {
   const fitWeeks  = sunWeeksBetween(fStartKey, FIT_THISWK);
 
   const fitBoxes = fitWeeks.map(wk => {
-    const wkProg  = getWeekProgram(wk).filter(s => !s.rest);
-    const wkData  = fitData[wk] || {};
-    const done    = wkProg.filter(s => { const v = wkData[s.id]; return v === true || v === 'done'; }).length;
-    const wkTotal = wkProg.length;
-    const dp      = wkTotal ? (done / wkTotal) * 100 : 0;
-    const hasData = wk in fitData;
+    const wkProg   = getWeekProgram(wk).filter(s => !s.rest);
+    const wkCustom = customForWk(wk);
+    const wkData   = fitData[wk] || {};
+    const done     = wkProg.filter(s => { const v = wkData[s.id]; return v === true || v === 'done'; }).length
+                   + wkCustom.filter(c => { const v = wkData[c.id]; return v === true || v === 'done'; }).length;
+    const wkTotal  = wkProg.length + wkCustom.length;
+    const dp       = wkTotal ? (done / wkTotal) * 100 : 0;
+    const hasData  = wk in fitData;
     return wkBox(wk, dp, FIT_THISWK, hasData);
   }).join('');
 
