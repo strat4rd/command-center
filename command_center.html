@@ -3094,6 +3094,11 @@ function saveFitness(data) {
   localStorage.setItem('cc_fitness', JSON.stringify(data));
 }
 
+function loadFitCustom() {
+  try { return JSON.parse(localStorage.getItem('cc_fit_custom') || '[]'); } catch { return []; }
+}
+function saveFitCustom(arr) { localStorage.setItem('cc_fit_custom', JSON.stringify(arr)); }
+
 function loadFitOverrides()  { try { return JSON.parse(localStorage.getItem('cc_fit_overrides') || '{}'); } catch { return {}; } }
 function saveFitOverrides(d) { localStorage.setItem('cc_fit_overrides', JSON.stringify(d)); }
 
@@ -3141,6 +3146,27 @@ function editWorkout(id) { fitEditingId = id; fitShowAdd = false; renderFitness(
 
 function cancelFitEdit() { fitEditingId = null; renderFitness(); }
 
+function cancelFitAdd() { fitShowAdd = false; renderFitness(); }
+
+function submitCustomWorkout() {
+  const name = document.getElementById('fit-add-name').value.trim();
+  const date = document.getElementById('fit-add-date').value;
+  if (!name || !date) return;
+  const customs = loadFitCustom();
+  customs.push({ id: 'custom-' + Date.now(), date, name });
+  saveFitCustom(customs);
+  fitShowAdd = false;
+  renderFitness();
+}
+
+function deleteCustomWorkout(id) {
+  saveFitCustom(loadFitCustom().filter(c => c.id !== id));
+  const data = loadFitness();
+  Object.keys(data).forEach(wk => { delete data[wk][id]; });
+  saveFitness(data);
+  renderFitness();
+}
+
 function saveWorkout(id) {
   const workout = getWeekProgram(fitCurrentWeek).find(x => x.id === id);
   if (!workout) return;
@@ -3160,30 +3186,22 @@ function renderFitness() {
   const data = loadFitness();
   const wk   = fitCurrentWeek;
 
-  // Weeks outside the 8-week program show an empty state
-  if (!(wk in WEEK_PROGRAM)) {
-    const sunDate = new Date(wk + 'T12:00:00');
-    const satDate = new Date(wk + 'T12:00:00'); satDate.setDate(satDate.getDate() + 6);
-    const fmtD = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    document.getElementById('fit-tracker-label').textContent = 'Week Progress';
-    document.getElementById('fit-done').textContent = 0;
-    document.getElementById('fit-total').textContent = 0;
-    document.getElementById('fit-progress').style.width = '0%';
-    document.getElementById('fit-streak-display').textContent = '';
-    document.getElementById('fit-week-title').innerHTML = `Week of ${fmtD(sunDate)}`;
-    document.getElementById('fit-week-range').textContent = `${fmtD(sunDate)} – ${fmtD(satDate)}`;
-    document.getElementById('fit-blocks').innerHTML = '<div class="empty">No workout data for this week.</div>';
-    return;
-  }
-
   const thisWk  = data[wk] || {};
   const todayDI = new Date().getDay();
   const isCurWk = wk === FIT_THISWK;
   const fmt     = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const sunDate = new Date(wk + 'T12:00:00');
+  const satDate = new Date(wk + 'T12:00:00'); satDate.setDate(satDate.getDate() + 6);
 
-  const ordered = getWeekProgram(wk);
+  // Nav (always)
+  document.getElementById('fit-week-title').innerHTML =
+    `Week of ${fmt(sunDate)}` + (isCurWk ? ' <span class="now-dot"></span>' : '');
+  document.getElementById('fit-week-range').textContent = `${fmt(sunDate)} – ${fmt(satDate)}`;
 
-  // Progress tracker
+  const inProgram = wk in WEEK_PROGRAM;
+  const ordered   = getWeekProgram(wk); // [] when outside 8-week program
+
+  // Progress tracker (program blocks only)
   const nonRestWk = ordered.filter(w => !w.rest);
   const doneCount = nonRestWk.filter(w => { const v = thisWk[w.id]; return v === true || v === 'done'; }).length;
   const total     = nonRestWk.length;
@@ -3192,45 +3210,55 @@ function renderFitness() {
   document.getElementById('fit-total').textContent = total;
   document.getElementById('fit-progress').style.width = total ? Math.min(100, (doneCount / total) * 100) + '%' : '0%';
 
-  // Streak (counts completed weeks going backwards from current week)
-  let streak = 0, checkWk = FIT_THISWK;
-  for (let i = 0; i < 52; i++) {
-    const wkProg = getWeekProgram(checkWk).filter(w => !w.rest);
-    if (!wkProg.length) break;
-    const wkData = data[checkWk] || {};
-    const allDone = wkProg.every(w => { const v = wkData[w.id]; return v === true || v === 'done'; });
-    if (!allDone) break;
-    streak++;
-    const d = new Date(checkWk + 'T12:00:00'); d.setDate(d.getDate() - 7);
-    checkWk = d.toISOString().slice(0, 10);
+  // Streak
+  if (inProgram) {
+    let streak = 0, checkWk = FIT_THISWK;
+    for (let i = 0; i < 52; i++) {
+      const wkProg = getWeekProgram(checkWk).filter(w => !w.rest);
+      if (!wkProg.length) break;
+      const wkData = data[checkWk] || {};
+      const allDone = wkProg.every(w => { const v = wkData[w.id]; return v === true || v === 'done'; });
+      if (!allDone) break;
+      streak++;
+      const d = new Date(checkWk + 'T12:00:00'); d.setDate(d.getDate() - 7);
+      checkWk = d.toISOString().slice(0, 10);
+    }
+    document.getElementById('fit-streak-display').textContent = streak > 0 ? `${streak} week streak 🔥` : '';
+  } else {
+    document.getElementById('fit-streak-display').textContent = '';
   }
-  document.getElementById('fit-streak-display').textContent = streak > 0 ? `${streak} week streak 🔥` : '';
 
-  // Nav
-  const sunDate = new Date(wk + 'T12:00:00');
-  const satDate = new Date(wk + 'T12:00:00'); satDate.setDate(satDate.getDate() + 6);
-  document.getElementById('fit-week-title').innerHTML =
-    `Week of ${fmt(sunDate)}` + (isCurWk ? ' <span class="now-dot"></span>' : '');
-  document.getElementById('fit-week-range').textContent = `${fmt(sunDate)} – ${fmt(satDate)}`;
+  // Custom workouts for this week (tied to date, not program)
+  const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const wkEnd = dateForDayIndex(wk, 6);
+  const customBlocks = loadFitCustom()
+    .filter(c => c.date >= wk && c.date <= wkEnd)
+    .map(c => {
+      const di = new Date(c.date + 'T12:00:00').getDay();
+      return { id: c.id, date: c.date, dayIndex: di, day: DAY_NAMES[di],
+               name: c.name, rest: false, optional: false,
+               time: '', duration: '', detail: '', custom: true };
+    });
 
+  const allOrdered = [...ordered, ...customBlocks];
   const fitOverrides = loadFitOverrides();
 
-  // For the current week: today first, then upcoming days ascending, then past days most-recent-first.
+  // For the current week: today first, upcoming ascending, past most-recent-first.
   const displayOrdered = isCurWk
-    ? [...ordered].sort((a, b) => {
-        const da = dateForDayIndex(wk, a.dayIndex);
-        const db = dateForDayIndex(wk, b.dayIndex);
+    ? [...allOrdered].sort((a, b) => {
+        const da = a.custom ? a.date : dateForDayIndex(wk, a.dayIndex);
+        const db = b.custom ? b.date : dateForDayIndex(wk, b.dayIndex);
         const ga = da === TODAY_STR ? 0 : da > TODAY_STR ? 1 : 2;
         const gb = db === TODAY_STR ? 0 : db > TODAY_STR ? 1 : 2;
         if (ga !== gb) return ga - gb;
         return ga === 2 ? db.localeCompare(da) : da.localeCompare(db);
       })
-    : ordered;
+    : allOrdered;
 
   const blocks = displayOrdered.map(workout => {
-    const dateKey  = dateForDayIndex(wk, workout.dayIndex);
-    const ov       = fitOverrides[dateKey];
-    const { id, day } = workout;
+    const dateKey  = workout.custom ? workout.date : dateForDayIndex(wk, workout.dayIndex);
+    const ov       = workout.custom ? null : fitOverrides[dateKey];
+    const { id, day, custom } = workout;
     const name     = (ov && ov.name     != null) ? ov.name     : workout.name;
     const rest     = (ov && ov.rest     != null) ? ov.rest     : workout.rest;
     const detail   = (ov && ov.detail   != null) ? ov.detail   : (workout.detail   || '');
@@ -3243,7 +3271,7 @@ function renderFitness() {
     const isToday  = isCurWk && workout.dayIndex === todayDI;
     const isPast   = dateKey < TODAY_STR;
 
-    if (fitEditingId === id) {
+    if (!custom && fitEditingId === id) {
       return `
       <div class="block" style="cursor:default;grid-template-columns:1fr;">
         <div class="block-body" style="width:100%;">
@@ -3268,6 +3296,9 @@ function renderFitness() {
           .map((p, pi) => pi === 0 ? `<span>${p}</span>` : `<span class="sep">·</span><span>${p}</span>`)
           .join('')
       : '';
+    const actionBtn = custom
+      ? `<button class="fit-edit-btn" style="margin-left:2px;color:#e05252;" onclick="deleteCustomWorkout('${id}')" title="Delete">✕</button>`
+      : `<button class="fit-edit-btn" style="margin-left:2px;" onclick="editWorkout('${id}')" title="Edit">✎</button>`;
 
     return `
     <div class="block ${isPast ? 'past' : ''} ${done ? 'done' : ''} ${missed ? 'missed' : ''} ${isToday ? 'today-block' : ''}" style="cursor:default;grid-template-columns:1fr;">
@@ -3280,7 +3311,7 @@ function renderFitness() {
           <div class="fit-status-pills">
             <button class="fit-pill fit-pill-done${done ? ' active' : ''}" onclick="setFitDone('${id}')" title="${done ? 'Mark incomplete' : 'Mark complete'}">Completed</button>
             <button class="fit-pill fit-pill-missed${missed ? ' active' : ''}" onclick="setFitMissed('${id}')" title="${missed ? 'Clear' : 'Mark as not completed'}">Not completed</button>
-            <button class="fit-edit-btn" style="margin-left:2px;" onclick="editWorkout('${id}')" title="Edit">✎</button>
+            ${actionBtn}
           </div>
         </div>
         <div class="block-goal">${displayName}${!rest && detail ? ` · ${detail}` : ''}</div>
@@ -3288,7 +3319,26 @@ function renderFitness() {
     </div>`;
   }).join('');
 
-  document.getElementById('fit-blocks').innerHTML = blocks;
+  const addSection = fitShowAdd ? `
+    <div class="block" style="cursor:default;grid-template-columns:1fr;margin-top:10px;">
+      <div class="block-body" style="width:100%;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input id="fit-add-name" class="t-text-input" placeholder="Workout label (e.g. Medium jog ~2 miles)" style="font-size:13px;"
+            onkeydown="if(event.key==='Enter')submitCustomWorkout();if(event.key==='Escape')cancelFitAdd();">
+          <input id="fit-add-date" class="t-text-input" type="date" value="${TODAY_STR}" style="font-size:13px;">
+          <div style="display:flex;gap:8px;">
+            <button class="journal-save-btn" style="padding:6px 14px;font-size:12px;" onclick="submitCustomWorkout()">Add</button>
+            <button class="fin-cancel-btn" onclick="cancelFitAdd()">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>` : `
+    <div style="margin-top:12px;text-align:right;">
+      <button onclick="fitShowAdd=true;fitEditingId=null;renderFitness()" style="background:none;border:none;color:#4A90D9;font-size:13px;font-weight:600;cursor:pointer;padding:4px 0;">+ Add workout</button>
+    </div>`;
+
+  document.getElementById('fit-blocks').innerHTML =
+    (allOrdered.length ? blocks : '<div class="empty">No workout data for this week.</div>') + addSection;
 }
 
 document.getElementById('fit-prev').addEventListener('click', () => {
