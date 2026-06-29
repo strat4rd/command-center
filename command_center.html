@@ -1502,18 +1502,19 @@
     .jobs-list { display: flex; flex-direction: column; gap: 10px; }
     .job-card {
       background: var(--surface); border: 1px solid #e8e8f0;
-      border-radius: 10px; padding: 14px 16px;
-      display: flex; align-items: flex-start; justify-content: space-between;
-      gap: 12px;
+      border-radius: 10px; overflow: hidden;
     }
-    .job-card-body { flex: 1; min-width: 0; }
+    .job-card-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px; padding: 14px 16px 10px; cursor: pointer; user-select: none;
+    }
+    .job-card-header:hover { background: rgba(0,0,0,0.015); }
+    .job-card-summary { flex: 1; min-width: 0; }
     .job-title-row {
       display: flex; align-items: center; gap: 8px;
-      flex-wrap: wrap; margin-bottom: 2px;
+      flex-wrap: wrap; margin-bottom: 3px;
     }
-    .job-title {
-      font-size: 14px; font-weight: 700; color: #1a1a2e; line-height: 1.3;
-    }
+    .job-title { font-size: 14px; font-weight: 700; color: #1a1a2e; line-height: 1.3; }
     .job-badge {
       font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
       text-transform: uppercase; padding: 2px 8px; border-radius: 10px;
@@ -1527,22 +1528,50 @@
       background: rgba(76,175,133,0.10); color: #166534;
       border: 1px solid rgba(76,175,133,0.25);
     }
-    .job-company { font-size: 13px; color: var(--muted); margin-bottom: 5px; }
-    .job-meta-row {
-      font-size: 11px; color: var(--muted);
-      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+    .job-company { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    .job-posted {
+      display: inline-block; font-size: 11px; font-weight: 600;
+      color: var(--muted); background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 1px 7px; margin-top: 1px;
     }
-    .job-meta-sep { opacity: 0.4; }
+    .job-chevron {
+      font-size: 13px; color: var(--muted); flex-shrink: 0; margin-top: 2px;
+      transition: transform 0.18s;
+    }
+    .job-card-actions {
+      display: flex; gap: 8px; padding: 0 16px 14px; align-items: center;
+    }
     .job-apply-btn {
-      font-size: 12px; font-weight: 600;
-      padding: 6px 14px; border-radius: 8px;
+      font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 8px;
       background: var(--accent-dim); color: var(--accent);
       border: 1px solid var(--accent-rim);
       cursor: pointer; white-space: nowrap; flex-shrink: 0;
-      text-decoration: none; display: inline-block;
-      transition: background 0.12s;
+      text-decoration: none; display: inline-block; transition: background 0.12s;
     }
     .job-apply-btn:hover { background: rgba(74,144,217,0.18); }
+    .job-remove-btn {
+      font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px;
+      background: rgba(239,68,68,0.07); color: #dc2626;
+      border: 1px solid rgba(239,68,68,0.20);
+      cursor: pointer; white-space: nowrap; transition: background 0.12s;
+    }
+    .job-remove-btn:hover { background: rgba(239,68,68,0.14); }
+    .job-card-detail {
+      display: none; border-top: 1px solid #e8e8f0; padding: 14px 16px;
+    }
+    .job-detail-grid {
+      display: grid; grid-template-columns: 76px 1fr;
+      gap: 5px 10px; font-size: 12px; margin-bottom: 10px;
+    }
+    .job-detail-label { color: var(--muted); font-weight: 600; padding-top: 1px; }
+    .job-detail-val { color: #1a1a2e; }
+    .job-description {
+      font-size: 12px; color: var(--text); line-height: 1.65;
+      border-top: 1px solid #f0f0f5; padding-top: 10px; margin-top: 6px;
+    }
+    .job-description p { margin: 0 0 7px; }
+    .job-description p:last-child { margin-bottom: 0; }
 
     /* ── VETTER ───────────────────────────────────────────── */
     .vetter-rocks { display: flex; flex-direction: column; gap: 10px; }
@@ -4650,8 +4679,28 @@ renderAll();
 // JOB PROSPECTS
 // ─────────────────────────────────────────────────────────
 
-let jobsData  = null;   // cached after first load
+let jobsData  = null;
 let jobFilter = 'all';
+
+function loadRemovedJobs()    { try { return JSON.parse(localStorage.getItem('cc_jobs_removed') || '[]'); } catch { return []; } }
+function saveRemovedJobs(arr) { localStorage.setItem('cc_jobs_removed', JSON.stringify(arr)); }
+
+function jobIdentity(j) {
+  return j.id || (j.title + '|' + j.company).toLowerCase();
+}
+
+function domSafeId(identity) {
+  return 'jc-' + identity.replace(/[^a-z0-9]/gi, '_');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatDesc(s) {
+  if (!s) return '<em style="color:var(--muted)">No description available.</em>';
+  return '<p>' + escHtml(s).split(/\n\n+/).map(p => p.replace(/\n/g,'<br>')).join('</p><p>') + '</p>';
+}
 
 function fmtUpdatedAt(iso) {
   if (!iso) return null;
@@ -4659,8 +4708,7 @@ function fmtUpdatedAt(iso) {
     return new Date(iso).toLocaleString('en-US', {
       timeZone: 'America/Los_Angeles',
       month: 'short', day: 'numeric',
-      hour: 'numeric', minute: '2-digit',
-      hour12: true,
+      hour: 'numeric', minute: '2-digit', hour12: true,
     }) + ' PT';
   } catch { return iso; }
 }
@@ -4673,9 +4721,24 @@ function setJobFilter(f) {
   renderJobs();
 }
 
+function toggleJobCard(safeId) {
+  const detail = document.getElementById('jdetail-' + safeId);
+  const chev   = document.getElementById('jchev-' + safeId);
+  if (!detail) return;
+  const opening = detail.style.display === 'none' || detail.style.display === '';
+  detail.style.display = opening ? 'block' : 'none';
+  if (chev) chev.style.transform = opening ? 'rotate(180deg)' : '';
+}
+
+function removeJob(identity) {
+  const removed = loadRemovedJobs();
+  if (!removed.includes(identity)) { removed.push(identity); saveRemovedJobs(removed); }
+  renderJobs();
+}
+
 function renderJobs() {
-  const listEl = document.getElementById('jobs-list');
-  const metaEl = document.getElementById('jobs-meta');
+  const listEl  = document.getElementById('jobs-list');
+  const metaEl  = document.getElementById('jobs-meta');
   if (!jobsData) return;
 
   const { updated_at, jobs } = jobsData;
@@ -4689,7 +4752,9 @@ function renderJobs() {
     return;
   }
 
+  const removed = new Set(loadRemovedJobs());
   const visible = jobs.filter(j => {
+    if (removed.has(jobIdentity(j))) return false;
     if (jobFilter === 'remote') return j.remote;
     if (jobFilter === 'local')  return !j.remote;
     return true;
@@ -4701,39 +4766,57 @@ function renderJobs() {
   }
 
   listEl.innerHTML = visible.map(j => {
+    const identity = jobIdentity(j);
+    const sid      = domSafeId(identity);
+
     const badge = j.remote
       ? '<span class="job-badge job-badge-remote">Remote</span>'
       : `<span class="job-badge job-badge-local">${j.distance_miles != null ? j.distance_miles + ' mi' : 'Local'}</span>`;
 
-    const metaParts = [];
-    if (j.posted)   metaParts.push(j.posted);
-    if (j.schedule) metaParts.push(j.schedule);
-    if (j.via)      metaParts.push('via ' + j.via);
-    const metaHtml = metaParts
-      .map((p, i) => i === 0 ? `<span>${p}</span>` : `<span class="job-meta-sep">·</span><span>${p}</span>`)
-      .join('');
+    const postedLabel = j.posted || 'Posting date not listed';
 
     const applyBtn = j.link
-      ? `<a class="job-apply-btn" href="${j.link.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">Apply ↗</a>`
+      ? `<a class="job-apply-btn" href="${escHtml(j.link)}" target="_blank" rel="noopener"
+            onclick="event.stopPropagation()">Apply ↗</a>`
       : '';
+
+    const detailRows = [
+      ['Salary',   j.salary   || 'Not listed'],
+      ['Location', j.location || '—'],
+      ['Schedule', j.schedule || '—'],
+      ['Via',      j.via      || '—'],
+    ].map(([label, val]) =>
+      `<div class="job-detail-label">${label}</div><div class="job-detail-val">${escHtml(val)}</div>`
+    ).join('');
 
     return `
     <div class="job-card">
-      <div class="job-card-body">
-        <div class="job-title-row">
-          <span class="job-title">${j.title}</span>
-          ${badge}
+      <div class="job-card-header" onclick="toggleJobCard('${sid}')">
+        <div class="job-card-summary">
+          <div class="job-title-row">
+            <span class="job-title">${escHtml(j.title)}</span>
+            ${badge}
+          </div>
+          <div class="job-company">${escHtml(j.company)}</div>
+          <span class="job-posted">${escHtml(postedLabel)}</span>
         </div>
-        <div class="job-company">${j.company}${j.location ? ' &nbsp;·&nbsp; ' + j.location : ''}</div>
-        <div class="job-meta-row">${metaHtml}</div>
+        <span class="job-chevron" id="jchev-${sid}">&#9660;</span>
       </div>
-      ${applyBtn}
+      <div class="job-card-actions">
+        ${applyBtn}
+        <button class="job-remove-btn"
+                onclick="event.stopPropagation(); removeJob('${escHtml(identity)}')">Remove</button>
+      </div>
+      <div class="job-card-detail" id="jdetail-${sid}" style="display:none;">
+        <div class="job-detail-grid">${detailRows}</div>
+        <div class="job-description">${formatDesc(j.description)}</div>
+      </div>
     </div>`;
   }).join('');
 }
 
 async function loadJobs() {
-  if (jobsData) { renderJobs(); return; }  // use cache on re-open
+  if (jobsData) { renderJobs(); return; }
   document.getElementById('jobs-list').innerHTML = '<div class="empty">Loading&hellip;</div>';
   document.getElementById('jobs-meta').innerHTML = '';
   try {
