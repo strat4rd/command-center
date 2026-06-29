@@ -631,19 +631,11 @@
       flex-shrink: 0;
     }
 
-    .t-cat-Writing    { background: rgba(245,166,35,0.10);  color: #92400E; }
-    .t-cat-Fitness    { background: rgba(74,144,217,0.12); color: #1D4ED8; }
-    .t-cat-Work       { background: rgba(74,144,217,0.12); color: #1D4ED8; }
-    .t-cat-Personal   { background: #F5F5F9; color: #6b6b90; }
-    .t-cat-Finance    { background: rgba(245,166,35,0.10);  color: #92400E; }
-    .t-cat-Job_Search { background: rgba(20,184,166,0.12);  color: #0F766E; }
-    .t-link-btn {
-      font-size: 11px; font-weight: 600; color: var(--accent);
-      text-decoration: none; padding: 2px 8px; border-radius: 4px;
-      background: var(--accent-dim); border: 1px solid var(--accent-rim);
-      white-space: nowrap; flex-shrink: 0;
-    }
-    .t-link-btn:hover { background: rgba(74,144,217,0.18); }
+    .t-cat-Writing  { background: rgba(245,166,35,0.10);  color: #92400E; }
+    .t-cat-Fitness  { background: rgba(74,144,217,0.12); color: #1D4ED8; }
+    .t-cat-Work     { background: rgba(74,144,217,0.12); color: #1D4ED8; }
+    .t-cat-Personal { background: #F5F5F9; color: #6b6b90; }
+    .t-cat-Finance  { background: rgba(245,166,35,0.10);  color: #92400E; }
 
     .t-section-label {
       font-size: 11px;
@@ -1565,13 +1557,6 @@
       cursor: pointer; white-space: nowrap; transition: background 0.12s;
     }
     .job-remove-btn:hover { background: rgba(239,68,68,0.14); }
-    .job-move-btn {
-      font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 8px;
-      background: var(--accent); color: #fff;
-      border: 1px solid var(--accent);
-      cursor: pointer; white-space: nowrap; transition: opacity 0.12s;
-    }
-    .job-move-btn:hover { opacity: 0.85; }
     .job-card-detail {
       display: none; border-top: 1px solid #e8e8f0; padding: 14px 16px;
     }
@@ -2919,7 +2904,7 @@ function renderTasks() {
     <path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 
-  const CATS = ['Personal','Writing','Work','Fitness','Finance','Job Search'];
+  const CATS = ['Personal','Writing','Work','Fitness','Finance'];
 
   function taskRow(t, opts = {}) {
     const isQueued = opts.queued;
@@ -2944,17 +2929,11 @@ function renderTasks() {
     const minsSpan = isDone
       ? `<span class="t-mins">${t.mins}m</span>`
       : `<span class="t-mins editable" title="Click to edit time" onclick="event.stopPropagation();editTaskMins(event,'${t.id}')">${t.mins}m</span>`;
-    const catCls = t.cat.replace(/ /g,'_');
-    const linkHtml = (!isDone && t.link)
-      ? `<a class="t-link-btn" href="${String(t.link).replace(/"/g,'&quot;')}" target="_blank" rel="noopener"
-              onclick="event.stopPropagation()">View listing ↗</a>`
-      : '';
     return `<div class="t-item ${isDone ? 'done' : ''} ${isQueued ? 't-queued' : ''}" onclick="toggleTask('${t.id}')">
       <div class="t-cb">${isDone ? check : ''}</div>
       <span class="t-name">${t.name}</span>
-      ${linkHtml}
       ${minsSpan}
-      <span class="t-cat-pill t-cat-${catCls}">${t.cat}</span>
+      <span class="t-cat-pill t-cat-${t.cat}">${t.cat}</span>
       ${!isDone ? `<button class="t-queue-btn" onclick="event.stopPropagation();queueTask('${t.id}')">${isQueued ? 'Unqueue' : 'Queue for later'}</button>` : ''}
       ${!isDone ? `<button class="t-icon-btn" title="Edit" onclick="event.stopPropagation();startEditTask('${t.id}')">✎</button>` : ''}
       <button class="t-icon-btn t-del-btn" title="Delete" onclick="event.stopPropagation();deleteTask('${t.id}')">✕</button>
@@ -4461,7 +4440,7 @@ function shiftDeckDate(delta) {
 }
 
 function renderDeckItemHtml(item, interactive) {
-  const catCls = { Writing:'t-cat-Writing', Fitness:'t-cat-Fitness', Work:'t-cat-Work', Personal:'t-cat-Personal', Finance:'t-cat-Finance', 'Job Search':'t-cat-Job_Search' };
+  const catCls = { Writing:'t-cat-Writing', Fitness:'t-cat-Fitness', Work:'t-cat-Work', Personal:'t-cat-Personal', Finance:'t-cat-Finance' };
   const checkSvg    = `<svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.2 5.8L8 1" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const missedXSvg  = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 1.5L7.5 7.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/><path d="M7.5 1.5L1.5 7.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>`;
   const cls    = ['t-item', item.done ? 'done' : '', item.missed ? 'missed' : ''].filter(Boolean).join(' ');
@@ -4825,8 +4804,6 @@ function renderJobs() {
       </div>
       <div class="job-card-actions">
         ${applyBtn}
-        <button class="job-move-btn"
-                onclick="event.stopPropagation(); moveJobToTasks('${escHtml(identity)}')">Move to Tasks</button>
         <button class="job-remove-btn"
                 onclick="event.stopPropagation(); removeJob('${escHtml(identity)}')">Remove</button>
       </div>
@@ -4836,25 +4813,6 @@ function renderJobs() {
       </div>
     </div>`;
   }).join('');
-}
-
-function moveJobToTasks(identity) {
-  if (!jobsData) return;
-  const j = jobsData.jobs.find(x => jobIdentity(x) === identity);
-  if (!j) return;
-  TASKS.push({
-    id: 'tj-' + Date.now(),
-    name: 'Apply: ' + j.title + ' at ' + j.company,
-    mins: 30,
-    cat: 'Job Search',
-    done: false,
-    queued: false,
-    doneDate: null,
-    link: j.link || '',
-  });
-  saveTasks(TASKS);
-  removeJob(identity);
-  renderTasks();
 }
 
 async function loadJobs() {
