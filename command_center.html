@@ -4737,7 +4737,7 @@ async function loadJobs() {
   document.getElementById('jobs-list').innerHTML = '<div class="empty">Loading&hellip;</div>';
   document.getElementById('jobs-meta').innerHTML = '';
   try {
-    const r = await fetch('jobs.json');
+    const r = await fetch('jobs.json?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw new Error(r.status);
     jobsData = await r.json();
     renderJobs();
