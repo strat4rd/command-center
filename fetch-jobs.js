@@ -79,11 +79,24 @@ async function serpQuery(q, location) {
 function normalize(job, source) {
   const apply = (job.apply_options && job.apply_options[0]) || null;
   const de = job.detected_extensions || {};
+  const title = job.title || '';
+  const company = job.company_name || '';
+  const idSource = (title + '|' + company).toLowerCase().replace(/\s+/g, ' ').trim();
+  let h = 0;
+  for (let i = 0; i < idSource.length; i++) { h = ((h << 5) - h + idSource.charCodeAt(i)) | 0; }
+  const id = 'j' + (h >>> 0).toString(36);
   return {
-    title: job.title || '', company: job.company_name || '',
-    location: job.location || '', via: job.via || '',
-    posted: de.posted_at || '', schedule: de.schedule_type || '',
-    link: apply ? apply.link : (job.share_link || ''), source,
+    id,
+    title,
+    company,
+    location: job.location || '',
+    via: job.via || '',
+    posted: de.posted_at || '',
+    schedule: de.schedule_type || '',
+    salary: de.salary || '',
+    description: job.description || '',
+    link: apply ? apply.link : (job.share_link || ''),
+    source,
   };
 }
 
