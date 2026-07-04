@@ -1352,9 +1352,9 @@
 
         <div class="deadline-banner">
           <div>
-            <div class="deadline-name">Big Break Final Draft</div>
-            <div class="deadline-sub">TV &amp; Feature</div>
-            <div class="deadline-date">June 29, 2026</div>
+            <div class="deadline-name" id="js-deadline-name">—</div>
+            <div class="deadline-sub" id="js-deadline-sub"></div>
+            <div class="deadline-date" id="js-deadline-date"></div>
           </div>
           <div class="deadline-right">
             <div class="deadline-count" id="js-days">—</div>
@@ -1873,7 +1873,22 @@ ensureWeekDays(currentWeek);
 // ─────────────────────────────────────────────────────────
 
 function renderDeadline() {
-  const days = daysFrom('2026-06-29');
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const next = CONTESTS
+    .map(c => ({ ...c, _date: parseContestDate(c.date) }))
+    .filter(c => c._date && c._date >= today)
+    .sort((a, b) => a._date - b._date)[0];
+  if (!next) {
+    document.getElementById('js-deadline-name').textContent = 'No upcoming deadlines';
+    document.getElementById('js-deadline-sub').textContent = '';
+    document.getElementById('js-deadline-date').textContent = '';
+    document.getElementById('js-days').textContent = '—';
+    return;
+  }
+  document.getElementById('js-deadline-name').textContent = next.name;
+  document.getElementById('js-deadline-sub').textContent = next.type;
+  document.getElementById('js-deadline-date').textContent = next.date;
+  const days = Math.ceil((next._date - today) / 86400000);
   document.getElementById('js-days').textContent = Math.max(0, days);
 }
 
@@ -1895,9 +1910,8 @@ function renderContests() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Exclude Big Break (shown in main banner), attach parsed dates, filter expired
+  // Attach parsed dates and filter out past contests
   const upcoming = CONTESTS
-    .filter(c => c.name !== 'Big Break Final Draft')
     .map(c => ({ ...c, _date: parseContestDate(c.date) }))
     .filter(c => c._date && c._date >= today);
 
