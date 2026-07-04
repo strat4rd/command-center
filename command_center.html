@@ -1446,6 +1446,9 @@
     <!-- Weight: goal cards + log + chart in one row -->
     <div id="wt-top" style="margin-bottom:16px;"></div>
 
+    <!-- Diet breaks reminder -->
+    <div id="fit-diet-breaks" style="margin-bottom:16px;"></div>
+
     <!-- Progress tracker -->
     <div class="card" style="margin-bottom:16px;">
       <div class="tracker-row">
@@ -2857,7 +2860,7 @@ function wtChartSvg(entries) {
   const L = 28, R = W - 10, T = 8, B = H - 18;
   const chartW = R - L, chartH = B - T;
 
-  const nov1 = new Date('2026-11-01T12:00:00');
+  const chartEnd = new Date('2026-12-11T12:00:00');
 
   // Y-axis: 5 lbs below lowest entry, max(5 above highest, 165); always include goal lines
   const allWeights = entries.map(e => e.weight);
@@ -2866,14 +2869,14 @@ function wtChartSvg(entries) {
   const yMin = Math.floor(Math.min(dataMin - 5, 143));
   const yMax = Math.max(Math.ceil(dataMax + 5), 165);
 
-  // X-axis: 2-day left pad before earliest entry, always end at Nov 1
+  // X-axis: 2-day left pad before earliest entry, always end at Dec 11
   let xStartDate, xEndDate;
   if (!entries.length) {
-    xStartDate = new Date(); xEndDate = nov1;
+    xStartDate = new Date(); xEndDate = chartEnd;
   } else {
     const firstMs = new Date(entries[0].date + 'T12:00:00').getTime();
     xStartDate = new Date(firstMs - 2 * 86400000);
-    xEndDate = nov1;
+    xEndDate = chartEnd;
   }
   const xSpan = Math.max(xEndDate - xStartDate, 7 * 86400000);
 
@@ -2974,7 +2977,7 @@ function renderWeight() {
           <div class="wt-goal-weight" style="color:#4A90D9;">145 lbs</div>
           <div class="wt-goal-target">${currentStr}</div>
           ${startedStr ? `<div class="wt-goal-target" style="color:var(--muted);">${startedStr}</div>` : ''}
-          <div class="wt-goal-deadline" style="color:#4A90D9;background:#EFF6FF;border-color:#4A90D9;">by Nov 1, 2026</div>
+          <div class="wt-goal-deadline" style="color:#4A90D9;background:#EFF6FF;border-color:#4A90D9;">by Dec 11, 2026</div>
           <div class="wt-bar-wrap" style="background:rgba(74,144,217,0.18);"><div class="wt-bar-fill" style="width:${p2.toFixed(1)}%;background:#4A90D9;"></div></div>
         </div>
       </div>
@@ -2991,6 +2994,29 @@ function renderWeight() {
 }
 
 renderWeight();
+
+function renderDietBreaks() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const breaks = [
+    { label: 'Diet Break 1', end: '2026-08-22', display: 'Aug 16–22, 2026' },
+    { label: 'Diet Break 2', end: '2026-10-24', display: 'Oct 18–24, 2026' },
+  ].filter(b => new Date(b.end + 'T12:00:00') >= today);
+
+  const el = document.getElementById('fit-diet-breaks');
+  if (!breaks.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `
+    <div class="card" style="padding:12px 16px;border-left:3px solid #4A90D9;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#4A90D9;margin-bottom:3px;">Upcoming Diet Breaks</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">1 week each — eat at maintenance</div>
+      ${breaks.map(b => `
+        <div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px solid var(--border);">
+          <span style="font-size:11px;font-weight:600;color:var(--muted);min-width:84px;">${b.label}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text);">${b.display}</span>
+        </div>`).join('')}
+    </div>`;
+}
+renderDietBreaks();
 
 // ─────────────────────────────────────────────────────────
 // FINANCES
