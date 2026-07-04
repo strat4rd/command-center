@@ -2904,7 +2904,7 @@ function wtChartSvg(entries) {
     tickCur.setMonth(tickCur.getMonth() + 1);
   }
 
-  const y152 = yPos(152);
+  const y156 = yPos(156);
   const y145 = yPos(145);
   const linePath = points.length > 1
     ? 'M ' + points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')
@@ -2917,8 +2917,8 @@ function wtChartSvg(entries) {
       return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="#EAECF0" stroke-width="0.5"/>
               <text x="${(L-2)}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#C0C8D4">${lb}</text>`;
     }).join('')}
-    <line x1="${L}" y1="${y152.toFixed(1)}" x2="${R}" y2="${y152.toFixed(1)}" stroke="#F5A623" stroke-width="1" stroke-dasharray="4,4"/>
-    <text x="${(R-1)}" y="${(y152-3).toFixed(1)}" text-anchor="end" font-size="9" fill="#F5A623" font-weight="600">152</text>
+    <line x1="${L}" y1="${y156.toFixed(1)}" x2="${R}" y2="${y156.toFixed(1)}" stroke="#F5A623" stroke-width="1" stroke-dasharray="4,4"/>
+    <text x="${(R-1)}" y="${(y156-3).toFixed(1)}" text-anchor="end" font-size="9" fill="#F5A623" font-weight="600">156</text>
     <line x1="${L}" y1="${y145.toFixed(1)}" x2="${R}" y2="${y145.toFixed(1)}" stroke="#4A90D9" stroke-width="1" stroke-dasharray="4,4"/>
     <text x="${(R-1)}" y="${(y145-3).toFixed(1)}" text-anchor="end" font-size="9" fill="#4A90D9" font-weight="600">145</text>
     ${xTicks.map(t => `<text x="${t.x.toFixed(1)}" y="${(B+11)}" text-anchor="middle" font-size="10" fill="#C0C8D4">${t.label}</text>`).join('')}
@@ -2955,7 +2955,7 @@ function renderWeight() {
   const currentStr = weekAvg != null ? `This week avg: ${weekAvg} lbs` : 'No weight logged';
   const startedStr = startLbs !== null ? `Starting Weight: ${startLbs.toFixed(1)} lbs` : '';
 
-  const p1 = wtProgressPct(entries, 152, weekAvg);
+  const p1 = wtProgressPct(entries, 156, weekAvg);
   const p2 = wtProgressPct(entries, 145, weekAvg);
 
   document.getElementById('wt-top').innerHTML = `
@@ -2963,7 +2963,7 @@ function renderWeight() {
       <div class="wt-left-panel">
         <div class="wt-goal-card" style="flex:1;background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.28);">
           <div class="wt-goal-label" style="color:#b87d10;">Interim Goal</div>
-          <div class="wt-goal-weight" style="color:#F5A623;">152 lbs</div>
+          <div class="wt-goal-weight" style="color:#F5A623;">156 lbs</div>
           <div class="wt-goal-target">${currentStr}</div>
           ${startedStr ? `<div class="wt-goal-target" style="color:var(--muted);">${startedStr}</div>` : ''}
           <div class="wt-goal-deadline" style="color:#F5A623;background:#FFF8E7;border-color:#F5A623;">by Aug 13, 2026</div>
