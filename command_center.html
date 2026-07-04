@@ -1588,50 +1588,7 @@ const CONTESTS = [
 
 const DEFAULTS = {
   'data-version': 11,
-  weeks: {
-    // Week of Sun Jun 14 – Sat Jun 20
-    '2026-06-14': [
-      { id: 'w2-ua',    day: 'Sunday',    date: '2026-06-14', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: true  },
-      { id: 'w2-ub',    day: 'Sunday',    date: '2026-06-14', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: true  },
-      { id: 'w2-uc',    day: 'Sunday',    date: '2026-06-14', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: true  },
-      { id: 'w2-ud',    day: 'Sunday',    date: '2026-06-14', time: '6:00 PM',  duration: 1,    goal: 'Write scenes', done: true  },
-      { id: 'w2-f',     day: 'Monday',    date: '2026-06-15', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: true  },
-      { id: 'w2-f-eve', day: 'Monday',    date: '2026-06-15', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-g',     day: 'Tuesday',   date: '2026-06-16', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w2-g-eve', day: 'Tuesday',   date: '2026-06-16', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-h',     day: 'Wednesday', date: '2026-06-17', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w2-h-eve', day: 'Wednesday', date: '2026-06-17', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-i',     day: 'Thursday',  date: '2026-06-18', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w2-i-eve', day: 'Thursday',  date: '2026-06-18', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w2-j',     day: 'Friday',    date: '2026-06-19', time: '7:30 AM',  duration: 0.75, goal: 'Write scenes', done: false },
-      { id: 'w2-j-eve', day: 'Friday',    date: '2026-06-19', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-sa',    day: 'Saturday',  date: '2026-06-20', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-sb',    day: 'Saturday',  date: '2026-06-20', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-sc',    day: 'Saturday',  date: '2026-06-20', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-sd',    day: 'Saturday',  date: '2026-06-20', time: '6:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
-    ],
-    // Week of Sun Jun 21 – Sat Jun 27
-    '2026-06-21': [
-      { id: 'w3-ua',    day: 'Sunday',    date: '2026-06-21', time: '9:00 AM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-ub',    day: 'Sunday',    date: '2026-06-21', time: '12:00 PM', duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-uc',    day: 'Sunday',    date: '2026-06-21', time: '3:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-ud',    day: 'Sunday',    date: '2026-06-21', time: '6:00 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-e',     day: 'Monday',    date: '2026-06-22', time: '7:30 AM',  duration: 0.75, goal: 'Read through', done: false },
-      { id: 'w3-e-eve', day: 'Monday',    date: '2026-06-22', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-f',     day: 'Tuesday',   date: '2026-06-23', time: '7:30 AM',  duration: 0.75, goal: 'Final fixes',  done: false },
-      { id: 'w3-f-eve', day: 'Tuesday',   date: '2026-06-23', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-g',     day: 'Wednesday', date: '2026-06-24', time: '7:30 AM',  duration: 0.75, goal: 'Final fixes',  done: false },
-      { id: 'w3-g-eve', day: 'Wednesday', date: '2026-06-24', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-h',     day: 'Thursday',  date: '2026-06-25', time: '7:30 AM',  duration: 0.75, goal: 'Final fixes',  done: false },
-      { id: 'w3-h-eve', day: 'Thursday',  date: '2026-06-25', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'w3-i',     day: 'Friday',    date: '2026-06-26', time: '7:30 AM',  duration: 0.75, goal: 'Submit',       done: false },
-      { id: 'w3-i-eve', day: 'Friday',    date: '2026-06-26', time: '7:30 PM',  duration: 1,    goal: 'Write scenes', done: false },
-      { id: 'auto-2026-06-27-900AM',  day: 'Saturday', date: '2026-06-27', time: '9:00 AM',  duration: 1, goal: 'Write scenes', done: false },
-      { id: 'auto-2026-06-27-1200PM', day: 'Saturday', date: '2026-06-27', time: '12:00 PM', duration: 1, goal: 'Write scenes', done: false },
-      { id: 'auto-2026-06-27-300PM',  day: 'Saturday', date: '2026-06-27', time: '3:00 PM',  duration: 1, goal: 'Write scenes', done: false },
-      { id: 'auto-2026-06-27-600PM',  day: 'Saturday', date: '2026-06-27', time: '6:00 PM',  duration: 1, goal: 'Write scenes', done: false },
-    ],
-  },
+  weeks: {},
 };
 
 // ─────────────────────────────────────────────────────────
@@ -2213,19 +2170,7 @@ function dateForDayIndex(wkKey, dayI) {
 // TASKS
 // ─────────────────────────────────────────────────────────
 
-const TASK_DEFAULTS = [
-  { id: 't1',  name: 'Make grocery list',                      mins: 15,  cat: 'Personal', done: false, queued: false },
-  { id: 't2',  name: 'Grocery shop',                           mins: 60,  cat: 'Personal', done: false, queued: false },
-  { id: 't3',  name: 'Spaghetti meal prep',                    mins: 45,  cat: 'Personal', done: false, queued: false },
-  { id: 't4',  name: 'Crispy teriyaki tofu soba meal prep',    mins: 45,  cat: 'Personal', done: false, queued: false },
-  { id: 't5',  name: 'Laundry',                                mins: 60,  cat: 'Personal', done: false, queued: false },
-  { id: 't6',  name: 'Return clothes',                         mins: 60,  cat: 'Personal', done: false, queued: false },
-  { id: 't7',  name: 'Record finances',                        mins: 30,  cat: 'Finance',  done: false, queued: false },
-  { id: 't8',  name: 'Cancel backup dentist appointment',       mins: 10,  cat: 'Personal', done: false, queued: false },
-  { id: 't9',  name: 'Research closer gyms',                   mins: 20,  cat: 'Personal', done: false, queued: false },
-  { id: 't10', name: 'Finish The Slight Edge last 2 chapters', mins: 45,  cat: 'Personal', done: false, queued: false },
-  { id: 't11', name: 'Re-engage writers group',                mins: 15,  cat: 'Writing',  done: false, queued: false },
-];
+
 
 function loadTasks() {
   try { return JSON.parse(localStorage.getItem('cc_tasks') || 'null'); } catch { return null; }
@@ -2245,9 +2190,8 @@ function saveTimeLog(log) {
 function initTasks() {
   const d = loadTasks();
   if (d) return d;
-  const fresh = JSON.parse(JSON.stringify(TASK_DEFAULTS));
-  saveTasks(fresh);
-  return fresh;
+  saveTasks([]);
+  return [];
 }
 let TASKS = initTasks();
 // ensure all tasks have queued field
@@ -2973,9 +2917,7 @@ function wtChartSvg(entries) {
 function loadWeightStart()  { try { const v = localStorage.getItem('cc_weight_start'); return v !== null ? parseFloat(v) : null; } catch { return null; } }
 function saveWeightStart(n) { localStorage.setItem('cc_weight_start', String(n)); }
 
-(function initWeightStart() {
-  if (loadWeightStart() === null) saveWeightStart(161.0);
-})();
+
 
 (function initWeightData() {
   let entries = loadWeight();
@@ -2987,10 +2929,7 @@ function saveWeightStart(n) { localStorage.setItem('cc_weight_start', String(n))
       dirty = true;
     }
   });
-  if (entries.length === 0) {
-    entries.push({ date: '2026-06-13', weight: 159.8 });
-    dirty = true;
-  }
+
   if (dirty) saveWeight(entries);
 })();
 
