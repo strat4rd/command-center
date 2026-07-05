@@ -3574,10 +3574,8 @@ function renderRocks() {
 
   function wkBox(wk, donePct, curKey, hasData) {
     const isCur = wk === curKey;
-    let bg, border, inner = '';
-    if (isCur) {
-      bg = '#F5F5F5'; border = '#C8C8C8';
-    } else if (!hasData) {
+    let bg, border;
+    if (!hasData) {
       bg = '#EFEFEF'; border = '#D0D0D0';
     } else if (donePct >= 90) {
       bg = '#E8F5EE'; border = '#4CAF85';
@@ -3586,8 +3584,9 @@ function renderRocks() {
     } else {
       bg = '#FFEBEB'; border = '#E8A0A0';
     }
+    // Current week gets a gray outline ring to mark it, but color is based on donePct just like past weeks
     const curRing = isCur ? 'outline:2px solid #AAAAAA;outline-offset:2px;' : '';
-    return `<div class="wk-box" style="background:${bg};border-color:${border};${curRing}" title="Week of ${wk}">${inner}</div>`;
+    return `<div class="wk-box" style="background:${bg};border-color:${border};${curRing}" title="Week of ${wk}"></div>`;
   }
 
   const legend = `
@@ -3598,9 +3597,10 @@ function renderRocks() {
     </div>`;
 
   // ── Writing ──
-  const allWritingKeys = Object.keys(DATA.weeks).sort();
+  // Only consider writing weeks that have already started (prevents phantom future-week boxes)
+  const allWritingKeys = Object.keys(DATA.weeks).filter(wk => wk <= THISWK).sort();
   const wStartKey  = allWritingKeys.length ? allWritingKeys[0] : THISWK;
-  const writeWeeks = sunWeeksBetween(wStartKey, THISWK);  // stop at current week
+  const writeWeeks = sunWeeksBetween(wStartKey, THISWK);
 
   const thisWkBlocks = DATA.weeks[THISWK] || [];
   const lastWkKey    = shiftSunWeek(THISWK, -1);
@@ -3642,7 +3642,13 @@ function renderRocks() {
 
   const writeBoxes = writeWeeks.map(wk => {
     const blocks = DATA.weeks[wk] || [];
-    const dp = blocks.length ? (blocks.filter(b => b.done).length / blocks.length) * 100 : 0;
+    let dp;
+    if (wk === THISWK) {
+      // Current week: use completed-so-far ÷ expected-so-far (same ratio as the pill)
+      dp = twExpected === 0 ? 100 : (twCompletedSoFar / twExpected) * 100;
+    } else {
+      dp = blocks.length ? (blocks.filter(b => b.done).length / blocks.length) * 100 : 0;
+    }
     return wkBox(wk, dp, THISWK, blocks.length > 0);
   }).join('');
 
@@ -3684,11 +3690,18 @@ function renderRocks() {
   const ftPillClass = thisWeekPillClass(thisFitCounts.completedSoFar, thisFitCounts.expectedSoFar, thisFitCounts.hasData);
   const flPillClass = thisWeekPillClass(flDone, flTotal, lastFitKey in fitData);
 
-  const fitKeys   = Object.keys(fitData).sort();
-  const fStartKey = fitKeys.length && fitKeys[0] < FIT_THISWK ? fitKeys[0] : FIT_THISWK;
+  // Only include weeks that have started — filter future keys so phantom next-week boxes can't appear
+  const fitKeys   = Object.keys(fitData).filter(wk => wk <= FIT_THISWK).sort();
+  const fStartKey = fitKeys.length ? fitKeys[0] : FIT_THISWK;
   const fitWeeks  = sunWeeksBetween(fStartKey, FIT_THISWK);
 
   const fitBoxes = fitWeeks.map(wk => {
+    if (wk === FIT_THISWK) {
+      // Current week: use completed-so-far ÷ expected-so-far (same ratio as the pill)
+      const dp = thisFitCounts.expectedSoFar === 0 ? 100
+               : (thisFitCounts.completedSoFar / thisFitCounts.expectedSoFar) * 100;
+      return wkBox(wk, dp, FIT_THISWK, thisFitCounts.hasData);
+    }
     const wkProg   = getWeekProgram(wk).filter(s => !s.rest);
     const wkCustom = customForWk(wk);
     const wkData   = fitData[wk] || {};
