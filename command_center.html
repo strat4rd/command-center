@@ -2550,7 +2550,7 @@ function saveWorkout(id) {
   const dur      = document.getElementById('fit-edit-dur').value.trim();
   const dateKey  = dateForDayIndex(fitCurrentWeek, workout.dayIndex);
   const overrides = loadFitOverrides();
-  overrides[dateKey] = Object.assign({}, overrides[dateKey] || {}, { time, duration: dur });
+  overrides[dateKey] = Object.assign({}, overrides[dateKey] || {}, { time, duration: dur || workout.duration || '' });
   if (name) { overrides[dateKey].name = name; overrides[dateKey].rest = false; }
   saveFitOverrides(overrides);
   fitEditingId = null;
@@ -3432,6 +3432,7 @@ function renderTimeBreakdown() {
   }
 
   const fitData  = loadFitness();
+  const fitOvsTB = loadFitOverrides();
   const todayDI  = new Date().getDay();
   const timeLog  = loadTimeLog();
 
@@ -3442,7 +3443,11 @@ function renderTimeBreakdown() {
   });
   getWeekProgram(FIT_THISWK).filter(s => !s.rest && s.dayIndex === todayDI).forEach(s => {
     const v = (fitData[FIT_THISWK] || {})[s.id];
-    if (v === true || v === 'done') todayMap.Fitness = (todayMap.Fitness || 0) + parseFitMins(s.duration);
+    if (v === true || v === 'done') {
+      const ov = fitOvsTB[dateForDayIndex(FIT_THISWK, s.dayIndex)];
+      const dur = (ov && ov.duration) ? ov.duration : s.duration;
+      todayMap.Fitness = (todayMap.Fitness || 0) + parseFitMins(dur);
+    }
   });
   TASKS.filter(t => t.done && t.doneDate === TODAY_STR).forEach(t => {
     const c = t.cat || 'Personal';
@@ -3456,7 +3461,11 @@ function renderTimeBreakdown() {
   });
   getWeekProgram(FIT_THISWK).filter(s => !s.rest).forEach(s => {
     const v = (fitData[FIT_THISWK] || {})[s.id];
-    if (v === true || v === 'done') weekMap.Fitness = (weekMap.Fitness || 0) + parseFitMins(s.duration);
+    if (v === true || v === 'done') {
+      const ov = fitOvsTB[dateForDayIndex(FIT_THISWK, s.dayIndex)];
+      const dur = (ov && ov.duration) ? ov.duration : s.duration;
+      weekMap.Fitness = (weekMap.Fitness || 0) + parseFitMins(dur);
+    }
   });
   // Live tasks completed today
   TASKS.filter(t => t.done).forEach(t => {
@@ -3480,7 +3489,11 @@ function renderTimeBreakdown() {
   Object.entries(fitData).forEach(([fitWk, wkData]) => {
     getWeekProgram(fitWk).filter(s => !s.rest).forEach(s => {
       const v = wkData[s.id];
-      if (v === true || v === 'done') allMap.Fitness = (allMap.Fitness || 0) + parseFitMins(s.duration);
+      if (v === true || v === 'done') {
+        const ov = fitOvsTB[dateForDayIndex(fitWk, s.dayIndex)];
+        const dur = (ov && ov.duration) ? ov.duration : s.duration;
+        allMap.Fitness = (allMap.Fitness || 0) + parseFitMins(dur);
+      }
     });
   });
   // Live tasks completed today
@@ -3845,14 +3858,19 @@ function renderDeck() {
   const todayDI       = new Date().getDay();
   const todayWorkouts = getWeekProgram(FIT_THISWK).filter(w => w.dayIndex === todayDI && !w.rest);
   if (todayWorkouts.length) {
-    const fitData = loadFitness();
-    const wkFit   = fitData[fitWeekKey()] || {};
+    const fitData    = loadFitness();
+    const fitOvsDeck = loadFitOverrides();
+    const wkFit      = fitData[fitWeekKey()] || {};
     todayWorkouts.forEach(w => {
-      const fitVal = wkFit[w.id];
+      const fitVal   = wkFit[w.id];
+      const ov       = fitOvsDeck[dateForDayIndex(FIT_THISWK, w.dayIndex)];
+      const dispName = (ov && ov.name)     ? ov.name     : w.name;
+      const dispTime = (ov && ov.time)     ? ov.time     : w.time;
+      const dispDur  = (ov && ov.duration) ? ov.duration : w.duration;
       items.push({
         type: 'fitness', id: w.id,
-        name: w.name + (w.detail ? ' · ' + w.detail : '') + (w.time ? ` (${w.time})` : ''),
-        mins: parseFitMins(w.duration),
+        name: dispName + (w.detail ? ' · ' + w.detail : '') + (dispTime ? ` (${dispTime})` : ''),
+        mins: parseFitMins(dispDur),
         cat: 'Fitness',
         done: fitVal === true || fitVal === 'done',
         missed: fitVal === 'missed',
