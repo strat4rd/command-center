@@ -1817,6 +1817,10 @@ function saveWritePurgedDates(d) { localStorage.setItem('cc_write_purged_dates',
     purged.push('2026-06-13');
     saveWritePurgedDates(purged);
   }
+  if (!purged.includes('2026-07-04')) {
+    purged.push('2026-07-04');
+    saveWritePurgedDates(purged);
+  }
   let dirty = false;
   Object.keys(DATA.weeks).forEach(wk => {
     const before = DATA.weeks[wk].length;
@@ -1835,12 +1839,14 @@ function ensureWeekDays(wk) {
   const WD_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const WEEKEND_TIMES = ['9:00 AM', '12:00 PM', '3:00 PM', '6:00 PM'];
   const sunDate  = new Date(wk + 'T12:00:00');
+  const _purged  = loadWritePurgedDates();
   let added = false;
   // Weekdays Mon–Fri
   for (let offset = 1; offset <= 5; offset++) {
     const dt = new Date(sunDate);
     dt.setDate(sunDate.getDate() + offset);
     const dateStr = dt.toISOString().slice(0, 10);
+    if (_purged.includes(dateStr)) continue;
     const dayName = WD_NAMES[offset];
     const blocks  = DATA.weeks[wk];
     const hasMorn = blocks.some(b => b.date === dateStr && b.time === '7:30 AM');
@@ -1853,6 +1859,7 @@ function ensureWeekDays(wk) {
     const dt = new Date(sunDate);
     dt.setDate(sunDate.getDate() + offset);
     const dateStr = dt.toISOString().slice(0, 10);
+    if (_purged.includes(dateStr)) return;
     const dayName = WD_NAMES[offset];
     const blocks  = DATA.weeks[wk];
     WEEKEND_TIMES.forEach(t => {
