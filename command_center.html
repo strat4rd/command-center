@@ -3603,7 +3603,8 @@ function renderRocks() {
   // On-track logic: completed / expected-so-far (blocks/workouts due up to today).
   // > 90% → green; 70–90% → gold; < 70% → muted red.
   function thisWeekPillClass(done, expectedSoFar, hasData) {
-    if (!hasData || expectedSoFar === 0) return 'fin-pill-gray';
+    if (!hasData) return 'fin-pill-gray';
+    if (expectedSoFar === 0) return 'fin-pill-met';
     const ratio = done / expectedSoFar;
     if (ratio >= 0.90) return 'fin-pill-met';
     if (ratio >= 0.70) return 'fin-pill-prog';
@@ -3666,13 +3667,16 @@ function renderRocks() {
     sum + fitDueInWk(wk).length + customDueBy(wk, TODAY_STR).length, 0);
   const atFPct   = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
 
-  // Expected so far this week (program + custom due up to and including today)
+  // Expected so far this week: only sessions actually recorded (done or missed).
+  // Unrecorded past sessions are skipped — they're "empty days" for color purposes.
   const fitDueSoFar      = fitDueInWk(FIT_THISWK);
   const customDueSoFar   = customDueBy(FIT_THISWK, TODAY_STR);
-  const ftExpectedCount  = fitDueSoFar.length + customDueSoFar.length;
-  const ftCompletedSoFar = fitDueSoFar.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length
-                         + customDueSoFar.filter(c => { const v = thisFit[c.id]; return v === true || v === 'done'; }).length;
-  const ftPillClass = thisWeekPillClass(ftCompletedSoFar, ftExpectedCount, FIT_THISWK in fitData || ftExpectedCount > 0);
+  const ftRecordedDue    = fitDueSoFar.filter(s => thisFit[s.id] !== undefined);
+  const ftRecordedCustom = customDueSoFar.filter(c => thisFit[c.id] !== undefined);
+  const ftExpectedCount  = ftRecordedDue.length + ftRecordedCustom.length;
+  const ftCompletedSoFar = ftRecordedDue.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length
+                         + ftRecordedCustom.filter(c => { const v = thisFit[c.id]; return v === true || v === 'done'; }).length;
+  const ftPillClass = thisWeekPillClass(ftCompletedSoFar, ftExpectedCount, FIT_THISWK in fitData || fitDueSoFar.length > 0);
   const flPillClass = thisWeekPillClass(flDone, flTotal, lastFitKey in fitData);
 
   const fitKeys   = Object.keys(fitData).sort();
