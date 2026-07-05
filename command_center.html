@@ -2457,15 +2457,41 @@ const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','
 function fitWeekKey() {
   // Sun–Sat week keyed by Sunday date (matches writing view)
   const d = new Date();
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - d.getDay());
-  return d.toISOString().slice(0,10);
+  d.setDate(d.getDate() - d.getDay()); // roll back to Sunday in local time
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 function shiftFitWeek(key, delta) {
   const d = new Date(key + 'T12:00:00');
   d.setDate(d.getDate() + delta * 7);
   return d.toISOString().slice(0,10);
+}
+
+// Single source of truth for fitness week counts — used by both Fitness tab and Main tab scoreboard.
+function getFitWeekCounts(wkKey) {
+  const fitData  = loadFitness();
+  const customs  = loadFitCustom();
+  const wkEnd    = dateForDayIndex(wkKey, 6);
+  const nonRest  = getWeekProgram(wkKey).filter(s => !s.rest);
+  const wkCustom = customs.filter(c => c.date >= wkKey && c.date <= wkEnd);
+  const wkFit    = fitData[wkKey] || {};
+
+  const done  = nonRest.filter(s => { const v = wkFit[s.id]; return v === true || v === 'done'; }).length
+              + wkCustom.filter(c => { const v = wkFit[c.id]; return v === true || v === 'done'; }).length;
+  const total = nonRest.length + wkCustom.length;
+
+  // "due so far": workouts/custom sessions whose date <= today
+  const dueNR   = nonRest.filter(s => dateForDayIndex(wkKey, s.dayIndex) <= TODAY_STR);
+  const dueCust = wkCustom.filter(c => c.date <= TODAY_STR);
+  // Only count explicitly recorded (done or missed) sessions toward expected
+  const recDueNR   = dueNR.filter(s => wkFit[s.id] !== undefined);
+  const recDueCust = dueCust.filter(c => wkFit[c.id] !== undefined);
+  const completedSoFar = recDueNR.filter(s  => { const v = wkFit[s.id];  return v === true || v === 'done'; }).length
+                       + recDueCust.filter(c => { const v = wkFit[c.id]; return v === true || v === 'done'; }).length;
+  const expectedSoFar  = recDueNR.length + recDueCust.length;
+  const hasData        = wkKey in fitData || dueNR.length > 0 || dueCust.length > 0;
+
+  return { done, total, completedSoFar, expectedSoFar, hasData };
 }
 
 function loadFitness() {
@@ -2583,10 +2609,8 @@ function renderFitness() {
   const inProgram = wk in WEEK_PROGRAM;
   const ordered   = getWeekProgram(wk); // [] when outside 8-week program
 
-  // Progress tracker (program blocks only)
-  const nonRestWk = ordered.filter(w => !w.rest);
-  const doneCount = nonRestWk.filter(w => { const v = thisWk[w.id]; return v === true || v === 'done'; }).length;
-  const total     = nonRestWk.length;
+  // Progress tracker — use shared getFitWeekCounts so this always matches the Main tab scoreboard
+  const { done: doneCount, total } = getFitWeekCounts(wk);
   document.getElementById('fit-tracker-label').textContent = isCurWk ? 'This Week' : 'Week Progress';
   document.getElementById('fit-done').textContent  = doneCount;
   document.getElementById('fit-total').textContent = total;
@@ -3634,31 +3658,21 @@ function renderRocks() {
   // Custom workouts due on or before a cutoff date within a week
   const customDueBy = (wkKey, upTo) => customForWk(wkKey).filter(c => c.date <= upTo);
 
-  const thisNonRest  = getWeekProgram(FIT_THISWK).filter(s => !s.rest);
-  const thisFit      = fitData[FIT_THISWK] || {};
-  const lastFitKey   = shiftFitWeek(FIT_THISWK, -1);
-  const lastNonRest  = getWeekProgram(lastFitKey).filter(s => !s.rest);
-  const lastFit      = fitData[lastFitKey] || {};
+  const lastFitKey  = shiftFitWeek(FIT_THISWK, -1);
 
-  const thisCustom = customForWk(FIT_THISWK);
-  const lastCustom = customForWk(lastFitKey);
+  // Use shared getFitWeekCounts so this tab and the Fitness tab always agree
+  const thisFitCounts = getFitWeekCounts(FIT_THISWK);
+  const lastFitCounts = getFitWeekCounts(lastFitKey);
 
-  // This week totals (program + custom)
-  const ftTotal = thisNonRest.length + thisCustom.length;
-  const ftDone  = thisNonRest.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length
-                + thisCustom.filter(c => { const v = thisFit[c.id]; return v === true || v === 'done'; }).length;
-
-  // Last week totals (program + custom)
-  const flTotal = lastNonRest.length + lastCustom.length;
-  const flDone  = lastNonRest.filter(s => { const v = lastFit[s.id]; return v === true || v === 'done'; }).length
-                + lastCustom.filter(c => { const v = lastFit[c.id]; return v === true || v === 'done'; }).length;
+  const ftDone  = thisFitCounts.done;
+  const ftTotal = thisFitCounts.total;
+  const flDone  = lastFitCounts.done;
+  const flTotal = lastFitCounts.total;
 
   const fitAllEntries = Object.entries(fitData);
   const fitDueInWk = wkKey => getWeekProgram(wkKey).filter(s => {
     if (s.rest) return false;
-    const d = new Date(wkKey + 'T12:00:00');
-    d.setDate(d.getDate() + s.dayIndex);
-    return d.toISOString().slice(0, 10) <= TODAY_STR;
+    return dateForDayIndex(wkKey, s.dayIndex) <= TODAY_STR;
   });
   const atFDone  = fitAllEntries.reduce((sum, [wk, wkData]) =>
     sum + fitDueInWk(wk).filter(s => { const v = wkData[s.id]; return v === true || v === 'done'; }).length
@@ -3667,16 +3681,7 @@ function renderRocks() {
     sum + fitDueInWk(wk).length + customDueBy(wk, TODAY_STR).length, 0);
   const atFPct   = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
 
-  // Expected so far this week: only sessions actually recorded (done or missed).
-  // Unrecorded past sessions are skipped — they're "empty days" for color purposes.
-  const fitDueSoFar      = fitDueInWk(FIT_THISWK);
-  const customDueSoFar   = customDueBy(FIT_THISWK, TODAY_STR);
-  const ftRecordedDue    = fitDueSoFar.filter(s => thisFit[s.id] !== undefined);
-  const ftRecordedCustom = customDueSoFar.filter(c => thisFit[c.id] !== undefined);
-  const ftExpectedCount  = ftRecordedDue.length + ftRecordedCustom.length;
-  const ftCompletedSoFar = ftRecordedDue.filter(s => { const v = thisFit[s.id]; return v === true || v === 'done'; }).length
-                         + ftRecordedCustom.filter(c => { const v = thisFit[c.id]; return v === true || v === 'done'; }).length;
-  const ftPillClass = thisWeekPillClass(ftCompletedSoFar, ftExpectedCount, FIT_THISWK in fitData || fitDueSoFar.length > 0);
+  const ftPillClass = thisWeekPillClass(thisFitCounts.completedSoFar, thisFitCounts.expectedSoFar, thisFitCounts.hasData);
   const flPillClass = thisWeekPillClass(flDone, flTotal, lastFitKey in fitData);
 
   const fitKeys   = Object.keys(fitData).sort();
