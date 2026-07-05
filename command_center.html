@@ -3597,10 +3597,7 @@ function renderRocks() {
     </div>`;
 
   // ── Writing ──
-  // Only consider writing weeks that have already started (prevents phantom future-week boxes)
-  const allWritingKeys = Object.keys(DATA.weeks).filter(wk => wk <= THISWK).sort();
-  const wStartKey  = allWritingKeys.length ? allWritingKeys[0] : THISWK;
-  const writeWeeks = sunWeeksBetween(wStartKey, THISWK);
+  // Grid shows only the current week — a single box matching the "this week" pill
 
   const thisWkBlocks = DATA.weeks[THISWK] || [];
   const lastWkKey    = shiftSunWeek(THISWK, -1);
@@ -3640,17 +3637,10 @@ function renderRocks() {
   const twPillClass = thisWeekPillClass(twCompletedSoFar, twExpected, twTotal > 0);
   const lwPillClass = thisWeekPillClass(lwDone, lwTotal, lwTotal > 0);
 
-  const writeBoxes = writeWeeks.map(wk => {
-    const blocks = DATA.weeks[wk] || [];
-    let dp;
-    if (wk === THISWK) {
-      // Current week: use completed-so-far ÷ expected-so-far (same ratio as the pill)
-      dp = twExpected === 0 ? 100 : (twCompletedSoFar / twExpected) * 100;
-    } else {
-      dp = blocks.length ? (blocks.filter(b => b.done).length / blocks.length) * 100 : 0;
-    }
-    return wkBox(wk, dp, THISWK, blocks.length > 0);
-  }).join('');
+  const writeBoxes = (() => {
+    const dp = twExpected === 0 ? 100 : (twCompletedSoFar / twExpected) * 100;
+    return wkBox(THISWK, dp, THISWK, twTotal > 0);
+  })();
 
   // ── Fitness ──
   const fitData      = loadFitness();
@@ -3690,28 +3680,11 @@ function renderRocks() {
   const ftPillClass = thisWeekPillClass(thisFitCounts.completedSoFar, thisFitCounts.expectedSoFar, thisFitCounts.hasData);
   const flPillClass = thisWeekPillClass(flDone, flTotal, lastFitKey in fitData);
 
-  // Only include weeks that have started — filter future keys so phantom next-week boxes can't appear
-  const fitKeys   = Object.keys(fitData).filter(wk => wk <= FIT_THISWK).sort();
-  const fStartKey = fitKeys.length ? fitKeys[0] : FIT_THISWK;
-  const fitWeeks  = sunWeeksBetween(fStartKey, FIT_THISWK);
-
-  const fitBoxes = fitWeeks.map(wk => {
-    if (wk === FIT_THISWK) {
-      // Current week: use completed-so-far ÷ expected-so-far (same ratio as the pill)
-      const dp = thisFitCounts.expectedSoFar === 0 ? 100
-               : (thisFitCounts.completedSoFar / thisFitCounts.expectedSoFar) * 100;
-      return wkBox(wk, dp, FIT_THISWK, thisFitCounts.hasData);
-    }
-    const wkProg   = getWeekProgram(wk).filter(s => !s.rest);
-    const wkCustom = customForWk(wk);
-    const wkData   = fitData[wk] || {};
-    const done     = wkProg.filter(s => { const v = wkData[s.id]; return v === true || v === 'done'; }).length
-                   + wkCustom.filter(c => { const v = wkData[c.id]; return v === true || v === 'done'; }).length;
-    const wkTotal  = wkProg.length + wkCustom.length;
-    const dp       = wkTotal ? (done / wkTotal) * 100 : 0;
-    const hasData  = wk in fitData;
-    return wkBox(wk, dp, FIT_THISWK, hasData);
-  }).join('');
+  const fitBoxes = (() => {
+    const dp = thisFitCounts.expectedSoFar === 0 ? 100
+             : (thisFitCounts.completedSoFar / thisFitCounts.expectedSoFar) * 100;
+    return wkBox(FIT_THISWK, dp, FIT_THISWK, thisFitCounts.hasData);
+  })();
 
   // ── Finances ──
   const f = FIN;
