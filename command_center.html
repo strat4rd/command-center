@@ -3119,10 +3119,6 @@ function saveFinEdit(key) {
   const val = parseFloat(document.getElementById('fin-input-' + key).value.replace(/[^0-9.\-]/g,''));
   if (isNaN(val)) return;
   FIN[key].current = val;
-  // Only auto-recalculate net worth from components when not editing net worth directly
-  if (key !== 'netWorth') {
-    FIN.netWorth.current = FIN.emergencyU.current - FIN.loans.current + FIN.retirement.current;
-  }
   saveFin(FIN);
   renderFinances();
 }
