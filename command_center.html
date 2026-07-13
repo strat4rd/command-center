@@ -3599,12 +3599,16 @@ function renderRocks() {
   const thisWkBlocks = DATA.weeks[THISWK] || [];
   const lastWkKey    = shiftSunWeek(THISWK, -1);
   const lastWkBlocks = DATA.weeks[lastWkKey] || [];
-  const allWkBlocks  = Object.values(DATA.weeks).flat();
   const twDone  = thisWkBlocks.filter(b => b.done).length;
   const twTotal = thisWkBlocks.length;
   const lwDone  = lastWkBlocks.filter(b => b.done).length;
   const lwTotal = lastWkBlocks.length;
-  const pastAndTodayBlocks = allWkBlocks.filter(b => b.date <= TODAY_STR);
+  // All-time: only count weeks that have ≥1 completed block on or before today,
+  // so auto-created weeks with no writing history don't inflate the denominator.
+  const pastAndTodayBlocks = Object.values(DATA.weeks)
+    .filter(wkBlocks => wkBlocks.some(b => b.date <= TODAY_STR && b.done))
+    .flat()
+    .filter(b => b.date <= TODAY_STR);
   const atWDone  = pastAndTodayBlocks.filter(b => b.done).length;
   const atWTotal = pastAndTodayBlocks.length;
   const atWPct   = atWTotal ? Math.round((atWDone / atWTotal) * 100) : 0;
@@ -3663,16 +3667,15 @@ function renderRocks() {
   const flTotal = lastFitCounts.total;
 
   const fitAllEntries = Object.entries(fitData);
-  const fitDueInWk = wkKey => getWeekProgram(wkKey).filter(s => {
-    if (s.rest) return false;
-    return dateForDayIndex(wkKey, s.dayIndex) <= TODAY_STR;
+  // All-time: reuse getFitWeekCounts (same recDueNR/recorded-only logic as the this-week pill)
+  // so weeks with no recorded activity contribute 0 and can't inflate the denominator.
+  let atFDone = 0, atFTotal = 0;
+  fitAllEntries.forEach(([wk]) => {
+    const { completedSoFar, expectedSoFar } = getFitWeekCounts(wk);
+    atFDone  += completedSoFar;
+    atFTotal += expectedSoFar;
   });
-  const atFDone  = fitAllEntries.reduce((sum, [wk, wkData]) =>
-    sum + fitDueInWk(wk).filter(s => { const v = wkData[s.id]; return v === true || v === 'done'; }).length
-        + customDueBy(wk, TODAY_STR).filter(c => { const v = wkData[c.id]; return v === true || v === 'done'; }).length, 0);
-  const atFTotal = fitAllEntries.reduce((sum, [wk]) =>
-    sum + fitDueInWk(wk).length + customDueBy(wk, TODAY_STR).length, 0);
-  const atFPct   = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
+  const atFPct = atFTotal ? Math.round((atFDone / atFTotal) * 100) : 0;
 
   const ftPillClass = thisWeekPillClass(thisFitCounts.completedSoFar, thisFitCounts.expectedSoFar, thisFitCounts.hasData);
   const flPillClass = thisWeekPillClass(flDone, flTotal, lastFitKey in fitData);
