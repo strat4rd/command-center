@@ -2820,19 +2820,20 @@ function saveWeight(arr) {
 }
 
 function logWeight() {
-  const inp = document.getElementById('wt-input');
-  const val = parseFloat(inp.value);
+  const inp     = document.getElementById('wt-input');
+  const dateInp = document.getElementById('wt-date');
+  const val  = parseFloat(inp.value);
   if (!val || val < 50 || val > 400) return;
+  const date = dateInp.value || TODAY_STR;
   const entries = loadWeight();
-  const today = TODAY_STR;
-  const idx = entries.findIndex(e => e.date === today);
+  const idx = entries.findIndex(e => e.date === date);
   if (idx >= 0) entries[idx].weight = val;
-  else entries.push({ date: today, weight: val });
+  else entries.push({ date, weight: val });
   entries.sort((a,b) => a.date.localeCompare(b.date));
   saveWeight(entries);
   inp.value = '';
+  dateInp.value = TODAY_STR;
   renderWeight();
-
   renderRocks();
 }
 
@@ -3015,7 +3016,8 @@ function renderWeight() {
       </div>
       <div class="wt-right-panel">
         <div class="wt-log-row">
-          <input type="number" id="wt-input" class="wt-input" placeholder="Today's weight (lbs)" min="50" max="400" step="0.1">
+          <input type="date" id="wt-date" class="wt-input" style="width:130px;" value="${TODAY_STR}" max="${TODAY_STR}">
+          <input type="number" id="wt-input" class="wt-input" placeholder="lbs" min="50" max="400" step="0.1">
           <button class="wt-log-btn" onclick="logWeight()">Log</button>
         </div>
         <p style="font-size:11px;color:var(--muted);margin:2px 0 4px;font-style:italic;">Log your weight daily — weekly averages are calculated automatically and plotted on the chart.</p>
