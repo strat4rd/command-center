@@ -1125,10 +1125,51 @@
     }
 
     /* ── CALORIE GOAL CALENDAR ───────────────────────────── */
-    .cal-goal-days {
+    .cal-goal-inner {
+      flex: 1;
+      min-height: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+    .cal-goal-track {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: row;
+      align-items: flex-start;
+      height: 100%;
+      min-width: min-content;
+    }
+    .cal-goal-month-col {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .cal-goal-col-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted2);
+      margin-bottom: 4px;
+    }
+    .cal-goal-col-rows {
+      display: flex;
+      flex-direction: row;
       gap: 3px;
+      align-items: flex-start;
+    }
+    .cal-goal-col-days {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+    .cal-goal-vdiv {
+      flex-shrink: 0;
+      width: 1px;
+      background: #e8e8f0;
+      margin: 0 4px;
+      align-self: stretch;
     }
     .cal-goal-day {
       width: 22px;
@@ -1145,16 +1186,6 @@
     .cal-goal-day:hover { border-color: var(--accent-rim); background: var(--accent-dim); }
     .cal-goal-day.hit   { background: #4CAF85; border-color: #4CAF85; }
     .cal-goal-day.today { box-shadow: 0 0 0 2px var(--accent); }
-    .cal-goal-month-sep {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted2);
-      border-top: 1px solid #e8e8f0;
-      padding-top: 4px;
-      margin: 5px 0 3px;
-    }
 
     .dream-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 
@@ -1478,8 +1509,8 @@
     <!-- 3-across top row: weight goals | calorie calendar | weight log+chart -->
     <div style="display:flex;gap:12px;margin-bottom:16px;align-items:stretch;flex-wrap:wrap;">
       <div id="wt-goals" style="flex:0 0 auto;"></div>
-      <div class="card" style="flex:0 0 273px;padding:10px 12px;align-self:flex-start;">
-        <div id="cal-goal-root"></div>
+      <div id="cal-goal-card" class="card" style="flex:0 0 273px;padding:10px 12px;height:0;min-height:0;overflow:hidden;">
+        <div id="cal-goal-root" style="height:100%;display:flex;flex-direction:column;min-height:0;"></div>
       </div>
       <div id="wt-log-chart" style="flex:1;min-width:240px;"></div>
     </div>
@@ -2854,14 +2885,15 @@ function saveCalGoal(s) {
   localStorage.setItem('cc_calorie_goal', JSON.stringify([...s]));
 }
 
-function renderCalGoal() {
+let _calSqPerCol = 7;
+
+function renderCalGoal(sqPerCol) {
+  if (sqPerCol !== undefined) _calSqPerCol = sqPerCol;
   const el = document.getElementById('cal-goal-root');
   if (!el) return;
   const hit = loadCalGoal();
-  const MONTHS = ['January','February','March','April','May','June','July',
-                  'August','September','October','November','December'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // Continuous grid: July 17 2026 → Dec 31 2026
   const startDate = new Date(CAL_GOAL_START + 'T12:00:00');
   const endDate   = new Date('2026-12-31T12:00:00');
 
@@ -2879,21 +2911,29 @@ function renderCalGoal() {
     cur.setDate(cur.getDate() + 1);
   }
 
-  let html = `<div class="tracker-label" style="margin-bottom:5px;">Calorie Goal</div>`;
+  // Build horizontal-scroll track: months as column groups, days flow top→bottom then right
+  let trackHtml = '';
   months.forEach((mo, idx) => {
-    const label = MONTHS[mo.m].slice(0, 3);
-    html += idx === 0
-      ? `<div style="font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted2);margin-bottom:3px;">${label}</div>`
-      : `<div class="cal-goal-month-sep">${label}</div>`;
-    html += `<div class="cal-goal-days">`;
-    for (const ds of mo.days) {
-      const cls = ['cal-goal-day', hit.has(ds) ? 'hit' : '', ds === TODAY_STR ? 'today' : '']
-                    .filter(Boolean).join(' ');
-      html += `<div class="${cls}" onclick="toggleCalGoal('${ds}')"></div>`;
+    if (idx > 0) trackHtml += `<div class="cal-goal-vdiv"></div>`;
+    // Split month days into sub-columns of _calSqPerCol each
+    const cols = [];
+    for (let i = 0; i < mo.days.length; i += _calSqPerCol) {
+      cols.push(mo.days.slice(i, i + _calSqPerCol));
     }
-    html += `</div>`;
+    const colsHtml = cols.map(colDays => {
+      const sq = colDays.map(ds => {
+        const cls = ['cal-goal-day', hit.has(ds) ? 'hit' : '', ds === TODAY_STR ? 'today' : '']
+                      .filter(Boolean).join(' ');
+        return `<div class="${cls}" onclick="toggleCalGoal('${ds}')"></div>`;
+      }).join('');
+      return `<div class="cal-goal-col-days">${sq}</div>`;
+    }).join('<div style="width:3px;flex-shrink:0;"></div>');
+    trackHtml += `<div class="cal-goal-month-col"><div class="cal-goal-col-label">${MONTHS[mo.m]}</div><div class="cal-goal-col-rows">${colsHtml}</div></div>`;
   });
-  el.innerHTML = html;
+
+  el.innerHTML =
+    `<div class="tracker-label" style="margin-bottom:5px;flex-shrink:0;">Calorie Goal</div>` +
+    `<div class="cal-goal-inner"><div class="cal-goal-track">${trackHtml}</div></div>`;
 }
 
 function toggleCalGoal(ds) {
@@ -2902,6 +2942,17 @@ function toggleCalGoal(ds) {
   if (hit.has(ds)) hit.delete(ds); else hit.add(ds);
   saveCalGoal(hit);
   renderCalGoal();
+}
+
+function syncCalGoal() {
+  const card = document.getElementById('cal-goal-card');
+  if (!card) return;
+  const h = card.offsetHeight;
+  if (h <= 0) return;
+  // card padding: 10+10=20px; title+margin: ~18px
+  const innerH = h - 20 - 18;
+  const sq = Math.max(1, Math.floor((innerH + 3) / 25));
+  renderCalGoal(sq);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -4064,6 +4115,8 @@ function renderMain() {
 
 renderMain();
 renderCalGoal();
+requestAnimationFrame(syncCalGoal);
+window.addEventListener('resize', () => requestAnimationFrame(syncCalGoal));
 renderAll();
 
 </script>
