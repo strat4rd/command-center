@@ -1127,45 +1127,32 @@
     /* ── CALORIE GOAL CALENDAR ───────────────────────────── */
     .cal-goal-grid {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
+      grid-template-columns: repeat(7, 18px);
+      gap: 2px;
     }
     .cal-goal-weekday {
+      width: 18px;
       text-align: center;
-      font-size: 10px;
+      font-size: 8px;
       font-weight: 700;
-      letter-spacing: 0.05em;
       color: var(--muted2);
-      padding: 4px 0 6px;
+      padding: 2px 0 3px;
     }
     .cal-goal-day {
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 7px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--muted);
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
       background: var(--surface2);
       border: 1px solid var(--border);
       cursor: pointer;
-      transition: background 0.12s, color 0.12s, border-color 0.12s;
+      transition: background 0.12s, border-color 0.12s;
       -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
     }
-    .cal-goal-day:hover {
-      border-color: var(--accent-rim);
-      background: var(--accent-dim);
-      color: var(--accent);
-    }
-    .cal-goal-day.hit {
-      background: #4CAF85;
-      border-color: #4CAF85;
-      color: #ffffff;
-      font-weight: 600;
-    }
+    .cal-goal-day:hover { border-color: var(--accent-rim); background: var(--accent-dim); }
+    .cal-goal-day.hit   { background: #4CAF85; border-color: #4CAF85; }
     .cal-goal-day.today { box-shadow: 0 0 0 2px var(--accent); }
-    .cal-goal-blank { aspect-ratio: 1; }
+    .cal-goal-blank { width: 18px; height: 18px; box-sizing: border-box; }
 
     .dream-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 
@@ -1489,8 +1476,13 @@
     <!-- Weight: goal cards + log + chart in one row -->
     <div id="wt-top" style="margin-bottom:16px;"></div>
 
-    <!-- Diet breaks reminder -->
-    <div id="fit-diet-breaks" style="margin-bottom:16px;"></div>
+    <!-- Diet breaks + Calorie Goal side by side -->
+    <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="fit-diet-breaks" style="flex:1;min-width:160px;"></div>
+      <div class="card" style="flex:0 0 auto;padding:10px 12px;">
+        <div id="cal-goal-root"></div>
+      </div>
+    </div>
 
     <!-- Progress tracker -->
     <div class="card" style="margin-bottom:16px;">
@@ -1592,10 +1584,6 @@
       </div>
     </div>
 
-    <!-- Calorie Goal Tracker -->
-    <div class="card" style="margin-top:16px;">
-      <div id="cal-goal-root"></div>
-    </div>
 
   </div>
 
@@ -2889,24 +2877,26 @@ function renderCalGoal() {
     } else {
       const cls = ['cal-goal-day', hit.has(ds) ? 'hit' : '', ds === TODAY_STR ? 'today' : '']
                     .filter(Boolean).join(' ');
-      cells += `<div class="${cls}" onclick="toggleCalGoal('${ds}')">${d}</div>`;
+      cells += `<div class="${cls}" onclick="toggleCalGoal('${ds}')"></div>`;
     }
   }
 
+  const navBtn = (fn, label, extra) =>
+    `<button onclick="${fn}()"${extra} style="width:18px;height:18px;background:var(--surface2);border:1px solid var(--border-d);color:var(--muted);border-radius:4px;font-size:13px;line-height:1;padding:0;cursor:pointer;">${label}</button>`;
   el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-      <div class="tracker-label">Calorie Goal</div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button class="nav-btn" onclick="calGoalPrev()"${canPrev ? '' : ' disabled style="opacity:0.35;cursor:default;"'}>&#8249;</button>
-        <span style="font-size:13px;font-weight:600;color:var(--text);min-width:108px;text-align:center;">${MONTHS[m]} ${y}</span>
-        <button class="nav-btn" onclick="calGoalNext()">&#8250;</button>
+    <div style="text-align:center;margin-bottom:7px;">
+      <div class="tracker-label" style="margin-bottom:4px;">Calorie Goal</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+        ${canPrev ? navBtn('calGoalPrev','&#8249;','') : `<button disabled style="width:18px;height:18px;background:var(--surface2);border:1px solid var(--border-d);color:var(--muted);border-radius:4px;font-size:13px;line-height:1;padding:0;opacity:0.35;cursor:default;">&#8249;</button>`}
+        <span style="font-size:10px;font-weight:600;color:var(--text);min-width:56px;text-align:center;">${MONTHS[m].slice(0,3)} ${y}</span>
+        ${navBtn('calGoalNext','&#8250;','')}
       </div>
     </div>
     <div class="cal-goal-grid">
-      <div class="cal-goal-weekday">Sun</div><div class="cal-goal-weekday">Mon</div>
-      <div class="cal-goal-weekday">Tue</div><div class="cal-goal-weekday">Wed</div>
-      <div class="cal-goal-weekday">Thu</div><div class="cal-goal-weekday">Fri</div>
-      <div class="cal-goal-weekday">Sat</div>
+      <div class="cal-goal-weekday">S</div><div class="cal-goal-weekday">M</div>
+      <div class="cal-goal-weekday">T</div><div class="cal-goal-weekday">W</div>
+      <div class="cal-goal-weekday">T</div><div class="cal-goal-weekday">F</div>
+      <div class="cal-goal-weekday">S</div>
       ${cells}
     </div>
   `;
