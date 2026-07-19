@@ -1474,15 +1474,13 @@
   <!-- ── FITNESS ───────────────────────────────────────────── -->
   <div class="tab-panel" id="panel-fitness">
 
-    <!-- Weight: goal cards + log + chart in one row -->
-    <div id="wt-top" style="margin-bottom:16px;"></div>
-
-    <!-- Diet breaks + Calorie Goal side by side -->
+    <!-- 3-across top row: weight goals | calorie calendar | weight log+chart -->
     <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-start;flex-wrap:wrap;">
-      <div id="fit-diet-breaks" style="flex:0 1 auto;min-width:180px;"></div>
+      <div id="wt-goals" style="flex:0 0 auto;"></div>
       <div class="card" style="flex:0 0 auto;padding:10px 12px;">
         <div id="cal-goal-root"></div>
       </div>
+      <div id="wt-log-chart" style="flex:1;min-width:240px;"></div>
     </div>
 
     <!-- Progress tracker -->
@@ -3111,63 +3109,40 @@ function renderWeight() {
   const p1 = wtProgressPct(entries, 156, weekAvg);
   const p2 = wtProgressPct(entries, 145, weekAvg);
 
-  document.getElementById('wt-top').innerHTML = `
-    <div class="wt-top-grid">
-      <div class="wt-left-panel">
-        <div class="wt-goal-card" style="flex:1;background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.28);">
-          <div class="wt-goal-label" style="color:#b87d10;">Interim Goal</div>
-          <div class="wt-goal-weight" style="color:#F5A623;">156 lbs</div>
-          <div class="wt-goal-target">${currentStr}</div>
-          ${startedStr ? `<div class="wt-goal-target" style="color:var(--muted);">${startedStr}</div>` : ''}
-          <div class="wt-goal-deadline" style="color:#F5A623;background:#FFF8E7;border-color:#F5A623;">by Aug 13, 2026</div>
-          <div class="wt-bar-wrap" style="background:rgba(245,166,35,0.18);"><div class="wt-bar-fill" style="width:${p1.toFixed(1)}%;background:#F5A623;"></div></div>
-        </div>
-        <div class="wt-goal-card" style="flex:1;background:rgba(74,144,217,0.06);border:1px solid rgba(74,144,217,0.25);">
-          <div class="wt-goal-label" style="color:#3a70ad;">Final Goal</div>
-          <div class="wt-goal-weight" style="color:#4A90D9;">145 lbs</div>
-          <div class="wt-goal-target">${currentStr}</div>
-          ${startedStr ? `<div class="wt-goal-target" style="color:var(--muted);">${startedStr}</div>` : ''}
-          <div class="wt-goal-deadline" style="color:#4A90D9;background:#EFF6FF;border-color:#4A90D9;">by Dec 11, 2026</div>
-          <div class="wt-bar-wrap" style="background:rgba(74,144,217,0.18);"><div class="wt-bar-fill" style="width:${p2.toFixed(1)}%;background:#4A90D9;"></div></div>
-        </div>
+  document.getElementById('wt-goals').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="wt-goal-card" style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.28);">
+        <div class="wt-goal-label" style="color:#b87d10;">Interim Goal</div>
+        <div class="wt-goal-weight" style="color:#F5A623;">156 lbs</div>
+        <div class="wt-goal-target">${currentStr}</div>
+        ${startedStr ? `<div class="wt-goal-target" style="color:var(--muted);">${startedStr}</div>` : ''}
+        <div class="wt-goal-deadline" style="color:#F5A623;background:#FFF8E7;border-color:#F5A623;">by Aug 13, 2026</div>
+        <div class="wt-bar-wrap" style="background:rgba(245,166,35,0.18);"><div class="wt-bar-fill" style="width:${p1.toFixed(1)}%;background:#F5A623;"></div></div>
       </div>
-      <div class="wt-right-panel">
-        <div class="wt-log-row">
-          <input type="date" id="wt-date" class="wt-input" style="width:130px;" value="${TODAY_STR}" max="${TODAY_STR}">
-          <input type="number" id="wt-input" class="wt-input" placeholder="lbs" min="50" max="400" step="0.1">
-          <button class="wt-log-btn" onclick="logWeight()">Log</button>
-        </div>
-        <p style="font-size:11px;color:var(--muted);margin:2px 0 4px;font-style:italic;">Log your weight daily — weekly averages are calculated automatically and plotted on the chart.</p>
-        <div class="wt-chart-wrap">${wtChartSvg(entries)}</div>
+      <div class="wt-goal-card" style="background:rgba(74,144,217,0.06);border:1px solid rgba(74,144,217,0.25);">
+        <div class="wt-goal-label" style="color:#3a70ad;">Final Goal</div>
+        <div class="wt-goal-weight" style="color:#4A90D9;">145 lbs</div>
+        <div class="wt-goal-target">${currentStr}</div>
+        ${startedStr ? `<div class="wt-goal-target" style="color:var(--muted);">${startedStr}</div>` : ''}
+        <div class="wt-goal-deadline" style="color:#4A90D9;background:#EFF6FF;border-color:#4A90D9;">by Dec 11, 2026</div>
+        <div class="wt-bar-wrap" style="background:rgba(74,144,217,0.18);"><div class="wt-bar-fill" style="width:${p2.toFixed(1)}%;background:#4A90D9;"></div></div>
       </div>
+    </div>`;
+  document.getElementById('wt-log-chart').innerHTML = `
+    <div class="card">
+      <div class="wt-log-row">
+        <input type="date" id="wt-date" class="wt-input" style="width:130px;" value="${TODAY_STR}" max="${TODAY_STR}">
+        <input type="number" id="wt-input" class="wt-input" placeholder="lbs" min="50" max="400" step="0.1">
+        <button class="wt-log-btn" onclick="logWeight()">Log</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin:2px 0 4px;font-style:italic;">Log your weight daily — weekly averages are calculated automatically and plotted on the chart.</p>
+      <div class="wt-chart-wrap">${wtChartSvg(entries)}</div>
     </div>`;
 
 }
 
 renderWeight();
 
-function renderDietBreaks() {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const breaks = [
-    { label: 'Diet Break 1', end: '2026-08-22', display: 'Aug 16–22, 2026' },
-    { label: 'Diet Break 2', end: '2026-10-24', display: 'Oct 18–24, 2026' },
-  ].filter(b => new Date(b.end + 'T12:00:00') >= today);
-
-  const el = document.getElementById('fit-diet-breaks');
-  if (!breaks.length) { el.innerHTML = ''; return; }
-
-  el.innerHTML = `
-    <div class="card" style="padding:12px 16px;border-left:3px solid #4A90D9;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#4A90D9;margin-bottom:3px;">Upcoming Diet Breaks</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">1 week each — eat at maintenance</div>
-      ${breaks.map(b => `
-        <div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px solid var(--border);">
-          <span style="font-size:11px;font-weight:600;color:var(--muted);min-width:84px;">${b.label}</span>
-          <span style="font-size:12px;font-weight:600;color:var(--text);">${b.display}</span>
-        </div>`).join('')}
-    </div>`;
-}
-renderDietBreaks();
 
 // ─────────────────────────────────────────────────────────
 // FINANCES
