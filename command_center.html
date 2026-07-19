@@ -1475,7 +1475,7 @@
   <div class="tab-panel" id="panel-fitness">
 
     <!-- 3-across top row: weight goals | calorie calendar | weight log+chart -->
-    <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-start;flex-wrap:wrap;">
+    <div style="display:flex;gap:12px;margin-bottom:16px;align-items:stretch;flex-wrap:wrap;">
       <div id="wt-goals" style="flex:0 0 auto;"></div>
       <div class="card" style="flex:0 0 auto;padding:10px 12px;">
         <div id="cal-goal-root"></div>
@@ -3110,8 +3110,8 @@ function renderWeight() {
   const p2 = wtProgressPct(entries, 145, weekAvg);
 
   document.getElementById('wt-goals').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <div class="wt-goal-card" style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.28);">
+    <div style="display:flex;flex-direction:column;gap:8px;height:100%;">
+      <div class="wt-goal-card" style="flex:1;background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.28);">
         <div class="wt-goal-label" style="color:#b87d10;">Interim Goal</div>
         <div class="wt-goal-weight" style="color:#F5A623;">156 lbs</div>
         <div class="wt-goal-target">${currentStr}</div>
@@ -3119,7 +3119,7 @@ function renderWeight() {
         <div class="wt-goal-deadline" style="color:#F5A623;background:#FFF8E7;border-color:#F5A623;">by Aug 13, 2026</div>
         <div class="wt-bar-wrap" style="background:rgba(245,166,35,0.18);"><div class="wt-bar-fill" style="width:${p1.toFixed(1)}%;background:#F5A623;"></div></div>
       </div>
-      <div class="wt-goal-card" style="background:rgba(74,144,217,0.06);border:1px solid rgba(74,144,217,0.25);">
+      <div class="wt-goal-card" style="flex:1;background:rgba(74,144,217,0.06);border:1px solid rgba(74,144,217,0.25);">
         <div class="wt-goal-label" style="color:#3a70ad;">Final Goal</div>
         <div class="wt-goal-weight" style="color:#4A90D9;">145 lbs</div>
         <div class="wt-goal-target">${currentStr}</div>
@@ -3129,7 +3129,7 @@ function renderWeight() {
       </div>
     </div>`;
   document.getElementById('wt-log-chart').innerHTML = `
-    <div class="card">
+    <div class="card" style="height:100%;box-sizing:border-box;">
       <div class="wt-log-row">
         <input type="date" id="wt-date" class="wt-input" style="width:130px;" value="${TODAY_STR}" max="${TODAY_STR}">
         <input type="number" id="wt-input" class="wt-input" placeholder="lbs" min="50" max="400" step="0.1">
