@@ -1509,8 +1509,8 @@
     <!-- 3-across top row: weight goals | calorie calendar | weight log+chart -->
     <div style="display:flex;gap:12px;margin-bottom:16px;align-items:stretch;flex-wrap:wrap;">
       <div id="wt-goals" style="flex:0 0 auto;"></div>
-      <div id="cal-goal-card" class="card" style="flex:0 0 273px;padding:10px 12px;height:0;min-height:0;overflow:hidden;">
-        <div id="cal-goal-root" style="height:100%;display:flex;flex-direction:column;min-height:0;"></div>
+      <div id="cal-goal-card" class="card" style="flex:0 0 273px;padding:10px 12px;align-self:flex-start;overflow:hidden;">
+        <div id="cal-goal-root" style="height:100%;display:flex;flex-direction:column;"></div>
       </div>
       <div id="wt-log-chart" style="flex:1;min-width:240px;"></div>
     </div>
@@ -2945,11 +2945,17 @@ function toggleCalGoal(ds) {
 }
 
 function syncCalGoal() {
-  const card = document.getElementById('cal-goal-card');
-  if (!card) return;
-  const h = card.offsetHeight;
-  if (h <= 0) return;
-  // card padding: 10+10=20px; title+margin: ~18px
+  const calCard = document.getElementById('cal-goal-card');
+  const logChart = document.getElementById('wt-log-chart');
+  if (!calCard || !logChart) return;
+  // Temporarily shrink calorie card to 0 so the row height is set by the other two columns
+  calCard.style.height = '0px';
+  void calCard.offsetHeight; // force reflow
+  // Now wt-log-chart reflects the row height without calorie's content inflating it
+  const h = logChart.offsetHeight;
+  if (h <= 0) { calCard.style.height = ''; return; }
+  calCard.style.height = h + 'px';
+  // card border-box padding: 10+10=20px; title+margin: ~18px
   const innerH = h - 20 - 18;
   const sq = Math.max(1, Math.floor((innerH + 3) / 25));
   renderCalGoal(sq);
