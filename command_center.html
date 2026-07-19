@@ -1125,51 +1125,31 @@
     }
 
     /* ── CALORIE GOAL CALENDAR ───────────────────────────── */
-    .cal-goal-inner {
+    .cal-goal-scroll {
       flex: 1;
       min-height: 0;
-      overflow-x: auto;
-      overflow-y: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
     }
-    .cal-goal-track {
-      display: flex;
-      flex-direction: row;
-      align-items: flex-start;
-      height: 100%;
-      min-width: min-content;
-    }
-    .cal-goal-month-col {
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-    }
-    .cal-goal-col-label {
+    .cal-goal-month-label {
       font-size: 9px;
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--muted2);
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
-    .cal-goal-col-rows {
-      display: flex;
-      flex-direction: row;
+    .cal-goal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 22px);
       gap: 3px;
-      align-items: flex-start;
+      margin-bottom: 6px;
     }
-    .cal-goal-col-days {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      flex-shrink: 0;
-    }
-    .cal-goal-vdiv {
-      flex-shrink: 0;
-      width: 1px;
+    .cal-goal-sep {
+      height: 1px;
       background: #e8e8f0;
-      margin: 0 4px;
-      align-self: stretch;
+      margin: 4px 0 6px;
     }
     .cal-goal-day {
       width: 22px;
@@ -1181,9 +1161,9 @@
       transition: background 0.12s, border-color 0.12s;
       -webkit-tap-highlight-color: transparent;
       box-sizing: border-box;
-      flex-shrink: 0;
     }
-    .cal-goal-day:hover { border-color: var(--accent-rim); background: var(--accent-dim); }
+    .cal-goal-day.filler { background: transparent; border-color: transparent; cursor: default; pointer-events: none; }
+    .cal-goal-day:not(.filler):hover { border-color: var(--accent-rim); background: var(--accent-dim); }
     .cal-goal-day.hit   { background: #4CAF85; border-color: #4CAF85; }
     .cal-goal-day.today { box-shadow: 0 0 0 2px var(--accent); }
 
@@ -2885,10 +2865,7 @@ function saveCalGoal(s) {
   localStorage.setItem('cc_calorie_goal', JSON.stringify([...s]));
 }
 
-let _calSqPerCol = 7;
-
-function renderCalGoal(sqPerCol) {
-  if (sqPerCol !== undefined) _calSqPerCol = sqPerCol;
+function renderCalGoal() {
   const el = document.getElementById('cal-goal-root');
   if (!el) return;
   const hit = loadCalGoal();
@@ -2906,34 +2883,28 @@ function renderCalGoal(sqPerCol) {
     if (!months.length || months[months.length - 1].key !== key) {
       months.push({ key, y, m, days: [] });
     }
-    const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
-    months[months.length - 1].days.push(ds);
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+    months[months.length-1].days.push(ds);
     cur.setDate(cur.getDate() + 1);
   }
 
-  // Build horizontal-scroll track: months as column groups, days flow top→bottom then right
-  let trackHtml = '';
+  // 7-column grid, months stacked vertically with weekday offset fillers
+  let moHtml = '';
   months.forEach((mo, idx) => {
-    if (idx > 0) trackHtml += `<div class="cal-goal-vdiv"></div>`;
-    // Split month days into sub-columns of _calSqPerCol each
-    const cols = [];
-    for (let i = 0; i < mo.days.length; i += _calSqPerCol) {
-      cols.push(mo.days.slice(i, i + _calSqPerCol));
+    if (idx > 0) moHtml += `<div class="cal-goal-sep"></div>`;
+    const offset = new Date(mo.days[0] + 'T12:00:00').getDay(); // 0=Sun
+    let cells = '';
+    for (let i = 0; i < offset; i++) cells += `<div class="cal-goal-day filler"></div>`;
+    for (const ds of mo.days) {
+      const cls = ['cal-goal-day', hit.has(ds) ? 'hit' : '', ds === TODAY_STR ? 'today' : ''].filter(Boolean).join(' ');
+      cells += `<div class="${cls}" onclick="toggleCalGoal('${ds}')"></div>`;
     }
-    const colsHtml = cols.map(colDays => {
-      const sq = colDays.map(ds => {
-        const cls = ['cal-goal-day', hit.has(ds) ? 'hit' : '', ds === TODAY_STR ? 'today' : '']
-                      .filter(Boolean).join(' ');
-        return `<div class="${cls}" onclick="toggleCalGoal('${ds}')"></div>`;
-      }).join('');
-      return `<div class="cal-goal-col-days">${sq}</div>`;
-    }).join('<div style="width:3px;flex-shrink:0;"></div>');
-    trackHtml += `<div class="cal-goal-month-col"><div class="cal-goal-col-label">${MONTHS[mo.m]}</div><div class="cal-goal-col-rows">${colsHtml}</div></div>`;
+    moHtml += `<div class="cal-goal-month-label">${MONTHS[mo.m]}</div><div class="cal-goal-grid">${cells}</div>`;
   });
 
   el.innerHTML =
-    `<div class="tracker-label" style="margin-bottom:5px;flex-shrink:0;">Calorie Goal</div>` +
-    `<div class="cal-goal-inner"><div class="cal-goal-track">${trackHtml}</div></div>`;
+    `<div class="tracker-label" style="margin-bottom:6px;flex-shrink:0;">Calorie Goal</div>` +
+    `<div class="cal-goal-scroll">${moHtml}</div>`;
 }
 
 function toggleCalGoal(ds) {
@@ -2948,17 +2919,13 @@ function syncCalGoal() {
   const calCard = document.getElementById('cal-goal-card');
   const logChart = document.getElementById('wt-log-chart');
   if (!calCard || !logChart) return;
-  // Temporarily shrink calorie card to 0 so the row height is set by the other two columns
+  // Zero calorie card so it doesn't inflate the row; measure the other two columns
   calCard.style.height = '0px';
   void calCard.offsetHeight; // force reflow
-  // Now wt-log-chart reflects the row height without calorie's content inflating it
   const h = logChart.offsetHeight;
   if (h <= 0) { calCard.style.height = ''; return; }
   calCard.style.height = h + 'px';
-  // card border-box padding: 10+10=20px; title+margin: ~18px
-  const innerH = h - 20 - 18;
-  const sq = Math.max(1, Math.floor((innerH + 3) / 25));
-  renderCalGoal(sq);
+  renderCalGoal();
 }
 
 // ─────────────────────────────────────────────────────────
