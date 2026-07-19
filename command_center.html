@@ -2483,12 +2483,9 @@ function getFitWeekCounts(wkKey) {
   // "due so far": workouts/custom sessions whose date <= today
   const dueNR   = nonRest.filter(s => dateForDayIndex(wkKey, s.dayIndex) <= TODAY_STR);
   const dueCust = wkCustom.filter(c => c.date <= TODAY_STR);
-  // Only count explicitly recorded (done or missed) sessions toward expected
-  const recDueNR   = dueNR.filter(s => wkFit[s.id] !== undefined);
-  const recDueCust = dueCust.filter(c => wkFit[c.id] !== undefined);
-  const completedSoFar = recDueNR.filter(s  => { const v = wkFit[s.id];  return v === true || v === 'done'; }).length
-                       + recDueCust.filter(c => { const v = wkFit[c.id]; return v === true || v === 'done'; }).length;
-  const expectedSoFar  = recDueNR.length + recDueCust.length;
+  const completedSoFar = dueNR.filter(s  => { const v = wkFit[s.id];  return v === true || v === 'done'; }).length
+                       + dueCust.filter(c => { const v = wkFit[c.id]; return v === true || v === 'done'; }).length;
+  const expectedSoFar  = dueNR.length + dueCust.length;
   const hasData        = wkKey in fitData || dueNR.length > 0 || dueCust.length > 0;
 
   return { done, total, completedSoFar, expectedSoFar, hasData };
