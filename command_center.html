@@ -3192,7 +3192,6 @@ const FIN_DEFAULTS = {
   car:          { current: 0 },
   feCarRepair:  { current: 0 },
   feTV:         { current: 0 },
-  feChair:      { current: 0 },
   feLaptop:     { current: 0 },
 };
 
@@ -3205,9 +3204,10 @@ function initFin() {
   const d = loadFin();
   if (d) {
     let dirty = false;
-    ['feCarRepair','feTV','feChair','feLaptop'].forEach(k => {
+    ['feCarRepair','feTV','feLaptop'].forEach(k => {
       if (!d[k]) { d[k] = { current: 0 }; dirty = true; }
     });
+    if (d.feChair !== undefined) { delete d.feChair; dirty = true; }
     if (dirty) saveFin(d);
     return d;
   }
@@ -3321,7 +3321,6 @@ function renderFinances(editing) {
   // Future Expenses sub-items
   const feCarRepairPct = pct(f.feCarRepair.current, 0, 1000);
   const feTVPct        = pct(f.feTV.current,        0, 180);
-  const feChairPct     = pct(f.feChair.current,     0, 300);
   const feLaptopPct    = pct(f.feLaptop.current,    0, 1500);
 
   // Inline color for amount text — mirrors barColor so text and bar always match
@@ -3417,18 +3416,6 @@ function renderFinances(editing) {
           </div>
           ${bar(feTVPct)}
           ${tvUnlocked ? editRow('feTV','Amount saved') : ''}
-        </div>
-        <div class="fin-sub-item" style="flex-direction:column;align-items:stretch;gap:6px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <div class="fin-sub-name">Chair</div>
-            <div style="display:flex;align-items:baseline;gap:5px;flex-shrink:0;">
-              <span style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;${ac(feChairPct)}">${fmtDollars(f.feChair.current)}</span>
-              <span style="font-size:11px;color:var(--muted);">/ $300</span>
-              ${editBtn('feChair', feChairPct)}
-            </div>
-          </div>
-          ${bar(feChairPct)}
-          ${editRow('feChair','Amount saved')}
         </div>
         <div class="fin-sub-item" style="flex-direction:column;align-items:stretch;gap:6px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
@@ -3826,7 +3813,6 @@ function renderRocks() {
     pct(f.tech.current, 0, 1500),
     pct(f.feCarRepair.current, 0, 1000),
     pct(f.feTV.current, 0, 180),
-    pct(f.feChair.current, 0, 300),
     pct(f.feLaptop.current, 0, 1500),
     pct(LOAN_START - f.loans.current, 0, LOAN_START),
   ];
