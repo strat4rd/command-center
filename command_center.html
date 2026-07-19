@@ -1127,10 +1127,12 @@
     /* ── CALORIE GOAL CALENDAR ───────────────────────────── */
     .cal-goal-grid {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(7, 22px);
       gap: 3px;
+      width: max-content;
     }
     .cal-goal-weekday {
+      width: 22px;
       text-align: center;
       font-size: 8px;
       font-weight: 700;
@@ -1138,7 +1140,8 @@
       padding: 2px 0 3px;
     }
     .cal-goal-day {
-      aspect-ratio: 1;
+      width: 22px;
+      height: 22px;
       border-radius: 5px;
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -1150,7 +1153,7 @@
     .cal-goal-day:hover { border-color: var(--accent-rim); background: var(--accent-dim); }
     .cal-goal-day.hit   { background: #4CAF85; border-color: #4CAF85; }
     .cal-goal-day.today { box-shadow: 0 0 0 2px var(--accent); }
-    .cal-goal-blank { aspect-ratio: 1; }
+    .cal-goal-blank { width: 22px; height: 22px; box-sizing: border-box; }
 
     .dream-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 
@@ -1477,7 +1480,7 @@
     <!-- Diet breaks + Calorie Goal side by side -->
     <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-start;flex-wrap:wrap;">
       <div id="fit-diet-breaks" style="flex:0 1 auto;min-width:180px;"></div>
-      <div class="card" style="flex:1;min-width:220px;padding:10px 12px;">
+      <div class="card" style="flex:0 0 auto;padding:10px 12px;">
         <div id="cal-goal-root"></div>
       </div>
     </div>
