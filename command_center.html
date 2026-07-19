@@ -1125,47 +1125,25 @@
     }
 
     /* ── CALORIE GOAL CALENDAR ───────────────────────────── */
-    .cal-goal-scroll {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
+    .cal-goal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .cal-goal-nav { display:flex; gap:4px; }
+    .cal-goal-nav button {
+      width:22px; height:22px; border:1px solid var(--border); background:var(--surface2);
+      border-radius:5px; cursor:pointer; font-size:12px; line-height:1; color:var(--muted2);
+      display:flex; align-items:center; justify-content:center; padding:0;
     }
-    .cal-goal-month-label {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted2);
-      margin-bottom: 3px;
-    }
-    .cal-goal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 22px);
-      gap: 3px;
-      margin-bottom: 6px;
-    }
-    .cal-goal-sep {
-      height: 1px;
-      background: #e8e8f0;
-      margin: 4px 0 6px;
-    }
+    .cal-goal-nav button:hover { border-color:var(--accent-rim); background:var(--accent-dim); }
+    .cal-goal-range { font-size:10px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted2); text-align:center; margin-bottom:6px; }
+    .cal-goal-grid { display:grid; grid-template-columns:repeat(7,24px); gap:4px; padding:3px; }
     .cal-goal-day {
-      width: 22px;
-      height: 22px;
-      border-radius: 5px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      cursor: pointer;
-      transition: background 0.12s, border-color 0.12s;
-      -webkit-tap-highlight-color: transparent;
-      box-sizing: border-box;
+      width:24px; height:24px; border-radius:5px; background:var(--surface2);
+      border:1px solid var(--border); cursor:pointer; box-sizing:border-box;
+      transition:background 0.12s, border-color 0.12s; -webkit-tap-highlight-color:transparent;
     }
-    .cal-goal-day.filler { background: transparent; border-color: transparent; cursor: default; pointer-events: none; }
-    .cal-goal-day:not(.filler):hover { border-color: var(--accent-rim); background: var(--accent-dim); }
-    .cal-goal-day.hit   { background: #4CAF85; border-color: #4CAF85; }
-    .cal-goal-day.today { box-shadow: 0 0 0 2px var(--accent); }
+    .cal-goal-day.filler { background:transparent; border-color:transparent; cursor:default; pointer-events:none; }
+    .cal-goal-day:not(.filler):hover { border-color:var(--accent-rim); background:var(--accent-dim); }
+    .cal-goal-day.hit { background:#4CAF85; border-color:#4CAF85; }
+    .cal-goal-day.today { box-shadow:0 0 0 2px var(--accent); }
 
     .dream-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 
@@ -1489,8 +1467,8 @@
     <!-- 3-across top row: weight goals | calorie calendar | weight log+chart -->
     <div style="display:flex;gap:12px;margin-bottom:16px;align-items:stretch;flex-wrap:wrap;">
       <div id="wt-goals" style="flex:0 0 auto;"></div>
-      <div id="cal-goal-card" class="card" style="flex:0 0 273px;padding:10px 12px;align-self:flex-start;overflow:hidden;">
-        <div id="cal-goal-root" style="height:100%;display:flex;flex-direction:column;"></div>
+      <div id="cal-goal-card" class="card" style="flex:0 0 240px;padding:10px 12px;align-self:flex-start;">
+        <div id="cal-goal-root"></div>
       </div>
       <div id="wt-log-chart" style="flex:1;min-width:240px;"></div>
     </div>
@@ -2856,56 +2834,54 @@ function toggleFitRef() {
 // ─────────────────────────────────────────────────────────
 
 const CAL_GOAL_START = '2026-07-17';
+const CAL_WEEKS = 5; // weeks visible at once
+let calGoalOffset = 0; // week pages from the start-of-current-week
 
 function loadCalGoal() {
   try { return new Set(JSON.parse(localStorage.getItem('cc_calorie_goal') || '[]')); }
   catch { return new Set(); }
 }
-function saveCalGoal(s) {
-  localStorage.setItem('cc_calorie_goal', JSON.stringify([...s]));
-}
+function saveCalGoal(s) { localStorage.setItem('cc_calorie_goal', JSON.stringify([...s])); }
+
+function fmtMD(d){ return (d.getMonth()+1) + '/' + d.getDate(); }
 
 function renderCalGoal() {
   const el = document.getElementById('cal-goal-root');
   if (!el) return;
   const hit = loadCalGoal();
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  const startDate = new Date(CAL_GOAL_START + 'T12:00:00');
-  const endDate   = new Date('2026-12-31T12:00:00');
+  // Anchor: Sunday of the current week, shifted by calGoalOffset weeks
+  const today = new Date(TODAY_STR + 'T12:00:00');
+  const anchor = new Date(today);
+  anchor.setDate(anchor.getDate() - anchor.getDay() + calGoalOffset * 7); // back to Sunday, then page
 
-  // Group days by month
-  const months = [];
-  const cur = new Date(startDate);
-  while (cur <= endDate) {
-    const y = cur.getFullYear(), m = cur.getMonth();
-    const key = `${y}-${m}`;
-    if (!months.length || months[months.length - 1].key !== key) {
-      months.push({ key, y, m, days: [] });
-    }
-    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
-    months[months.length-1].days.push(ds);
-    cur.setDate(cur.getDate() + 1);
+  // Build CAL_WEEKS * 7 day cells starting at anchor
+  let cells = '';
+  const firstDay = new Date(anchor);
+  const lastDay = new Date(anchor); lastDay.setDate(lastDay.getDate() + CAL_WEEKS*7 - 1);
+  for (let i = 0; i < CAL_WEEKS*7; i++) {
+    const d = new Date(anchor); d.setDate(d.getDate() + i);
+    const y=d.getFullYear(), m=d.getMonth(), day=d.getDate();
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    if (ds < CAL_GOAL_START) { cells += `<div class="cal-goal-day filler"></div>`; continue; }
+    const cls = ['cal-goal-day', hit.has(ds)?'hit':'', ds===TODAY_STR?'today':''].filter(Boolean).join(' ');
+    cells += `<div class="${cls}" onclick="toggleCalGoal('${ds}')"></div>`;
   }
 
-  // 7-column grid, months stacked vertically with weekday offset fillers
-  let moHtml = '';
-  months.forEach((mo, idx) => {
-    if (idx > 0) moHtml += `<div class="cal-goal-sep"></div>`;
-    const offset = new Date(mo.days[0] + 'T12:00:00').getDay(); // 0=Sun
-    let cells = '';
-    for (let i = 0; i < offset; i++) cells += `<div class="cal-goal-day filler"></div>`;
-    for (const ds of mo.days) {
-      const cls = ['cal-goal-day', hit.has(ds) ? 'hit' : '', ds === TODAY_STR ? 'today' : ''].filter(Boolean).join(' ');
-      cells += `<div class="${cls}" onclick="toggleCalGoal('${ds}')"></div>`;
-    }
-    moHtml += `<div class="cal-goal-month-label">${MONTHS[mo.m]}</div><div class="cal-goal-grid">${cells}</div>`;
-  });
-
+  const rangeLabel = fmtMD(firstDay) + ' – ' + fmtMD(lastDay);
   el.innerHTML =
-    `<div class="tracker-label" style="margin-bottom:6px;flex-shrink:0;">Calorie Goal</div>` +
-    `<div class="cal-goal-scroll">${moHtml}</div>`;
+    `<div class="cal-goal-head">
+       <div class="tracker-label">Calorie Goal</div>
+       <div class="cal-goal-nav">
+         <button onclick="pageCalGoal(-1)" aria-label="Earlier">‹</button>
+         <button onclick="pageCalGoal(1)" aria-label="Later">›</button>
+       </div>
+     </div>
+     <div class="cal-goal-range">${rangeLabel}</div>
+     <div class="cal-goal-grid">${cells}</div>`;
 }
+
+function pageCalGoal(dir){ calGoalOffset += dir; renderCalGoal(); }
 
 function toggleCalGoal(ds) {
   if (ds < CAL_GOAL_START) return;
@@ -2915,18 +2891,7 @@ function toggleCalGoal(ds) {
   renderCalGoal();
 }
 
-function syncCalGoal() {
-  const calCard = document.getElementById('cal-goal-card');
-  const logChart = document.getElementById('wt-log-chart');
-  if (!calCard || !logChart) return;
-  // Zero calorie card so it doesn't inflate the row; measure the other two columns
-  calCard.style.height = '0px';
-  void calCard.offsetHeight; // force reflow
-  const h = logChart.offsetHeight;
-  if (h <= 0) { calCard.style.height = ''; return; }
-  calCard.style.height = h + 'px';
-  renderCalGoal();
-}
+function syncCalGoal() { renderCalGoal(); }
 
 // ─────────────────────────────────────────────────────────
 // WEIGHT TRACKING
