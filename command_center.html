@@ -1125,19 +1125,10 @@
     }
 
     /* ── CALORIE GOAL CALENDAR ───────────────────────────── */
-    .cal-goal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 22px);
+    .cal-goal-days {
+      display: flex;
+      flex-wrap: wrap;
       gap: 3px;
-      width: max-content;
-    }
-    .cal-goal-weekday {
-      width: 22px;
-      text-align: center;
-      font-size: 8px;
-      font-weight: 700;
-      color: var(--muted2);
-      padding: 2px 0 3px;
     }
     .cal-goal-day {
       width: 22px;
@@ -1149,11 +1140,21 @@
       transition: background 0.12s, border-color 0.12s;
       -webkit-tap-highlight-color: transparent;
       box-sizing: border-box;
+      flex-shrink: 0;
     }
     .cal-goal-day:hover { border-color: var(--accent-rim); background: var(--accent-dim); }
     .cal-goal-day.hit   { background: #4CAF85; border-color: #4CAF85; }
     .cal-goal-day.today { box-shadow: 0 0 0 2px var(--accent); }
-    .cal-goal-blank { width: 22px; height: 22px; box-sizing: border-box; }
+    .cal-goal-month-sep {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted2);
+      border-top: 1px solid #e8e8f0;
+      padding-top: 4px;
+      margin: 5px 0 3px;
+    }
 
     .dream-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 
@@ -1477,7 +1478,7 @@
     <!-- 3-across top row: weight goals | calorie calendar | weight log+chart -->
     <div style="display:flex;gap:12px;margin-bottom:16px;align-items:stretch;flex-wrap:wrap;">
       <div id="wt-goals" style="flex:0 0 auto;"></div>
-      <div class="card" style="flex:0 0 auto;padding:10px 12px;">
+      <div class="card" style="flex:0 0 273px;padding:10px 12px;align-self:flex-start;">
         <div id="cal-goal-root"></div>
       </div>
       <div id="wt-log-chart" style="flex:1;min-width:240px;"></div>
@@ -2853,52 +2854,46 @@ function saveCalGoal(s) {
   localStorage.setItem('cc_calorie_goal', JSON.stringify([...s]));
 }
 
-let calGoalYear  = new Date().getFullYear();
-let calGoalMonth = new Date().getMonth();
-
 function renderCalGoal() {
   const el = document.getElementById('cal-goal-root');
   if (!el) return;
   const hit = loadCalGoal();
-  const y = calGoalYear, m = calGoalMonth;
   const MONTHS = ['January','February','March','April','May','June','July',
                   'August','September','October','November','December'];
-  const canPrev = !(y === 2026 && m === 6);
-  const firstDay    = new Date(y, m, 1).getDay();
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
 
-  let cells = '';
-  for (let i = 0; i < firstDay; i++) cells += `<div class="cal-goal-blank"></div>`;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    if (ds < CAL_GOAL_START) {
-      cells += `<div class="cal-goal-blank"></div>`;
-    } else {
-      const cls = ['cal-goal-day', hit.has(ds) ? 'hit' : '', ds === TODAY_STR ? 'today' : '']
-                    .filter(Boolean).join(' ');
-      cells += `<div class="${cls}" onclick="toggleCalGoal('${ds}')"></div>`;
+  // Continuous grid: July 17 2026 → Dec 31 2026
+  const startDate = new Date(CAL_GOAL_START + 'T12:00:00');
+  const endDate   = new Date('2026-12-31T12:00:00');
+
+  // Group days by month
+  const months = [];
+  const cur = new Date(startDate);
+  while (cur <= endDate) {
+    const y = cur.getFullYear(), m = cur.getMonth();
+    const key = `${y}-${m}`;
+    if (!months.length || months[months.length - 1].key !== key) {
+      months.push({ key, y, m, days: [] });
     }
+    const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+    months[months.length - 1].days.push(ds);
+    cur.setDate(cur.getDate() + 1);
   }
 
-  const navBtn = (fn, label, extra) =>
-    `<button onclick="${fn}()"${extra} style="width:18px;height:18px;background:var(--surface2);border:1px solid var(--border-d);color:var(--muted);border-radius:4px;font-size:13px;line-height:1;padding:0;cursor:pointer;">${label}</button>`;
-  el.innerHTML = `
-    <div style="text-align:center;margin-bottom:7px;">
-      <div class="tracker-label" style="margin-bottom:4px;">Calorie Goal</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
-        ${canPrev ? navBtn('calGoalPrev','&#8249;','') : `<button disabled style="width:18px;height:18px;background:var(--surface2);border:1px solid var(--border-d);color:var(--muted);border-radius:4px;font-size:13px;line-height:1;padding:0;opacity:0.35;cursor:default;">&#8249;</button>`}
-        <span style="font-size:10px;font-weight:600;color:var(--text);min-width:56px;text-align:center;">${MONTHS[m].slice(0,3)} ${y}</span>
-        ${navBtn('calGoalNext','&#8250;','')}
-      </div>
-    </div>
-    <div class="cal-goal-grid">
-      <div class="cal-goal-weekday">S</div><div class="cal-goal-weekday">M</div>
-      <div class="cal-goal-weekday">T</div><div class="cal-goal-weekday">W</div>
-      <div class="cal-goal-weekday">T</div><div class="cal-goal-weekday">F</div>
-      <div class="cal-goal-weekday">S</div>
-      ${cells}
-    </div>
-  `;
+  let html = `<div class="tracker-label" style="margin-bottom:5px;">Calorie Goal</div>`;
+  months.forEach((mo, idx) => {
+    const label = MONTHS[mo.m].slice(0, 3);
+    html += idx === 0
+      ? `<div style="font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted2);margin-bottom:3px;">${label}</div>`
+      : `<div class="cal-goal-month-sep">${label}</div>`;
+    html += `<div class="cal-goal-days">`;
+    for (const ds of mo.days) {
+      const cls = ['cal-goal-day', hit.has(ds) ? 'hit' : '', ds === TODAY_STR ? 'today' : '']
+                    .filter(Boolean).join(' ');
+      html += `<div class="${cls}" onclick="toggleCalGoal('${ds}')"></div>`;
+    }
+    html += `</div>`;
+  });
+  el.innerHTML = html;
 }
 
 function toggleCalGoal(ds) {
@@ -2906,19 +2901,6 @@ function toggleCalGoal(ds) {
   const hit = loadCalGoal();
   if (hit.has(ds)) hit.delete(ds); else hit.add(ds);
   saveCalGoal(hit);
-  renderCalGoal();
-}
-
-function calGoalPrev() {
-  if (calGoalYear === 2026 && calGoalMonth === 6) return;
-  calGoalMonth--;
-  if (calGoalMonth < 0) { calGoalMonth = 11; calGoalYear--; }
-  renderCalGoal();
-}
-
-function calGoalNext() {
-  calGoalMonth++;
-  if (calGoalMonth > 11) { calGoalMonth = 0; calGoalYear++; }
   renderCalGoal();
 }
 
