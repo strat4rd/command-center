@@ -1124,6 +1124,49 @@
       flex-shrink: 0;
     }
 
+    /* ── CALORIE GOAL CALENDAR ───────────────────────────── */
+    .cal-goal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .cal-goal-weekday {
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--muted2);
+      padding: 4px 0 6px;
+    }
+    .cal-goal-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cal-goal-day:hover {
+      border-color: var(--accent-rim);
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+    .cal-goal-day.hit {
+      background: #4CAF85;
+      border-color: #4CAF85;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .cal-goal-day.today { box-shadow: 0 0 0 2px var(--accent); }
+    .cal-goal-blank { aspect-ratio: 1; }
+
     .dream-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 
     /* Time breakdown */
@@ -1547,6 +1590,11 @@
         </div>
 
       </div>
+    </div>
+
+    <!-- Calorie Goal Tracker -->
+    <div class="card" style="margin-top:16px;">
+      <div id="cal-goal-root"></div>
     </div>
 
   </div>
@@ -2805,6 +2853,87 @@ function toggleFitRef() {
 }
 
 // ─────────────────────────────────────────────────────────
+// CALORIE GOAL TRACKER
+// ─────────────────────────────────────────────────────────
+
+const CAL_GOAL_START = '2026-07-17';
+
+function loadCalGoal() {
+  try { return new Set(JSON.parse(localStorage.getItem('cc_calorie_goal') || '[]')); }
+  catch { return new Set(); }
+}
+function saveCalGoal(s) {
+  localStorage.setItem('cc_calorie_goal', JSON.stringify([...s]));
+}
+
+let calGoalYear  = new Date().getFullYear();
+let calGoalMonth = new Date().getMonth();
+
+function renderCalGoal() {
+  const el = document.getElementById('cal-goal-root');
+  if (!el) return;
+  const hit = loadCalGoal();
+  const y = calGoalYear, m = calGoalMonth;
+  const MONTHS = ['January','February','March','April','May','June','July',
+                  'August','September','October','November','December'];
+  const canPrev = !(y === 2026 && m === 6);
+  const firstDay    = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+  let cells = '';
+  for (let i = 0; i < firstDay; i++) cells += `<div class="cal-goal-blank"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    if (ds < CAL_GOAL_START) {
+      cells += `<div class="cal-goal-blank"></div>`;
+    } else {
+      const cls = ['cal-goal-day', hit.has(ds) ? 'hit' : '', ds === TODAY_STR ? 'today' : '']
+                    .filter(Boolean).join(' ');
+      cells += `<div class="${cls}" onclick="toggleCalGoal('${ds}')">${d}</div>`;
+    }
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div class="tracker-label">Calorie Goal</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="nav-btn" onclick="calGoalPrev()"${canPrev ? '' : ' disabled style="opacity:0.35;cursor:default;"'}>&#8249;</button>
+        <span style="font-size:13px;font-weight:600;color:var(--text);min-width:108px;text-align:center;">${MONTHS[m]} ${y}</span>
+        <button class="nav-btn" onclick="calGoalNext()">&#8250;</button>
+      </div>
+    </div>
+    <div class="cal-goal-grid">
+      <div class="cal-goal-weekday">Sun</div><div class="cal-goal-weekday">Mon</div>
+      <div class="cal-goal-weekday">Tue</div><div class="cal-goal-weekday">Wed</div>
+      <div class="cal-goal-weekday">Thu</div><div class="cal-goal-weekday">Fri</div>
+      <div class="cal-goal-weekday">Sat</div>
+      ${cells}
+    </div>
+  `;
+}
+
+function toggleCalGoal(ds) {
+  if (ds < CAL_GOAL_START) return;
+  const hit = loadCalGoal();
+  if (hit.has(ds)) hit.delete(ds); else hit.add(ds);
+  saveCalGoal(hit);
+  renderCalGoal();
+}
+
+function calGoalPrev() {
+  if (calGoalYear === 2026 && calGoalMonth === 6) return;
+  calGoalMonth--;
+  if (calGoalMonth < 0) { calGoalMonth = 11; calGoalYear--; }
+  renderCalGoal();
+}
+
+function calGoalNext() {
+  calGoalMonth++;
+  if (calGoalMonth > 11) { calGoalMonth = 0; calGoalYear++; }
+  renderCalGoal();
+}
+
+// ─────────────────────────────────────────────────────────
 // WEIGHT TRACKING
 // ─────────────────────────────────────────────────────────
 
@@ -4000,6 +4129,7 @@ function renderMain() {
 }
 
 renderMain();
+renderCalGoal();
 renderAll();
 
 </script>
