@@ -2835,7 +2835,7 @@ function toggleFitRef() {
 
 const CAL_GOAL_START = '2026-07-17';
 const CAL_WEEKS = 5; // weeks visible at once
-let calGoalOffset = 0; // week pages from the start-of-current-week
+let calGoalOffset = -1; // start one week back so filled early days are visible
 
 function loadCalGoal() {
   try { return new Set(JSON.parse(localStorage.getItem('cc_calorie_goal') || '[]')); }
