@@ -4499,15 +4499,15 @@ function toggleDsAddForm() {
   const timeEl = document.getElementById('ds-add-time');
   const durEl  = document.getElementById('ds-add-dur');
   timeEl.innerHTML = '';
-  for (let m = DS_MIN_START; m < DS_MIN_END; m += 30) {
+  for (let m = DS_MIN_START; m < DS_MIN_END; m += 15) {
     const o = document.createElement('option');
     o.value = dsMin24(m); o.textContent = dsMinToTimeStr(m);
     timeEl.appendChild(o);
   }
   if (dsViewDate === TODAY_STR) {
     const now = new Date();
-    const snap = Math.ceil((now.getHours()*60+now.getMinutes())/30)*30;
-    timeEl.value = dsMin24(Math.min(Math.max(snap, DS_MIN_START), DS_MIN_END-30));
+    const snap = Math.ceil((now.getHours()*60+now.getMinutes())/15)*15;
+    timeEl.value = dsMin24(Math.min(Math.max(snap, DS_MIN_START), DS_MIN_END-15));
   }
   durEl.innerHTML = [15,30,45,60,90,120,180]
     .map(d=>`<option value="${d}"${d===60?' selected':''}>${d}m</option>`).join('');
@@ -4551,16 +4551,16 @@ function dsGetSlot(clientX, clientY) {
   if (clientX < wr.left || clientX > wr.right) return null;
   const relY = clientY - wr.top + wrap.scrollTop;
   if (relY < 0) return null;
-  const idx = Math.floor(relY / DS_SLOT_H);
-  const max = (DS_HOUR_END - DS_HOUR_START) * 2;
+  const idx = Math.floor(relY / (DS_SLOT_H / 2));
+  const max = (DS_HOUR_END - DS_HOUR_START) * 4;
   return (idx >= 0 && idx < max) ? idx : null;
 }
 
 function dsHighlight(clientX, clientY) {
   document.querySelectorAll('.ds-slot.drop-target').forEach(el=>el.classList.remove('drop-target'));
-  const idx = dsGetSlot(clientX, clientY);
-  if (idx !== null)
-    document.querySelector(`.ds-slot[data-slot="${idx}"]`)?.classList.add('drop-target');
+  const idx15 = dsGetSlot(clientX, clientY);
+  if (idx15 !== null)
+    document.querySelector(`.ds-slot[data-slot="${Math.floor(idx15/2)}"]`)?.classList.add('drop-target');
 }
 
 function dsClearHighlight() {
@@ -4587,7 +4587,7 @@ function dsRemoveGhost() { document.getElementById('ds-ghost')?.remove(); }
 function dsPlaceChip(chipId, source, durationMin, label, clientX, clientY) {
   const slotIdx = dsGetSlot(clientX, clientY);
   if (slotIdx === null) return;
-  const startMin = DS_MIN_START + slotIdx * 30;
+  const startMin = DS_MIN_START + slotIdx * 15;
   const db = loadDayBlocks();
   if (!db[dsViewDate]) db[dsViewDate] = [];
   const existing = db[dsViewDate].find(e => e.source===source && e.refId===chipId);
@@ -4605,7 +4605,7 @@ function dsPlaceChip(chipId, source, durationMin, label, clientX, clientY) {
 function dsMoveBlock(blockId, source, refId, durationMin, label, clientX, clientY) {
   const slotIdx = dsGetSlot(clientX, clientY);
   if (slotIdx === null) { renderDaySchedule(); return; }
-  const startMin = DS_MIN_START + slotIdx * 30;
+  const startMin = DS_MIN_START + slotIdx * 15;
   const db = loadDayBlocks();
   if (!db[dsViewDate]) db[dsViewDate] = [];
   const arr = db[dsViewDate];
@@ -4753,7 +4753,7 @@ function openDsRetime(blockId) {
   const label    = blockEl.querySelector('.ds-block-name').textContent;
 
   let timeOpts = '';
-  for (let m = DS_MIN_START; m < DS_MIN_END; m += 30)
+  for (let m = DS_MIN_START; m < DS_MIN_END; m += 15)
     timeOpts += `<option value="${dsMin24(m)}"${m===startMin?' selected':''}>${dsMinToTimeStr(m)}</option>`;
   const durOpts = [15,30,45,60,90,120,180]
     .map(d=>`<option value="${d}"${d===dur?' selected':''}>${d}m</option>`).join('');
