@@ -1315,6 +1315,130 @@
     .rock-fit-name { color: var(--text); flex: 1; font-weight: 500; }
     .rock-fit-tick { color: #4CAF85; font-size: 12px; font-weight: 700; margin-left: auto; }
 
+    /* ── DAY SCHEDULE ────────────────────────────────────── */
+    .ds-header {
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:14px;flex-wrap:wrap;gap:10px;
+    }
+    .ds-day-nav { display:flex;align-items:center;gap:4px; }
+    .ds-day-label {
+      font-size:14px;font-weight:600;color:var(--text);
+      min-width:168px;text-align:center;
+    }
+    .ds-add-btn {
+      font-family:inherit;font-size:12px;font-weight:600;
+      color:var(--accent);background:var(--accent-dim);
+      border:1px solid var(--accent-rim);border-radius:8px;
+      padding:6px 14px;cursor:pointer;white-space:nowrap;
+    }
+    .ds-add-btn:hover { opacity:0.8; }
+    .ds-add-form {
+      display:none;flex-direction:column;gap:8px;
+      padding:12px;background:var(--surface2);
+      border:1px solid var(--border);border-radius:8px;margin-bottom:12px;
+    }
+    .ds-add-form.open { display:flex; }
+    .ds-layout { display:grid;grid-template-columns:1fr 200px;gap:14px;align-items:start; }
+    @media (max-width:700px) { .ds-layout { grid-template-columns:1fr; } }
+
+    .ds-timeline-wrap {
+      border:1px solid var(--border);border-radius:8px;
+      background:var(--surface2);overflow-y:auto;max-height:580px;
+      position:relative;
+    }
+    .ds-timeline { position:relative; }
+    .ds-slot {
+      display:flex;align-items:flex-start;
+      border-top:1px solid var(--border);height:36px;box-sizing:border-box;
+      transition:background 0.1s;
+    }
+    .ds-slot.hour-boundary { border-top-color:var(--border-d); }
+    .ds-slot.drop-target { background:rgba(74,144,217,0.12); }
+    .ds-slot-label {
+      font-size:10px;color:var(--muted2);font-weight:600;
+      width:46px;flex-shrink:0;padding:3px 6px 0;line-height:1;
+      letter-spacing:0.02em;
+    }
+    .ds-slot.half-hour .ds-slot-label { visibility:hidden; }
+    .ds-blocks-col { position:absolute;left:46px;right:0;top:0; }
+
+    .ds-block {
+      position:absolute;left:4px;right:4px;border-radius:6px;
+      padding:3px 22px 3px 6px;font-size:11px;font-weight:600;color:#fff;
+      cursor:grab;overflow:hidden;display:flex;flex-direction:column;gap:1px;
+      box-sizing:border-box;user-select:none;z-index:2;
+      transition:box-shadow 0.1s;
+    }
+    .ds-block:active { cursor:grabbing; }
+    .ds-block-name { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1; }
+    .ds-block-time { font-size:10px;opacity:0.85;white-space:nowrap; }
+    .ds-block-remove {
+      position:absolute;top:3px;right:4px;background:rgba(0,0,0,0.25);
+      border:none;border-radius:3px;color:#fff;font-size:10px;
+      width:14px;height:14px;cursor:pointer;display:flex;
+      align-items:center;justify-content:center;opacity:0;
+      padding:0;line-height:1;transition:opacity 0.12s;
+    }
+    .ds-block:hover .ds-block-remove { opacity:1; }
+
+    .ds-now-line {
+      position:absolute;left:46px;right:0;height:2px;
+      background:#EF4444;z-index:5;pointer-events:none;
+    }
+    .ds-now-line::before {
+      content:'';position:absolute;left:-4px;top:-3px;
+      width:8px;height:8px;background:#EF4444;border-radius:50%;
+    }
+
+    .ds-tray {
+      border:1px solid var(--border);border-radius:8px;
+      background:var(--surface);padding:10px;
+    }
+    .ds-tray-label {
+      font-size:10px;font-weight:700;letter-spacing:0.08em;
+      text-transform:uppercase;color:var(--muted);margin-bottom:8px;
+    }
+    .ds-chip {
+      display:flex;align-items:center;gap:6px;padding:6px 8px;
+      margin-bottom:5px;background:var(--surface2);
+      border:1px solid var(--border);border-radius:7px;font-size:11px;
+      cursor:grab;user-select:none;transition:border-color 0.12s,background 0.12s;
+    }
+    .ds-chip:hover { border-color:var(--border-d);background:var(--surface); }
+    .ds-chip:active { cursor:grabbing; }
+    .ds-chip.dragging { opacity:0.4; }
+    .ds-chip-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+    .ds-chip-name { flex:1;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .ds-chip-dur { font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0; }
+    .ds-tray-empty { font-size:12px;color:var(--muted2);font-style:italic;text-align:center;padding:12px 0; }
+
+    .ds-retime-pop {
+      position:fixed;background:#fff;border:1px solid var(--border-d);
+      border-radius:10px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);
+      z-index:9000;min-width:210px;
+    }
+    .ds-retime-title { font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px; }
+    .ds-retime-row { display:flex;gap:6px;margin-bottom:6px;align-items:center; }
+    .ds-retime-select {
+      flex:1;font-family:inherit;font-size:12px;padding:5px 7px;
+      border:1px solid var(--border);border-radius:6px;
+      background:var(--surface2);color:var(--text);
+    }
+    .ds-retime-btn {
+      font-family:inherit;font-size:12px;font-weight:600;padding:5px 12px;
+      background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;
+    }
+    .ds-retime-cancel {
+      font-family:inherit;font-size:12px;color:var(--muted);
+      background:none;border:none;cursor:pointer;padding:5px;
+    }
+    #ds-ghost {
+      position:fixed;pointer-events:none;z-index:9999;
+      border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;
+      color:#fff;opacity:0.9;white-space:nowrap;
+      box-shadow:0 4px 14px rgba(0,0,0,0.22);font-family:inherit;
+    }
+
   </style>
 </head>
 <body>
@@ -1362,6 +1486,50 @@
       </div>
       <div id="deck-list" class="t-list"></div>
     </div>
+
+    <!-- ── DAY SCHEDULE ────────────────────────────────── -->
+    <div class="card" style="margin-top:0;">
+      <div class="ds-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="tracker-label">Day Schedule</div>
+          <div class="ds-day-nav">
+            <button class="nav-btn" onclick="shiftDsDate(-1)">&#8249;</button>
+            <span class="ds-day-label" id="ds-day-label">Today</span>
+            <button class="nav-btn" onclick="shiftDsDate(1)">&#8250;</button>
+          </div>
+        </div>
+        <button class="ds-add-btn" onclick="toggleDsAddForm()">+ Add block</button>
+      </div>
+
+      <div id="ds-add-form" class="ds-add-form">
+        <div style="font-size:12px;font-weight:700;color:var(--text);">Add custom block</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input id="ds-add-label" class="t-text-input" placeholder="Label" style="flex:2;min-width:140px;">
+          <select id="ds-add-time" class="t-select" style="flex:1;min-width:110px;"></select>
+          <select id="ds-add-dur"  class="t-select" style="min-width:88px;"></select>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="journal-save-btn" style="padding:6px 14px;font-size:12px;" onclick="addDsCustomBlock()">Add</button>
+          <button class="fin-cancel-btn" onclick="toggleDsAddForm()">Cancel</button>
+        </div>
+      </div>
+
+      <div class="ds-layout">
+        <div style="min-width:0;">
+          <div class="ds-timeline-wrap" id="ds-timeline-wrap">
+            <div class="ds-timeline" id="ds-timeline"></div>
+          </div>
+        </div>
+        <div>
+          <div class="ds-tray" id="ds-tray">
+            <div class="ds-tray-label">Unscheduled</div>
+            <div id="ds-tray-items"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ds-retime-pop" class="ds-retime-pop" style="display:none;"></div>
 
   </div>
 
@@ -2119,7 +2287,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('panel-' + t).classList.add('active');
-    if (t === 'main') { deckViewDate = TODAY_STR; renderMain(); }
+    if (t === 'main') { deckViewDate = TODAY_STR; renderMain(); renderDaySchedule(); }
   });
 });
 
@@ -4056,6 +4224,598 @@ renderCalGoal();
 requestAnimationFrame(syncCalGoal);
 window.addEventListener('resize', () => requestAnimationFrame(syncCalGoal));
 renderAll();
+
+// ─────────────────────────────────────────────────────────
+// DAY SCHEDULE
+// ─────────────────────────────────────────────────────────
+
+const DS_HOUR_START = 6;
+const DS_HOUR_END   = 23;
+const DS_SLOT_H     = 36;
+const DS_MIN_START  = DS_HOUR_START * 60;
+const DS_MIN_END    = DS_HOUR_END   * 60;
+const DS_COLORS = { writing:'#F5A623', fitness:'#4A90D9', task:'#8B7FD4', custom:'#4CAF85' };
+
+let dsViewDate        = TODAY_STR;
+let dsScrolledDate    = null;
+let dsLastDragWasMove = false;
+
+// ── Storage ──────────────────────────────────────────────
+
+function loadDayBlocks() {
+  try { return JSON.parse(localStorage.getItem('cc_day_blocks') || '{}'); } catch { return {}; }
+}
+function saveDayBlocks(d) { localStorage.setItem('cc_day_blocks', JSON.stringify(d)); }
+
+// ── Time utilities ────────────────────────────────────────
+
+function dsParseTimeToMin(str) {
+  if (!str) return null;
+  const m = str.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return null;
+  let h = parseInt(m[1]), mn = parseInt(m[2]), ap = m[3].toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + mn;
+}
+function dsMinToTimeStr(min) {
+  const h = Math.floor(min / 60), m = min % 60;
+  const ap = h < 12 ? 'AM' : 'PM';
+  const hh = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hh}:${String(m).padStart(2,'0')} ${ap}`;
+}
+function dsMin24(min) {
+  return `${String(Math.floor(min/60)).padStart(2,'0')}:${String(min%60).padStart(2,'0')}`;
+}
+function dsHHMMToMin(s) { const [h,m]=s.split(':').map(Number); return h*60+m; }
+
+// ── Data readers (read-only from source) ─────────────────
+
+function getDsBlocksForDate(dateStr) {
+  const dayData = (loadDayBlocks()[dateStr] || []);
+  const overMap = {};
+  dayData.forEach(e => { if (e.refId) overMap[e.source+'|'+e.refId] = e; });
+
+  const result = [];
+
+  // Writing blocks
+  Object.values(DATA.weeks).flat()
+    .filter(b => b.date === dateStr)
+    .forEach(b => {
+      const ov = overMap['writing|'+b.id];
+      const startMin = ov ? dsHHMMToMin(ov.start) : dsParseTimeToMin(b.time);
+      if (startMin === null) return;
+      const durationMin = ov ? ov.durationMin : Math.round(b.duration * 60);
+      result.push({ id:'w-'+b.id, source:'writing', refId:b.id,
+        label:b.goal||'Writing', startMin, durationMin,
+        color:DS_COLORS.writing, removable:false });
+    });
+
+  // Fitness scheduled workouts
+  const dateDI = new Date(dateStr+'T12:00:00').getDay();
+  const wkKey  = sunWeekKey(new Date(dateStr+'T12:00:00'));
+  const fitOvs = loadFitOverrides();
+  const fitOv  = fitOvs[dateStr] || {};
+
+  getWeekProgram(wkKey)
+    .filter(w => !w.rest && w.dayIndex === dateDI)
+    .forEach(w => {
+      const ov = overMap['fitness|'+w.id];
+      const origTimeStr = fitOv.time || w.time;
+      const origStart   = dsParseTimeToMin(origTimeStr);
+      const durStr = fitOv.duration || w.duration;
+      const label  = fitOv.name || w.name;
+      if (ov) {
+        result.push({ id:'f-'+w.id, source:'fitness', refId:w.id,
+          label, startMin:dsHHMMToMin(ov.start),
+          durationMin:ov.durationMin||parseFitMins(durStr)||45,
+          color:DS_COLORS.fitness, removable:true });
+      } else if (origStart !== null) {
+        result.push({ id:'f-'+w.id, source:'fitness', refId:w.id,
+          label, startMin:origStart,
+          durationMin:parseFitMins(durStr)||45,
+          color:DS_COLORS.fitness, removable:false });
+      }
+    });
+
+  // Fitness custom workouts placed from tray
+  loadFitCustom().filter(c => c.date === dateStr).forEach(c => {
+    const ov = overMap['fitness|'+c.id];
+    if (!ov) return;
+    result.push({ id:'f-'+c.id, source:'fitness', refId:c.id,
+      label:c.name, startMin:dsHHMMToMin(ov.start),
+      durationMin:ov.durationMin||30,
+      color:DS_COLORS.fitness, removable:true });
+  });
+
+  // Task placements
+  dayData.filter(e => e.source === 'task').forEach(e => {
+    const task = TASKS.find(t => t.id === e.refId);
+    result.push({ id:e.id, source:'task', refId:e.refId,
+      label:task ? task.name : (e.label||'Task'),
+      startMin:dsHHMMToMin(e.start),
+      durationMin:e.durationMin||(task?task.mins:30),
+      color:DS_COLORS.task, removable:true });
+  });
+
+  // Custom blocks
+  dayData.filter(e => e.source === 'custom').forEach(e => {
+    result.push({ id:e.id, source:'custom', refId:null,
+      label:e.label||'Custom', startMin:dsHHMMToMin(e.start),
+      durationMin:e.durationMin||30,
+      color:e.color||DS_COLORS.custom, removable:true });
+  });
+
+  return result;
+}
+
+function getDsTrayItems(dateStr) {
+  const dayData = (loadDayBlocks()[dateStr] || []);
+  const placed  = new Set(dayData.filter(e=>e.refId).map(e=>e.source+'|'+e.refId));
+  const result  = [];
+
+  const dateDI = new Date(dateStr+'T12:00:00').getDay();
+  const wkKey  = sunWeekKey(new Date(dateStr+'T12:00:00'));
+  const fitOvs = loadFitOverrides();
+  const fitOv  = fitOvs[dateStr] || {};
+
+  getWeekProgram(wkKey)
+    .filter(w => !w.rest && w.dayIndex === dateDI)
+    .forEach(w => {
+      if (placed.has('fitness|'+w.id)) return;
+      const origTime = dsParseTimeToMin(fitOv.time || w.time);
+      if (origTime !== null) return;
+      const durStr = fitOv.duration || w.duration;
+      result.push({ id:w.id, source:'fitness', label:fitOv.name||w.name,
+        durationMin:parseFitMins(durStr)||45, color:DS_COLORS.fitness });
+    });
+
+  loadFitCustom().filter(c => c.date === dateStr).forEach(c => {
+    if (placed.has('fitness|'+c.id)) return;
+    result.push({ id:c.id, source:'fitness', label:c.name,
+      durationMin:30, color:DS_COLORS.fitness });
+  });
+
+  const placedTaskIds = new Set(dayData.filter(e=>e.source==='task').map(e=>e.refId));
+  TASKS.filter(t => !t.done && !t.queued && !placedTaskIds.has(t.id)).forEach(t => {
+    result.push({ id:t.id, source:'task', label:t.name,
+      durationMin:t.mins||30, color:DS_COLORS.task });
+  });
+
+  return result;
+}
+
+// ── Render ────────────────────────────────────────────────
+
+function renderDaySchedule() {
+  const dateStr = dsViewDate;
+  const isToday = dateStr === TODAY_STR;
+
+  const labelEl = document.getElementById('ds-day-label');
+  if (labelEl) {
+    labelEl.textContent = isToday ? 'Today'
+      : new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',
+          {weekday:'long',month:'short',day:'numeric'});
+  }
+
+  let blocks    = []; try { blocks    = getDsBlocksForDate(dateStr); } catch(e) { console.error('DS blocks error', e); }
+  let trayItems = []; try { trayItems = getDsTrayItems(dateStr);    } catch(e) { console.error('DS tray error',  e); }
+  const TOTAL_SLOTS = (DS_HOUR_END - DS_HOUR_START) * 2;
+
+  // Tray
+  const trayEl = document.getElementById('ds-tray-items');
+  if (trayEl) {
+    trayEl.innerHTML = trayItems.length
+      ? trayItems.map(item => `
+        <div class="ds-chip"
+             data-chip-id="${item.id}"
+             data-chip-source="${item.source}"
+             data-chip-dur="${item.durationMin}"
+             data-chip-label="${(item.label||'').replace(/"/g,'&quot;')}">
+          <div class="ds-chip-dot" style="background:${item.color};"></div>
+          <span class="ds-chip-name">${item.label}</span>
+          <span class="ds-chip-dur">${item.durationMin}m</span>
+        </div>`).join('')
+      : '<div class="ds-tray-empty">Nothing unscheduled</div>';
+  }
+
+  // Timeline
+  let slotsHtml = '';
+  for (let s = 0; s < TOTAL_SLOTS; s++) {
+    const minOfDay = DS_MIN_START + s * 30;
+    const isHour   = minOfDay % 60 === 0;
+    const cls = 'ds-slot' + (isHour ? ' hour-boundary' : ' half-hour');
+    slotsHtml += `<div class="${cls}" data-slot="${s}" data-min="${minOfDay}"
+        style="height:${DS_SLOT_H}px;">
+      <div class="ds-slot-label">${isHour ? dsMinToTimeStr(minOfDay) : ''}</div>
+    </div>`;
+  }
+
+  const blocksHtml = blocks.map(b => {
+    const topPx = ((b.startMin - DS_MIN_START) / 30) * DS_SLOT_H;
+    const hPx   = Math.max((b.durationMin / 30) * DS_SLOT_H, 22);
+    const rmBtn = b.removable
+      ? `<button class="ds-block-remove"
+           onclick="event.stopPropagation();dsLastDragWasMove=true;removeDsBlock('${b.id}')">✕</button>`
+      : '';
+    return `<div class="ds-block"
+        id="dsb-${b.id}"
+        data-block-id="${b.id}"
+        data-block-source="${b.source}"
+        data-block-ref-id="${b.refId||''}"
+        data-block-start="${b.startMin}"
+        data-block-dur="${b.durationMin}"
+        style="top:${topPx}px;height:${hPx}px;background:${b.color};"
+        onclick="if(!dsLastDragWasMove)openDsRetime('${b.id}');dsLastDragWasMove=false;">
+      <span class="ds-block-name">${b.label}</span>
+      <span class="ds-block-time">${dsMinToTimeStr(b.startMin)} · ${b.durationMin}m</span>
+      ${rmBtn}
+    </div>`;
+  }).join('');
+
+  let nowLine = '';
+  if (isToday) {
+    const now = new Date();
+    const nowMin = now.getHours()*60 + now.getMinutes();
+    if (nowMin >= DS_MIN_START && nowMin <= DS_MIN_END) {
+      const top = ((nowMin - DS_MIN_START)/30)*DS_SLOT_H;
+      nowLine = `<div class="ds-now-line" style="top:${top}px;"></div>`;
+    }
+  }
+
+  const tlEl = document.getElementById('ds-timeline');
+  if (!tlEl) return;
+  tlEl.style.height = (TOTAL_SLOTS * DS_SLOT_H) + 'px';
+  tlEl.innerHTML = slotsHtml + `<div class="ds-blocks-col">${blocksHtml}${nowLine}</div>`;
+
+  dsDragAttachChips();
+  dsDragAttachBlocks();
+
+  // Scroll to current time on first render of each date
+  const wrapEl = document.getElementById('ds-timeline-wrap');
+  if (wrapEl && dsScrolledDate !== dateStr) {
+    dsScrolledDate = dateStr;
+    const now = new Date();
+    const nowMin = now.getHours()*60 + now.getMinutes();
+    const anchor = isToday ? Math.max(DS_MIN_START, nowMin - 60) : 7*60;
+    wrapEl.scrollTop = Math.max(0, ((anchor - DS_MIN_START)/30)*DS_SLOT_H);
+  }
+}
+
+// ── Navigation & add form ─────────────────────────────────
+
+function shiftDsDate(delta) {
+  const d = new Date(dsViewDate+'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  dsViewDate = d.toISOString().slice(0,10);
+  renderDaySchedule();
+}
+
+function toggleDsAddForm() {
+  const form = document.getElementById('ds-add-form');
+  const open = !form.classList.contains('open');
+  form.classList.toggle('open', open);
+  if (!open) return;
+  const timeEl = document.getElementById('ds-add-time');
+  const durEl  = document.getElementById('ds-add-dur');
+  timeEl.innerHTML = '';
+  for (let m = DS_MIN_START; m < DS_MIN_END; m += 30) {
+    const o = document.createElement('option');
+    o.value = dsMin24(m); o.textContent = dsMinToTimeStr(m);
+    timeEl.appendChild(o);
+  }
+  if (dsViewDate === TODAY_STR) {
+    const now = new Date();
+    const snap = Math.ceil((now.getHours()*60+now.getMinutes())/30)*30;
+    timeEl.value = dsMin24(Math.min(Math.max(snap, DS_MIN_START), DS_MIN_END-30));
+  }
+  durEl.innerHTML = [15,30,45,60,90,120,180]
+    .map(d=>`<option value="${d}"${d===60?' selected':''}>${d}m</option>`).join('');
+}
+
+function addDsCustomBlock() {
+  const label = document.getElementById('ds-add-label').value.trim();
+  const start = document.getElementById('ds-add-time').value;
+  const dur   = parseInt(document.getElementById('ds-add-dur').value);
+  if (!label || !start) return;
+  const db = loadDayBlocks();
+  if (!db[dsViewDate]) db[dsViewDate] = [];
+  db[dsViewDate].push({ id:'dsc-'+Date.now(), source:'custom', refId:null,
+    label, start, durationMin:dur, color:DS_COLORS.custom });
+  saveDayBlocks(db);
+  document.getElementById('ds-add-label').value = '';
+  document.getElementById('ds-add-form').classList.remove('open');
+  renderDaySchedule();
+}
+
+// ── Remove ────────────────────────────────────────────────
+
+function removeDsBlock(blockId) {
+  const blockEl = document.getElementById('dsb-'+blockId);
+  const source  = blockEl?.dataset.blockSource;
+  const refId   = blockEl?.dataset.blockRefId;
+  const db = loadDayBlocks();
+  const arr = db[dsViewDate] || [];
+  let idx = arr.findIndex(e => e.id === blockId);
+  if (idx === -1 && refId) idx = arr.findIndex(e => e.source===source && e.refId===refId);
+  if (idx !== -1) { arr.splice(idx,1); db[dsViewDate]=arr; saveDayBlocks(db); }
+  renderDaySchedule();
+}
+
+// ── Drag helpers ──────────────────────────────────────────
+
+function dsGetSlot(clientX, clientY) {
+  const wrap = document.getElementById('ds-timeline-wrap');
+  if (!wrap) return null;
+  const wr = wrap.getBoundingClientRect();
+  if (clientX < wr.left || clientX > wr.right) return null;
+  const relY = clientY - wr.top + wrap.scrollTop;
+  if (relY < 0) return null;
+  const idx = Math.floor(relY / DS_SLOT_H);
+  const max = (DS_HOUR_END - DS_HOUR_START) * 2;
+  return (idx >= 0 && idx < max) ? idx : null;
+}
+
+function dsHighlight(clientX, clientY) {
+  document.querySelectorAll('.ds-slot.drop-target').forEach(el=>el.classList.remove('drop-target'));
+  const idx = dsGetSlot(clientX, clientY);
+  if (idx !== null)
+    document.querySelector(`.ds-slot[data-slot="${idx}"]`)?.classList.add('drop-target');
+}
+
+function dsClearHighlight() {
+  document.querySelectorAll('.ds-slot.drop-target').forEach(el=>el.classList.remove('drop-target'));
+}
+
+function dsCreateGhost(label, color, dur) {
+  let g = document.getElementById('ds-ghost');
+  if (!g) { g = document.createElement('div'); g.id='ds-ghost'; document.body.appendChild(g); }
+  g.style.cssText = `position:fixed;pointer-events:none;z-index:9999;
+    background:${color};color:#fff;border-radius:6px;padding:4px 10px;
+    font-size:11px;font-weight:600;opacity:0.9;white-space:nowrap;
+    box-shadow:0 4px 14px rgba(0,0,0,0.22);font-family:inherit;`;
+  g.textContent = `${label} (${dur}m)`;
+}
+function dsMoveGhost(x,y) {
+  const g=document.getElementById('ds-ghost');
+  if(g){g.style.left=(x+12)+'px';g.style.top=(y-8)+'px';}
+}
+function dsRemoveGhost() { document.getElementById('ds-ghost')?.remove(); }
+
+// ── Place/move helpers ────────────────────────────────────
+
+function dsPlaceChip(chipId, source, durationMin, label, clientX, clientY) {
+  const slotIdx = dsGetSlot(clientX, clientY);
+  if (slotIdx === null) return;
+  const startMin = DS_MIN_START + slotIdx * 30;
+  const db = loadDayBlocks();
+  if (!db[dsViewDate]) db[dsViewDate] = [];
+  const existing = db[dsViewDate].find(e => e.source===source && e.refId===chipId);
+  if (existing) {
+    existing.start = dsMin24(startMin); existing.durationMin = durationMin;
+  } else {
+    db[dsViewDate].push({ id:'dsp-'+Date.now(), source, refId:chipId,
+      label, start:dsMin24(startMin), durationMin,
+      color:DS_COLORS[source]||DS_COLORS.custom });
+  }
+  saveDayBlocks(db);
+  renderDaySchedule();
+}
+
+function dsMoveBlock(blockId, source, refId, durationMin, label, clientX, clientY) {
+  const slotIdx = dsGetSlot(clientX, clientY);
+  if (slotIdx === null) { renderDaySchedule(); return; }
+  const startMin = DS_MIN_START + slotIdx * 30;
+  const db = loadDayBlocks();
+  if (!db[dsViewDate]) db[dsViewDate] = [];
+  const arr = db[dsViewDate];
+
+  if (source === 'writing' || source === 'fitness') {
+    const ex = arr.find(e => e.source===source && e.refId===refId);
+    if (ex) { ex.start = dsMin24(startMin); }
+    else { arr.push({ id:'dso-'+Date.now(), source, refId, label,
+      start:dsMin24(startMin), durationMin, color:DS_COLORS[source] }); }
+  } else {
+    const ex = arr.find(e => e.id===blockId);
+    if (ex) ex.start = dsMin24(startMin);
+  }
+  saveDayBlocks(db);
+  renderDaySchedule();
+}
+
+// ── Drag attach: chips ────────────────────────────────────
+
+function dsDragAttachChips() {
+  document.querySelectorAll('#ds-tray-items .ds-chip').forEach(chip => {
+    chip.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const id=chip.dataset.chipId, src=chip.dataset.chipSource,
+            dur=parseInt(chip.dataset.chipDur), label=chip.dataset.chipLabel,
+            color=DS_COLORS[src]||DS_COLORS.custom;
+      let moved=false;
+      const ox=e.clientX, oy=e.clientY;
+
+      function onMove(cx,cy){
+        if(!moved&&(Math.abs(cx-ox)>4||Math.abs(cy-oy)>4)){
+          moved=true; chip.classList.add('dragging'); dsCreateGhost(label,color,dur);
+        }
+        if(moved){dsMoveGhost(cx,cy);dsHighlight(cx,cy);}
+      }
+      function onEnd(cx,cy){
+        rm(); chip.classList.remove('dragging'); dsClearHighlight(); dsRemoveGhost();
+        if(moved) dsPlaceChip(id,src,dur,label,cx,cy);
+      }
+      function mm(e){onMove(e.clientX,e.clientY);}
+      function mu(e){onEnd(e.clientX,e.clientY);}
+      function rm(){document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);}
+      document.addEventListener('mousemove',mm);
+      document.addEventListener('mouseup',mu);
+    });
+
+    chip.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const t0=e.touches[0];
+      const id=chip.dataset.chipId, src=chip.dataset.chipSource,
+            dur=parseInt(chip.dataset.chipDur), label=chip.dataset.chipLabel,
+            color=DS_COLORS[src]||DS_COLORS.custom;
+      let moved=false;
+      const ox=t0.clientX, oy=t0.clientY;
+
+      function onMove(cx,cy){
+        if(!moved&&(Math.abs(cx-ox)>4||Math.abs(cy-oy)>4)){
+          moved=true; chip.classList.add('dragging'); dsCreateGhost(label,color,dur);
+        }
+        if(moved){dsMoveGhost(cx,cy);dsHighlight(cx,cy);}
+      }
+      function onEnd(cx,cy){
+        rm(); chip.classList.remove('dragging'); dsClearHighlight(); dsRemoveGhost();
+        if(moved) dsPlaceChip(id,src,dur,label,cx,cy);
+      }
+      function tm(e){e.preventDefault();const t=e.touches[0];onMove(t.clientX,t.clientY);}
+      function te(e){const t=e.changedTouches[0];onEnd(t.clientX,t.clientY);}
+      function rm(){document.removeEventListener('touchmove',tm);document.removeEventListener('touchend',te);}
+      document.addEventListener('touchmove',tm,{passive:false});
+      document.addEventListener('touchend',te);
+    },{passive:false});
+  });
+}
+
+// ── Drag attach: blocks ───────────────────────────────────
+
+function dsDragAttachBlocks() {
+  document.querySelectorAll('#ds-timeline .ds-block').forEach(block => {
+    block.addEventListener('mousedown', e => {
+      if(e.target.classList.contains('ds-block-remove')) return;
+      e.preventDefault();
+      const blockId=block.dataset.blockId, source=block.dataset.blockSource,
+            refId=block.dataset.blockRefId, dur=parseInt(block.dataset.blockDur),
+            label=block.querySelector('.ds-block-name').textContent,
+            color=block.style.background;
+      let moved=false;
+      const ox=e.clientX, oy=e.clientY;
+
+      function onMove(cx,cy){
+        if(!moved&&(Math.abs(cx-ox)>5||Math.abs(cy-oy)>5)){
+          moved=true; block.style.opacity='0.3'; dsCreateGhost(label,color,dur);
+        }
+        if(moved){dsMoveGhost(cx,cy);dsHighlight(cx,cy);}
+      }
+      function onEnd(cx,cy){
+        rm(); block.style.opacity=''; dsClearHighlight(); dsRemoveGhost();
+        if(moved){dsLastDragWasMove=true; dsMoveBlock(blockId,source,refId,dur,label,cx,cy);}
+      }
+      function mm(e){onMove(e.clientX,e.clientY);}
+      function mu(e){onEnd(e.clientX,e.clientY);}
+      function rm(){document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);}
+      document.addEventListener('mousemove',mm);
+      document.addEventListener('mouseup',mu);
+    });
+
+    block.addEventListener('touchstart', e => {
+      if(e.target.classList.contains('ds-block-remove')) return;
+      e.preventDefault();
+      const t0=e.touches[0];
+      const blockId=block.dataset.blockId, source=block.dataset.blockSource,
+            refId=block.dataset.blockRefId, dur=parseInt(block.dataset.blockDur),
+            label=block.querySelector('.ds-block-name').textContent,
+            color=block.style.background;
+      let moved=false;
+      const ox=t0.clientX, oy=t0.clientY;
+
+      function onMove(cx,cy){
+        if(!moved&&(Math.abs(cx-ox)>5||Math.abs(cy-oy)>5)){
+          moved=true; block.style.opacity='0.3'; dsCreateGhost(label,color,dur);
+        }
+        if(moved){dsMoveGhost(cx,cy);dsHighlight(cx,cy);}
+      }
+      function onEnd(cx,cy){
+        rm(); block.style.opacity=''; dsClearHighlight(); dsRemoveGhost();
+        if(moved){dsLastDragWasMove=true; dsMoveBlock(blockId,source,refId,dur,label,cx,cy);}
+      }
+      function tm(e){e.preventDefault();const t=e.touches[0];onMove(t.clientX,t.clientY);}
+      function te(e){const t=e.changedTouches[0];onEnd(t.clientX,t.clientY);}
+      function rm(){document.removeEventListener('touchmove',tm);document.removeEventListener('touchend',te);}
+      document.addEventListener('touchmove',tm,{passive:false});
+      document.addEventListener('touchend',te);
+    },{passive:false});
+  });
+}
+
+// ── Retime popover ────────────────────────────────────────
+
+function openDsRetime(blockId) {
+  const blockEl = document.getElementById('dsb-'+blockId);
+  if (!blockEl) return;
+  const startMin = parseInt(blockEl.dataset.blockStart);
+  const dur      = parseInt(blockEl.dataset.blockDur);
+  const source   = blockEl.dataset.blockSource;
+  const refId    = blockEl.dataset.blockRefId;
+  const label    = blockEl.querySelector('.ds-block-name').textContent;
+
+  let timeOpts = '';
+  for (let m = DS_MIN_START; m < DS_MIN_END; m += 30)
+    timeOpts += `<option value="${dsMin24(m)}"${m===startMin?' selected':''}>${dsMinToTimeStr(m)}</option>`;
+  const durOpts = [15,30,45,60,90,120,180]
+    .map(d=>`<option value="${d}"${d===dur?' selected':''}>${d}m</option>`).join('');
+
+  const pop = document.getElementById('ds-retime-pop');
+  pop.innerHTML = `
+    <div class="ds-retime-title">Reschedule: ${label}</div>
+    <div class="ds-retime-row">
+      <select class="ds-retime-select" id="ds-rt-time">${timeOpts}</select>
+      <select class="ds-retime-select" id="ds-rt-dur" style="max-width:72px;">${durOpts}</select>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="ds-retime-btn" onclick="applyDsRetime('${blockId}','${source}','${refId}')">Save</button>
+      <button class="ds-retime-cancel" onclick="closeDsRetime()">Cancel</button>
+    </div>`;
+
+  const rect = blockEl.getBoundingClientRect();
+  let left = rect.right + 10, top = rect.top;
+  if (left + 220 > window.innerWidth)  left = rect.left - 232;
+  if (top  + 130 > window.innerHeight) top  = window.innerHeight - 140;
+  pop.style.left = Math.max(6,left)+'px';
+  pop.style.top  = Math.max(6,top)+'px';
+  pop.style.display = 'block';
+
+  setTimeout(()=>document.addEventListener('click',dsRetimeOutside,{once:true}),0);
+}
+
+function dsRetimeOutside(e) {
+  const pop = document.getElementById('ds-retime-pop');
+  if (pop && !pop.contains(e.target)) closeDsRetime();
+  else document.addEventListener('click',dsRetimeOutside,{once:true});
+}
+
+function closeDsRetime() {
+  const pop = document.getElementById('ds-retime-pop');
+  if (pop) pop.style.display = 'none';
+}
+
+function applyDsRetime(blockId, source, refId) {
+  const start = document.getElementById('ds-rt-time').value;
+  const dur   = parseInt(document.getElementById('ds-rt-dur').value);
+  const db = loadDayBlocks();
+  if (!db[dsViewDate]) db[dsViewDate] = [];
+  const arr = db[dsViewDate];
+  const label = document.getElementById('dsb-'+blockId)
+    ?.querySelector('.ds-block-name')?.textContent || '';
+
+  if (source === 'writing' || source === 'fitness') {
+    const ex = arr.find(e => e.source===source && e.refId===refId);
+    if (ex) { ex.start=start; ex.durationMin=dur; }
+    else arr.push({ id:'dso-'+Date.now(), source, refId, label,
+      start, durationMin:dur, color:DS_COLORS[source] });
+  } else {
+    const ex = arr.find(e => e.id===blockId);
+    if (ex) { ex.start=start; ex.durationMin=dur; }
+  }
+  saveDayBlocks(db);
+  closeDsRetime();
+  renderDaySchedule();
+}
+
+renderDaySchedule();
 
 </script>
 
